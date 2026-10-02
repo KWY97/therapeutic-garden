@@ -10,11 +10,15 @@ function element(dataset = {}) {
         classList: {toggle(name, active) { active ? classes.add(name) : classes.delete(name); },
             contains(name) { return classes.has(name); }, add(name) { classes.add(name); }, remove(name) { classes.delete(name); }},
         setAttribute(name, value) { this.attrs[name] = value; },
-        addEventListener(name, fn) { this.events[name] = fn; },
+        addEventListener(name, fn) {
+            const previous = this.events[name];
+            this.events[name] = previous ? event => { previous(event); fn(event); } : fn;
+        },
+        contains(target) { return target === this || Object.values(this.one).includes(target); },
         querySelector(selector) { return this.one[selector] || null; },
         querySelectorAll(selector) { return this.many[selector] || []; }};
 }
-function boot({reduced = false, empty = false} = {}) {
+function boot({reduced = false, empty = false, controls = false} = {}) {
     const timers = new Map(); let sequence = 0;
     const changes = [];
     const motion = {matches: reduced, addEventListener(_, fn) { changes.push(fn); }};
@@ -33,6 +37,12 @@ function boot({reduced = false, empty = false} = {}) {
     chart.many['[data-personal-metric]'] = metrics;
     for (const selector of ['[data-current-spot]', '[data-current-metric]', '[data-current-rate]']) chart.one[selector] = element();
     page.one['[data-personal-change-chart]'] = empty ? null : chart;
+    if (controls) {
+        course.one['[data-rotation-toggle]'] = element();
+        chart.one['[data-rotation-toggle]'] = element();
+        course.one['[data-selection-status]'] = element();
+        chart.one['[data-selection-status]'] = element();
+    }
     const buttons = [element({code: 'HS1', name: 'one', stress: empty ? undefined : '19.5% 감소', emotional: empty ? undefined : '54.3% 증가'}),
         element({code: 'HS2', name: 'two', stress: empty ? undefined : '10.8% 감소', emotional: empty ? undefined : '29.2% 증가'})];
     course.many['.landing-course-spots button'] = buttons;
@@ -43,7 +53,7 @@ function boot({reduced = false, empty = false} = {}) {
     const window = {matchMedia() { return motion; }, clearTimeout(id) { timers.delete(id); },
         setTimeout(fn, delay) { const id = ++sequence; timers.set(id, {fn, delay}); return id; }};
     vm.runInNewContext(source, {document, window});
-    return {chart, course, spots, metrics, buttons, timers, changes, motion,
+    return {chart, course, spots, metrics, buttons, timers, changes, motion, document,
         value: () => chart.one['[data-current-rate]'].textContent};
 }
 
@@ -91,4 +101,45 @@ test('automatic browsing advances only the selected Spot, keeping the chosen met
     ui.timers.delete(id); timer.fn();
     assert.equal(ui.spots[1].attrs['aria-pressed'], 'true');
     assert.equal(ui.chart.dataset.activeMetric, 'stress');
+});
+
+test('explicit pause persists through pointer, focus, visibility and motion changes', () => {
+    const ui = boot({controls: true});
+    const pause = ui.course.one['[data-rotation-toggle]'];
+    pause.events.click();
+    assert.equal(pause.attrs['aria-pressed'], 'true');
+    assert.equal(ui.timers.size, 1);
+    ui.course.events.pointerenter();
+    ui.course.events.pointerleave();
+    ui.document.hidden = true; ui.document.events.visibilitychange();
+    assert.equal(ui.timers.size, 0);
+    ui.document.hidden = false; ui.document.events.visibilitychange();
+    assert.equal(ui.timers.size, 1);
+    ui.motion.matches = true; ui.changes.forEach(fn => fn({matches: true}));
+    assert.equal(pause.disabled, true); assert.equal(ui.timers.size, 0);
+    ui.motion.matches = false; ui.changes.forEach(fn => fn({matches: false}));
+    assert.equal(ui.timers.size, 1);
+    pause.events.click();
+    assert.equal(ui.timers.size, 2);
+    ui.course.events.focusin();
+    assert.equal(ui.timers.size, 1);
+    ui.course.events.focusout({relatedTarget: null});
+    assert.equal(ui.timers.size, 2);
+});
+
+test('semantic colors distinguish metric directions, and only manual choices announce', () => {
+    const ui = boot({controls: true});
+    const rate = ui.chart.one['[data-current-rate]'];
+    assert.equal(rate.dataset.effectStatus, 'worsened');
+    assert.equal(ui.chart.one['[data-selection-status]'].textContent, '');
+    ui.metrics[1].events.click();
+    assert.equal(rate.dataset.effectStatus, 'improved');
+    ui.spots[4].events.click();
+    assert.equal(rate.dataset.effectStatus, 'worsened');
+    assert.match(ui.chart.one['[data-selection-status]'].textContent, /HS5.*6.5% 감소/);
+    ui.metrics[0].events.click();
+    assert.equal(rate.dataset.effectStatus, 'neutral');
+    ui.buttons[1].events.click();
+    assert.equal(ui.course.one['[data-field="stress-reduction"]'].dataset.effectStatus, 'improved');
+    assert.match(ui.course.one['[data-selection-status]'].textContent, /HS2.*10.8% 감소/);
 });
