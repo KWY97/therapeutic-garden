@@ -1,7 +1,11 @@
 package com.example.manage.service;
 
 import com.example.manage.dto.HealingEffectView;
+import com.example.manage.dto.HealingSpotImprovementView;
+import com.example.manage.dto.ImprovementMetricView;
 import com.example.manage.dto.MonitoringSpotEffectView;
+import com.example.manage.dto.ParticipantOverallImprovementView;
+import com.example.manage.domain.MemberHealingSpotEffectSummary;
 import com.example.manage.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -79,5 +83,59 @@ public class HealingEffectQueryService {
             return summary == null ? MonitoringSpotEffectView.missing(spot.getCode(), spot.getName())
                     : MonitoringSpotEffectView.overall(summary);
         }).toList();
+    }
+
+    /** Phase-1 data API. Existing average-rate DTOs and UI callers remain untouched. */
+    public List<HealingSpotImprovementView> findOverallImprovements(Long siteId) {
+        var summaries = overall.findByHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(siteId);
+        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
+        return summaries.stream()
+                .map(summary -> new HealingSpotImprovementView(
+                        summary.getHealingSpot().getCode(), summary.getHealingSpot().getName(),
+                        summary.getParticipantCount(), summary.getTotalExperienceCount(),
+                        ImprovementMetricView.of(summary.getStressValidSessionCount(), summary.getStressImprovedCount()),
+                        ImprovementMetricView.of(summary.getEmotionalValidSessionCount(), summary.getEmotionalImprovedCount())))
+                .toList();
+    }
+
+    public List<HealingSpotImprovementView> findMemberImprovements(Long siteId, Long memberId) {
+        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        var summaries = participants
+                .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId);
+        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
+        return summaries.stream()
+                .map(summary -> new HealingSpotImprovementView(
+                        summary.getHealingSpot().getCode(), summary.getHealingSpot().getName(), null,
+                        summary.getTotalExperienceCount(),
+                        ImprovementMetricView.of(summary.getStressValidSessionCount(), summary.getStressImprovedCount()),
+                        ImprovementMetricView.of(summary.getEmotionalValidSessionCount(), summary.getEmotionalImprovedCount())))
+                .toList();
+    }
+
+    /** Participant overall is derived by summing Member x Spot source counts; it is not stored. */
+    public Optional<ParticipantOverallImprovementView> findParticipantOverallImprovement(Long siteId, Long memberId) {
+        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        var summaries = participants
+                .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId);
+        if (summaries.isEmpty() || summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary)))
+            return Optional.empty();
+        int experiences = summaries.stream().mapToInt(MemberHealingSpotEffectSummary::getTotalExperienceCount).sum();
+        int stressValid = summaries.stream().mapToInt(MemberHealingSpotEffectSummary::getStressValidSessionCount).sum();
+        int stressImproved = summaries.stream().mapToInt(MemberHealingSpotEffectSummary::getStressImprovedCount).sum();
+        int emotionalValid = summaries.stream().mapToInt(MemberHealingSpotEffectSummary::getEmotionalValidSessionCount).sum();
+        int emotionalImproved = summaries.stream().mapToInt(MemberHealingSpotEffectSummary::getEmotionalImprovedCount).sum();
+        return Optional.of(new ParticipantOverallImprovementView(experiences,
+                ImprovementMetricView.of(stressValid, stressImproved),
+                ImprovementMetricView.of(emotionalValid, emotionalImproved)));
+    }
+
+    private static boolean hasImprovementCounts(com.example.manage.domain.HealingSpotEffectSummary summary) {
+        return summary.getParticipantCount() != null && summary.getTotalExperienceCount() != null
+                && summary.getStressImprovedCount() != null && summary.getEmotionalImprovedCount() != null;
+    }
+
+    private static boolean hasImprovementCounts(MemberHealingSpotEffectSummary summary) {
+        return summary.getTotalExperienceCount() != null
+                && summary.getStressImprovedCount() != null && summary.getEmotionalImprovedCount() != null;
     }
 }

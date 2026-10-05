@@ -57,3 +57,10 @@ tasks.register('healingMeasurementImport', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.example.manage.healingeffect.RawMeasurementImportCli'
 }
+
+tasks.register('healingImprovementRebuild', JavaExec) {
+    group = 'application'
+    description = 'Explicit local Raw-to-Summary improvement count dry-run/rebuild; never creates schema'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.manage.healingeffect.HealingImprovementRebuildCli'
+}

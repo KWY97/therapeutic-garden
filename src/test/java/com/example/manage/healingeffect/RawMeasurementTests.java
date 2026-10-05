@@ -68,7 +68,7 @@ class RawMeasurementTests {
         j.execute("create table healing_spot(spot_id bigint primary key,course_id bigint,code varchar(10),name varchar(100))");
         j.update("insert into site values(1)");j.update("insert into member values(1,1)");
         j.update("insert into healing_course values(1,1,'HC-A')");
-        j.update("insert into healing_spot values(1,1,'HS1','호스타 정원')");
+        j.update("insert into healing_spot values(1,1,'HS1','호스타 정원'),(2,1,'HS2','곶자왈원')");
         return ds;
     }
     void schema(JdbcTemplate j) throws Exception {
@@ -90,6 +90,11 @@ class RawMeasurementTests {
         assertNull(records.get(1).baselineStress());
         assertTrue(new HealingMeasurementRepository(j).findMemberForSite(2L,1L).isEmpty());
         assertTrue(new HealingMeasurementRepository(j).findMemberForSite(1L,2L).isEmpty());
+        var aggregationRecords=new HealingMeasurementRepository(j).findForSiteAggregation(1L);
+        assertEquals(4,aggregationRecords.size());
+        assertEquals(2,aggregationRecords.stream().filter(r->r.spotId()==2L).count());
+        assertTrue(aggregationRecords.stream().filter(r->r.spotId()==2L)
+                .allMatch(r->r.stressPost()==null && !r.stressValid()));
     }
     @Test void mappingsFailBeforeWriteAndSqlFailureRollsBackBatch() throws Exception {
         var source=new RawMeasurementParser().parse(workbook(null,false,false));
@@ -98,9 +103,9 @@ class RawMeasurementTests {
         try(var c=ds.getConnection()) {assertThrows(IllegalArgumentException.class,()->importer.execute(c,source,1,false));}
         j.update("update member set participant_no=1");j.update("update healing_course set code='HC-B'");
         try(var c=ds.getConnection()) {assertThrows(IllegalArgumentException.class,()->importer.execute(c,source,1,true));}
-        j.update("update healing_course set code='HC-A'");j.update("update healing_spot set name='wrong'");
+        j.update("update healing_course set code='HC-A'");j.update("update healing_spot set name='wrong' where spot_id=1");
         try(var c=ds.getConnection()) {assertThrows(IllegalArgumentException.class,()->importer.execute(c,source,1,true));}
-        j.update("update healing_spot set name='호스타 정원'");
+        j.update("update healing_spot set name='호스타 정원' where spot_id=1");
         j.execute("alter table healing_spot_measurement add constraint fail_write check(stress_post < 0)");
         try(var c=ds.getConnection()) {assertThrows(SQLException.class,()->importer.execute(c,source,1,false));}
         for(String table:RawMeasurementDatabaseImporter.TABLES) assertEquals(0,j.queryForObject("select count(*) from "+table,Integer.class));

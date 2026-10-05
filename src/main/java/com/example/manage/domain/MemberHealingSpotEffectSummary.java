@@ -35,6 +35,13 @@ public class MemberHealingSpotEffectSummary {
     @Column(nullable = false, precision = 38, scale = 18)
     private BigDecimal emotionalIncreaseRate;
 
+    /** Nullable during the safe phase-1 backfill of pre-existing summary rows. */
+    private Integer totalExperienceCount;
+
+    private Integer stressImprovedCount;
+
+    private Integer emotionalImprovedCount;
+
     public MemberHealingSpotEffectSummary(Member member, HealingSpot healingSpot,
             Integer stressValidSessionCount, BigDecimal stressReductionRate,
             Integer emotionalValidSessionCount, BigDecimal emotionalIncreaseRate) {
@@ -46,5 +53,22 @@ public class MemberHealingSpotEffectSummary {
 
         this.emotionalValidSessionCount = emotionalValidSessionCount;
         this.emotionalIncreaseRate = emotionalIncreaseRate;
+    }
+
+    public void updateImprovementCounts(Integer totalExperienceCount,
+            Integer stressValidCount, Integer stressImprovedCount,
+            Integer emotionalValidCount, Integer emotionalImprovedCount) {
+        if (totalExperienceCount == null || stressValidCount == null || stressImprovedCount == null
+                || emotionalValidCount == null || emotionalImprovedCount == null
+                || totalExperienceCount < 0 || stressValidCount < 0 || stressImprovedCount < 0
+                || emotionalValidCount < 0 || emotionalImprovedCount < 0
+                || stressValidCount > totalExperienceCount || emotionalValidCount > totalExperienceCount
+                || stressImprovedCount > stressValidCount || emotionalImprovedCount > emotionalValidCount)
+            throw new IllegalArgumentException("invalid improvement counts");
+        this.totalExperienceCount = totalExperienceCount;
+        this.stressValidSessionCount = stressValidCount;
+        this.stressImprovedCount = stressImprovedCount;
+        this.emotionalValidSessionCount = emotionalValidCount;
+        this.emotionalImprovedCount = emotionalImprovedCount;
     }
 }
