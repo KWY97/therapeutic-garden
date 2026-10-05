@@ -85,7 +85,36 @@ public class HealingEffectQueryService {
         }).toList();
     }
 
-    /** Phase-1 data API. Existing average-rate DTOs and UI callers remain untouched. */
+    /** Count-backed UI snapshot for the currently published dataset. */
+    public List<HealingSpotImprovementView> findPublishedOverallImprovements() {
+        return batches.findFirstByOrderByIdAsc()
+                .map(batch -> findOverallImprovements(batch.getTargetSiteId()))
+                .filter(views -> views.size() == 6)
+                .orElse(List.of());
+    }
+
+    /** Uses the same stable, complete anonymous example selection as the legacy view. */
+    public List<HealingSpotImprovementView> findAnonymousExampleImprovements() {
+        return batches.findFirstByOrderByIdAsc().map(batch -> {
+            var candidates = participants.findCompleteExampleMemberIds(batch.getTargetSiteId());
+            if (candidates.isEmpty()) return List.<HealingSpotImprovementView>of();
+            var views = findMemberImprovements(batch.getTargetSiteId(), candidates.getFirst());
+            return views.size() == 6 ? views : List.<HealingSpotImprovementView>of();
+        }).orElse(List.of());
+    }
+
+    /** Authenticated participant UI data, including explicit missing HS1-HS6 entries. */
+    public List<HealingSpotImprovementView> findImportedMemberImprovements(Long memberId) {
+        return batches.findFirstByOrderByIdAsc()
+                .map(batch -> findMemberImprovementsWithMissing(batch.getTargetSiteId(), memberId))
+                .orElse(List.of());
+    }
+
+    public Optional<ParticipantOverallImprovementView> findImportedMemberOverallImprovement(Long memberId) {
+        return batches.findFirstByOrderByIdAsc()
+                .flatMap(batch -> findParticipantOverallImprovement(batch.getTargetSiteId(), memberId));
+    }
+
     public List<HealingSpotImprovementView> findOverallImprovements(Long siteId) {
         var summaries = overall.findByHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(siteId);
         if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
@@ -110,6 +139,28 @@ public class HealingEffectQueryService {
                         ImprovementMetricView.of(summary.getStressValidSessionCount(), summary.getStressImprovedCount()),
                         ImprovementMetricView.of(summary.getEmotionalValidSessionCount(), summary.getEmotionalImprovedCount())))
                 .toList();
+    }
+
+    private List<HealingSpotImprovementView> findMemberImprovementsWithMissing(Long siteId, Long memberId) {
+        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        var summaries = participants
+                .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId);
+        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
+        var bySpot = summaries.stream().collect(Collectors.toMap(
+                summary -> summary.getHealingSpot().getSpotId(), Function.identity()));
+        return spots.findByHealingCourseSiteSiteId(siteId).stream()
+                .filter(spot -> spot.getCode().matches("HS[1-6]"))
+                .sorted(Comparator.comparing(com.example.manage.domain.HealingSpot::getCode))
+                .map(spot -> {
+                    var summary = bySpot.get(spot.getSpotId());
+                    return summary == null
+                            ? new HealingSpotImprovementView(spot.getCode(), spot.getName(), null, 0,
+                                    ImprovementMetricView.of(0, 0), ImprovementMetricView.of(0, 0))
+                            : new HealingSpotImprovementView(spot.getCode(), spot.getName(), null,
+                                    summary.getTotalExperienceCount(),
+                                    ImprovementMetricView.of(summary.getStressValidSessionCount(), summary.getStressImprovedCount()),
+                                    ImprovementMetricView.of(summary.getEmotionalValidSessionCount(), summary.getEmotionalImprovedCount()));
+                }).toList();
     }
 
     /** Participant overall is derived by summing Member x Spot source counts; it is not stored. */

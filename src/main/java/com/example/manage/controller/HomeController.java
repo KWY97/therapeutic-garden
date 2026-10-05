@@ -30,11 +30,11 @@ public class HomeController {
         if (session.getAttribute("loginMemberId") != null) {
             return "redirect:/member";
         }
-        var overall = healingEffects.findPublishedOverall();
+        var overall = healingEffects.findPublishedOverallImprovements();
         model.addAttribute("healingEffects", overall);
         model.addAttribute("effectsBySpot", overall.stream().collect(java.util.stream.Collectors.toMap(
-                com.example.manage.dto.HealingEffectView::spotCode, java.util.function.Function.identity())));
-        model.addAttribute("anonymousEffects", healingEffects.findAnonymousExample());
+                com.example.manage.dto.HealingSpotImprovementView::spotCode, java.util.function.Function.identity())));
+        model.addAttribute("anonymousEffects", healingEffects.findAnonymousExampleImprovements());
         return "landing";
     }
 

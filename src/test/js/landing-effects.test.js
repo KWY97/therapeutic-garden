@@ -22,11 +22,13 @@ function boot({reduced = false, empty = false} = {}) {
     const changes = [];
     const motion = {matches: reduced, addEventListener(_, fn) { changes.push(fn); }};
     const page = element(); const chart = element(); const course = element();
+    const stressRates = [100, 100, 33.333, 66.667, 0, 50];
+    const emotionalRates = [100, 50, 33.333, 66.667, 0, 50];
     const spots = Array.from({length: 6}, (_, index) => {
         const n = element({personalSpot: `HS${index+1}`, name: `Spot ${index+1}`,
-            stress: index ? '0' : '-38.6', emotional: index === 4 ? '-6.5' : '1423.513',
-            stressDisplay: index ? '0.0% 변화 없음' : '38.6% 증가',
-            emotionalDisplay: index === 4 ? '6.5% 감소' : '1423.5% 증가'});
+            stress: String(stressRates[index]), emotional: String(emotionalRates[index]),
+            stressDisplay: stressRates[index].toFixed(1) + '% 개선',
+            emotionalDisplay: emotionalRates[index].toFixed(1) + '% 개선'});
         n.one['[data-comparison-value]'] = element();
         n.one['.landing-comparison-track i'] = element();
         return n;
@@ -38,8 +40,8 @@ function boot({reduced = false, empty = false} = {}) {
     page.one['[data-personal-change-chart]'] = empty ? null : chart;
     course.one['[data-selection-status]'] = element();
     chart.one['[data-selection-status]'] = element();
-    const buttons = [element({code: 'HS1', name: 'one', stress: empty ? undefined : '19.5% 감소', emotional: empty ? undefined : '54.3% 증가'}),
-        element({code: 'HS2', name: 'two', stress: empty ? undefined : '10.8% 감소', emotional: empty ? undefined : '29.2% 증가'})];
+    const buttons = [element({code: 'HS1', name: 'one', stress: empty ? undefined : '88.2% 개선', emotional: empty ? undefined : '58.8% 개선'}),
+        element({code: 'HS2', name: 'two', stress: empty ? undefined : '81.3% 개선', emotional: empty ? undefined : '68.8% 개선'})];
     course.many['.landing-course-spots button'] = buttons;
     for (const code of ['HS1', 'HS2']) course.one[`[data-spot-image="${code}"]`] = element();
     for (const field of ['stress-reduction', 'emotional-increase']) course.one[`[data-field="${field}"]`] = element();
@@ -51,24 +53,24 @@ function boot({reduced = false, empty = false} = {}) {
         value: () => chart.one['[data-current-rate]'].textContent};
 }
 
-test('personal metric and six independent Spot selectors preserve raw sign for bars and show directional text', () => {
+test('personal metric and six independent Spot selectors show server-formatted improvement rates', () => {
     const ui = boot();
-    assert.equal(ui.value(), '38.6% 증가');
-    assert.equal(ui.spots[0].one['.landing-comparison-track i'].style.top, '50%');
+    assert.equal(ui.value(), '100.0% 개선');
+    assert.equal(ui.spots[0].one['.landing-comparison-track i'].style.bottom, '0');
     ui.metrics[1].events.click();
-    assert.equal(ui.value(), '1423.5% 증가');
+    assert.equal(ui.value(), '100.0% 개선');
     assert.equal(ui.chart.dataset.activeMetric, 'emotional');
     ui.spots[5].events.click();
     assert.equal(ui.chart.one['[data-current-spot]'].textContent, 'HS6 · Spot 6');
     assert.equal(ui.spots[5].attrs['aria-pressed'], 'true');
     ui.metrics[0].events.click();
-    assert.equal(ui.value(), '0.0% 변화 없음');
-    assert.equal(ui.spots[5].one['[data-comparison-value]'].textContent, '0.0% 변화 없음');
+    assert.equal(ui.value(), '50.0% 개선');
+    assert.equal(ui.spots[5].one['[data-comparison-value]'].textContent, '50.0% 개선');
 });
 test('garden carousel changes image, active selector and both SSR effect displays together', () => {
     const ui = boot(); ui.buttons[1].events.click();
-    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '10.8% 감소');
-    assert.equal(ui.course.one['[data-field="emotional-increase"]'].textContent, '29.2% 증가');
+    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3% 개선');
+    assert.equal(ui.course.one['[data-field="emotional-increase"]'].textContent, '68.8% 개선');
     assert.equal(ui.course.one['[data-spot-image="HS2"]'].attrs['aria-hidden'], 'false');
     assert.equal(ui.buttons[0].attrs['aria-pressed'], 'false');
     assert.equal(ui.buttons[1].attrs['aria-pressed'], 'true');
@@ -81,25 +83,25 @@ test('empty data never creates sample numbers', () => {
 test('manual selectors work immediately with reduced motion and never require timer APIs', () => {
     const ui = boot({reduced: true});
     ui.spots[4].events.click(); ui.metrics[1].events.click();
-    assert.equal(ui.value(), '6.5% 감소');
+    assert.equal(ui.value(), '0.0% 개선');
     ui.motion.matches = false; ui.changes.forEach(fn => fn({matches: false}));
     ui.buttons[1].events.click();
-    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '10.8% 감소');
+    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3% 개선');
 });
 
-test('semantic colors distinguish metric directions, and only manual choices announce', () => {
+test('improvement rates use improvement semantics, and only manual choices announce', () => {
     const ui = boot();
     const rate = ui.chart.one['[data-current-rate]'];
-    assert.equal(rate.dataset.effectStatus, 'worsened');
+    assert.equal(rate.dataset.effectStatus, 'improved');
     assert.equal(ui.chart.one['[data-selection-status]'].textContent, '');
     ui.metrics[1].events.click();
     assert.equal(rate.dataset.effectStatus, 'improved');
     ui.spots[4].events.click();
-    assert.equal(rate.dataset.effectStatus, 'worsened');
-    assert.match(ui.chart.one['[data-selection-status]'].textContent, /HS5.*6.5% 감소/);
+    assert.equal(rate.dataset.effectStatus, 'improved');
+    assert.match(ui.chart.one['[data-selection-status]'].textContent, /HS5.*0.0% 개선/);
     ui.metrics[0].events.click();
-    assert.equal(rate.dataset.effectStatus, 'neutral');
+    assert.equal(rate.dataset.effectStatus, 'improved');
     ui.buttons[1].events.click();
     assert.equal(ui.course.one['[data-field="stress-reduction"]'].dataset.effectStatus, 'improved');
-    assert.match(ui.course.one['[data-selection-status]'].textContent, /HS2.*10.8% 감소/);
+    assert.match(ui.course.one['[data-selection-status]'].textContent, /HS2.*81.3% 개선/);
 });

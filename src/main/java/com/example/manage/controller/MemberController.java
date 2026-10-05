@@ -59,7 +59,8 @@ public class MemberController {
         List<ScheduleResponse> schedules = scheduleService.findScheduleByMemberId(memberId);
 
         model.addAttribute("schedules", schedules);
-        model.addAttribute("spotEffects", healingEffects.findImportedMember(memberId));
+        model.addAttribute("spotEffects", healingEffects.findImportedMemberImprovements(memberId));
+        model.addAttribute("overallImprovement", healingEffects.findImportedMemberOverallImprovement(memberId).orElse(null));
         model.addAttribute("measurementHistory", measurementHistory.findImportedMember(memberId));
         return "member/home";
     }

@@ -190,9 +190,9 @@
 
 <script th:inline="javascript">
     window.memberHealingEffects = /*[[${spotEffects}]]*/ [];
+    window.memberOverallImprovement = /*[[${overallImprovement}]]*/ null;
     window.memberMeasurementHistory = /*[[${measurementHistory}]]*/ [];
 </script>
-<script th:src="@{/js/home-survey-analysis.js?v=participant-analysis}"></script>
 <script th:src="@{/js/measurement-history.js?v=participant-analysis}"></script>
 <script th:src="@{/js/member-healing-analysis.js?v=participant-analysis}"></script>
 
