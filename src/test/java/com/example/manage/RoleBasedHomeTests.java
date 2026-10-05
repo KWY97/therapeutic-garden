@@ -149,18 +149,24 @@ class RoleBasedHomeTests {
         }
     }
     @Test
-    void landingEditorialScenesPreserveRealSpacesHeaderAndProtectedMonitoringLinks() throws Exception {
+    void landingEditorialScenesPreserveRealSpacesHeaderAndStaticMonitoringPreview() throws Exception {
         String html = mvc.perform(get("/")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));
         String hero = html.substring(html.indexOf("<section"), html.indexOf("</section>"));
         String cta = html.substring(html.indexOf("<section class=\"landing-section landing-final-cta"), html.indexOf("</main>"));
+        String monitoring = html.substring(html.indexOf("<section class=\"landing-section landing-monitoring"),
+                html.indexOf("<section class=\"landing-section landing-person-scene"));
         assertThat(header).contains("href=\"/admin/login\"", "href=\"/member/login\"", "href=\"/\"");
-        assertThat(hero).contains("THERAPEUTIC GARDEN", "공간이", "SCROLL TO EXPLORE")
+        assertThat(hero).contains("THERAPEUTIC ", "GARDEN", "공간이", "SCROLL TO EXPLORE")
                 .doesNotContain("/admin/login", "/member/login");
         assertThat(cta).contains("/images/landing/optimized/effect-hs3-cta.webp", "치유 공간의", "경험을 확인하세요.")
                 .contains("href=\"/admin/monitoring\"", "공간 모니터링 보기")
                 .doesNotContain("<button", "<nav", "/admin/login", "/member/login");
+        assertThat(monitoring).contains("<div class=\"landing-monitoring-preview\"", "landing-preview-stage",
+                        "실제 공간 모니터링의 배치도")
+                .doesNotContain("<a class=\"landing-monitoring-preview\"", "href=\"/admin/monitoring\"",
+                        "landing-preview-affordance", "공간 모니터링 보기");
         String experience = html.substring(html.indexOf("<section class=\"landing-section landing-connection"),
                 html.indexOf("<section class=\"landing-section landing-final-cta"));
         assertThat(experience).contains("/images/landing/optimized/personal-hs4.webp",
@@ -204,18 +210,22 @@ class RoleBasedHomeTests {
                         "개인 측정 값과 변화 흐름은 데이터 연동 전 예시입니다.");
         assertThat(hero).contains("/images/landing/optimized/hero-hs2.webp")
                 .doesNotContain("HC-A", "HC-B", "HS1", "HS2</span>", "공간 구조 개념도");
-        assertThat(html).contains("바이오마커", "뇌파", "맥파", "공간별 치유효과", "landing-spatial-visual",
-                "데이터 준비 중", "개인 힐링코스 구성", "href=\"/css/landing.css\"")
-                .doesNotContain(".codex-reference", "home-course-overlay.js", "id=\"siteSelect\"", "<canvas");
+        assertThat(html).contains("바이오마커", "뇌파", "맥파", "공간별 치유효과", "landing-monitoring-preview",
+                "landing-preview-stage", "landing-capabilities", "landing-capability-list", "monitoring-hotspot-circle",
+                "monitoring-hotspot-label", "monitoring-hotspot-metric", "monitoring-hotspot-value",
+                "스트레스", "정서적 안정성", "개선", "데이터 준비 중", "개인 힐링코스 구성",
+                "href=\"/css/landing.css\"")
+                .doesNotContain(".codex-reference", "home-course-overlay.js", "id=\"siteSelect\"", "<canvas", "<iframe",
+                        "landing-capability-track", "landing-keywords");
         assertThat(html).contains("몸이 보내는 신호,", "공간이 만드는 변화", "곶자왈원", "콜로네이드 가든",
                 "블로썸 가든", "극림원", "데이터 준비 중")
                 .doesNotContain("HRV", "Sample Data", "아래 수치는 설명을 위한 예시 데이터입니다.",
                         "머리에 착용하는 생체신호 측정 장비");
-        assertThat(experience).contains("HS1 · 호스타 정원", "HS2 · 곶자왈원", "HS3 · 가든 위스퍼스",
-                        "HS4 · 콜로네이드 가든", "HS5 · 블로썸 가든", "HS6 · 극림원")
+        assertThat(experience).contains("HS1", "호스타 정원", "HS2", "곶자왈원", "HS3", "가든 위스퍼스",
+                        "HS4", "콜로네이드 가든", "HS5", "블로썸 가든", "HS6", "극림원")
                 .doesNotContain("긴장 완화", "감각 환기", "정서 안정", "Sample Personal Healing Course", "오늘의 상태 · 예시");
-        assertThat(experience.indexOf("HS4 ·")).isLessThan(experience.indexOf("HS5 ·"));
-        assertThat(experience.indexOf("HS5 ·")).isLessThan(experience.indexOf("HS6 ·"));
+        assertThat(experience.indexOf("HS4")).isLessThan(experience.indexOf("HS5"));
+        assertThat(experience.indexOf("HS5")).isLessThan(experience.indexOf("HS6"));
         var images = java.util.regex.Pattern.compile("<img[^>]+src=\"([^\"]+)\"").matcher(html);
         int spacePhotos = 0;
         while (images.find()) {
@@ -224,10 +234,11 @@ class RoleBasedHomeTests {
             assertThat(Files.isRegularFile(Path.of("src/main/resources/static" + source))).isTrue();
             if (source.startsWith("/images/landing/")) spacePhotos++;
         }
-        assertThat(spacePhotos).isEqualTo(15);
+        assertThat(spacePhotos).isEqualTo(21);
         assertThat(html).contains("landing-image-scene", "landing-person-scene", "landing-course-journey",
-                        "data-rotation-toggle", "aria-live=\"off\"")
-                .doesNotContain("Sample Monitoring", "landing-waveform", "--level:");
+                        "landing-course-route", "aria-live=\"off\"")
+                .doesNotContain("data-rotation-toggle", "Sample Monitoring", "landing-waveform", "--level:",
+                        "landing-text-link");
         assertThat(html.indexOf("landing-image-scene")).isLessThan(html.indexOf("02 / MONITORING"));
         assertThat(html.indexOf("02 / MONITORING")).isLessThan(html.indexOf("landing-person-scene"));
         assertThat(html.indexOf("landing-person-scene")).isLessThan(html.indexOf("03 / PERSONAL HEALING COURSE"));
@@ -243,13 +254,19 @@ class RoleBasedHomeTests {
         String js = Files.readString(resources.resolve("static/js/landing.js"));
         assertThat(js).contains("'IntersectionObserver' in window", "motion.matches", "showAll",
                 "observer.disconnect()", "prefers-reduced-motion: reduce", "focusin",
-                "initializeHealingSpotCarousels", "changeHealingSpot", "initializePersonalChangeAnimation",
-                "data-personal-spot", "scheduleNext", "activeMetric", "8500");
+                "initializeHealingSpotSelectors", "changeHealingSpot", "initializePersonalChangeSelectors",
+                "data-personal-spot", "activeMetric")
+                .doesNotContain("scheduleNext", "setTimeout", "clearTimeout", "data-rotation-toggle");
         assertThat(Files.readString(resources.resolve("static/css/landing.css")))
                 .contains("@media (prefers-reduced-motion: reduce)", "data-active-metric=\"stress\"",
-                        "data-active-metric=\"emotional\"", "landing-effect-overview-background",
-                        "landing-section-hero", "landing-section-content")
-                .doesNotContain("landing-chart-line-stress", "landing-chart-line-emotional");
+                        "data-active-metric=\"emotional\"", "landing-section-hero",
+                        "landing-section-content", "landing-capability-list",
+                        ".landing-page .landing-course-journey > li { position: relative; min-height: min(850px, 78vw); width: 100vw;",
+                        ".landing-page .landing-journey-b .landing-journey-name { right: 7vw; left: auto; }",
+                        "linear-gradient(270deg, #112c25d9")
+                .doesNotContain("landing-chart-line-stress", "landing-chart-line-emotional", "landing-rotation-toggle",
+                        "landing-capability-flow", "animation-play-state", "landing-capability-track", "landing-keywords",
+                        "landing-preview-affordance", "landing-monitoring-preview:hover", "landing-monitoring-preview:focus-visible");
         assertThat(Files.readString(resources.resolve("static/css/style.css")))
                 .contains("@media (prefers-reduced-motion: reduce)", ".landing-reveal-enabled .landing-page");
         try (var paths = Files.walk(resources.resolve("templates"))) {

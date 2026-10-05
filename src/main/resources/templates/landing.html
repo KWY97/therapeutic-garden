@@ -16,7 +16,6 @@
         <div class="landing-hero-image">
             <img th:src="@{/images/landing/optimized/hero-hs2.webp}" width="2400" height="1600" fetchpriority="high" loading="eager" alt="디에이치 방배의 나무와 식생 사이로 깊이 이어지는 정원 데크">
         </div>
-        <div class="landing-hero-topline"><span>SPACE · NATURE · RECOVERY</span><span>THERAPEUTIC GARDEN</span></div>
         <h1 id="landing-hero-title"><span>THERAPEUTIC </span><span>GARDEN</span></h1>
         <div class="landing-hero-copy">
             <p class="landing-hero-statement">공간이<br>회복의 경험이 되도록.</p>
@@ -55,7 +54,6 @@
                                 <div><dt>평균 정서적 안정성 증감률</dt><dd data-field="emotional-increase" th:text="${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].emotionalChangeDisplay : '데이터 준비 중'}">데이터 준비 중</dd></div>
                             </dl>
                             <p class="landing-data-note">스트레스는 낮아질수록, 정서적 안정성은 높아질수록 개선됩니다.</p>
-                            <button class="landing-rotation-toggle" type="button" data-rotation-toggle aria-pressed="false">자동 전환 일시정지</button>
                         </figcaption>
                         <div class="landing-course-spots" role="group" aria-label="Healing Spot 선택">
 <button class="is-active" type="button" aria-pressed="true" data-code="HS1" data-name="호스타 정원" data-course="HC-A" data-course-name="회복 코스" th:attr="data-name=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].spotName : '호스타 정원'},data-stress=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].stressChangeDisplay : null},data-emotional=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].emotionalChangeDisplay : null}"><span>HS1</span><span th:text="${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].spotName : '호스타 정원'}">호스타 정원</span></button>
@@ -86,28 +84,45 @@
             </div>
         </div>
         <div class="landing-section-content landing-monitoring-content">
-            <figure class="landing-spatial-visual" aria-labelledby="landing-spatial-caption" data-reveal>
-                <div class="landing-spatial-heading"><span>공간 모니터링</span><span>HEALING SPOT / 전체 평균</span></div>
-                <div class="landing-effect-overview-background">
-                    <img th:src="@{/images/landing/optimized/site-plan.webp}" width="1459" height="1078" loading="lazy" decoding="async" alt="디에이치 방배 정원과 건물의 단지 배치도">
-                </div>
-                <figcaption id="landing-spatial-caption">단지 배치도 · 공간별 전체 평균은 실제 측정 결과를 바탕으로 합니다.</figcaption>
-                <p class="landing-effect-empty" th:if="${#lists.isEmpty(healingEffects)}">데이터 준비 중</p>
-                <dl class="landing-monitoring-effects" th:unless="${#lists.isEmpty(healingEffects)}">
-                    <div th:each="effect : ${healingEffects}">
-                        <dt><span th:text="${effect.spotCode}"></span><strong th:text="${effect.spotName}"></strong></dt>
-                        <dd><span>스트레스</span><strong data-effect-metric="stress" th:text="${effect.stressChangeDisplay}"></strong></dd>
-                        <dd><span>정서적 안정성</span><strong data-effect-metric="emotional" th:text="${effect.emotionalChangeDisplay}"></strong></dd>
-                    </div>
-                </dl>
-            </figure>
-            <ul class="landing-keywords" aria-label="모니터링 핵심 항목">
-                <li><span>01</span><h3>바이오마커</h3><p>스트레스와 이완감의 변화</p></li>
-                <li><span>02</span><h3>뇌파</h3><p>안정감과 집중의 흐름</p></li>
-                <li><span>03</span><h3>맥파</h3><p>몸의 리듬과 안정도</p></li>
-                <li><span>04</span><h3>공간별 치유효과</h3><p>코스에 따른 반응 비교</p></li>
-            </ul>
-            <a class="landing-text-link" th:href="@{/admin/monitoring}">공간 모니터링 보기 <span aria-hidden="true">↗</span></a>
+            <div class="landing-monitoring-preview" aria-describedby="landing-spatial-caption" data-reveal>
+                <div class="landing-spatial-heading"><span>공간 모니터링</span><span>THE H BANGBAE / OVERALL SUMMARY</span></div>
+                <figure class="landing-preview-stage">
+                    <img class="landing-preview-map" th:src="@{/images/landing/optimized/site-plan.webp}" width="1459" height="1078" loading="lazy" decoding="async" alt="디에이치 방배 정원과 건물의 공간 모니터링 배치도">
+                    <div class="landing-preview-halo landing-preview-halo-a" aria-hidden="true"></div>
+                    <div class="landing-preview-halo landing-preview-halo-b" aria-hidden="true"></div>
+                    <div class="landing-preview-halo landing-preview-halo-c" aria-hidden="true"></div>
+                    <div class="landing-preview-course landing-preview-course-a" aria-hidden="true"><strong>HC-A</strong><span>회복 코스</span></div>
+                    <div class="landing-preview-course landing-preview-course-b" aria-hidden="true"><strong>HC-B</strong><span>감각 코스</span></div>
+                    <div class="landing-preview-course landing-preview-course-c" aria-hidden="true"><strong>HC-C</strong><span>힐링 코스</span></div>
+                    <span class="landing-preview-spot landing-preview-spot-hs1" style="--spot-x:17.0068%;--spot-y:35.4470%;--spot-tone:#4a8866" th:with="effect=${effectsBySpot['HS1']},display=${effect != null ? effect.stressChangeDisplay : '데이터 준비 중'},good=${#strings.endsWith(display, '감소')},bad=${#strings.endsWith(display, '증가')}" aria-hidden="true">
+                        <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs1.webp}" alt=""></span><span class="monitoring-hotspot-label"><span class="monitoring-hotspot-metric">스트레스</span><span class="monitoring-hotspot-value" th:classappend="${good ? 'effect-good' : bad ? 'effect-bad' : 'effect-neutral'}"><strong th:text="${effect != null ? #strings.substringBefore(display, ' ') : display}">데이터 준비 중</strong><span th:text="${effect != null ? (good ? '개선' : bad ? '악화' : '변화 없음') : ''}"></span></span><strong class="monitoring-hotspot-name"><b>HS1</b><span th:text="${effect != null ? effect.spotName : '호스타 정원'}">호스타 정원</span></strong></span>
+                    </span>
+                    <span class="landing-preview-spot landing-preview-spot-hs2" style="--spot-x:29.1498%;--spot-y:21.9180%;--spot-tone:#4a8866" th:with="effect=${effectsBySpot['HS2']},display=${effect != null ? effect.emotionalChangeDisplay : '데이터 준비 중'},good=${#strings.endsWith(display, '증가')},bad=${#strings.endsWith(display, '감소')}" aria-hidden="true">
+                        <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs2.webp}" alt=""></span><span class="monitoring-hotspot-label"><span class="monitoring-hotspot-metric">정서적 안정성</span><span class="monitoring-hotspot-value" th:classappend="${good ? 'effect-good' : bad ? 'effect-bad' : 'effect-neutral'}"><strong th:text="${effect != null ? #strings.substringBefore(display, ' ') : display}">데이터 준비 중</strong><span th:text="${effect != null ? (good ? '개선' : bad ? '악화' : '변화 없음') : ''}"></span></span><strong class="monitoring-hotspot-name"><b>HS2</b><span th:text="${effect != null ? effect.spotName : '곶자왈원'}">곶자왈원</span></strong></span>
+                    </span>
+                    <span class="landing-preview-spot landing-preview-spot-hs3" style="--spot-x:86.9433%;--spot-y:9.4522%;--spot-tone:#ad9651" th:with="effect=${effectsBySpot['HS3']},display=${effect != null ? effect.stressChangeDisplay : '데이터 준비 중'},good=${#strings.endsWith(display, '감소')},bad=${#strings.endsWith(display, '증가')}" aria-hidden="true">
+                        <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs3-cta.webp}" alt=""></span><span class="monitoring-hotspot-label"><span class="monitoring-hotspot-metric">스트레스</span><span class="monitoring-hotspot-value" th:classappend="${good ? 'effect-good' : bad ? 'effect-bad' : 'effect-neutral'}"><strong th:text="${effect != null ? #strings.substringBefore(display, ' ') : display}">데이터 준비 중</strong><span th:text="${effect != null ? (good ? '개선' : bad ? '악화' : '변화 없음') : ''}"></span></span><strong class="monitoring-hotspot-name"><b>HS3</b><span th:text="${effect != null ? effect.spotName : '가든 위스퍼스'}">가든 위스퍼스</span></strong></span>
+                    </span>
+                    <span class="landing-preview-spot landing-preview-spot-hs4" style="--spot-x:80.1942%;--spot-y:24.4408%;--spot-tone:#ad9651" th:with="effect=${effectsBySpot['HS4']},display=${effect != null ? effect.emotionalChangeDisplay : '데이터 준비 중'},good=${#strings.endsWith(display, '증가')},bad=${#strings.endsWith(display, '감소')}" aria-hidden="true">
+                        <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs4.webp}" alt=""></span><span class="monitoring-hotspot-label"><span class="monitoring-hotspot-metric">정서적 안정성</span><span class="monitoring-hotspot-value" th:classappend="${good ? 'effect-good' : bad ? 'effect-bad' : 'effect-neutral'}"><strong th:text="${effect != null ? #strings.substringBefore(display, ' ') : display}">데이터 준비 중</strong><span th:text="${effect != null ? (good ? '개선' : bad ? '악화' : '변화 없음') : ''}"></span></span><strong class="monitoring-hotspot-name"><b>HS4</b><span th:text="${effect != null ? effect.spotName : '콜로네이드 가든'}">콜로네이드 가든</span></strong></span>
+                    </span>
+                    <span class="landing-preview-spot landing-preview-spot-hs5" style="--spot-x:70.5466%;--spot-y:72.3295%;--spot-tone:#9b7164" th:with="effect=${effectsBySpot['HS5']},display=${effect != null ? effect.emotionalChangeDisplay : '데이터 준비 중'},good=${#strings.endsWith(display, '증가')},bad=${#strings.endsWith(display, '감소')}" aria-hidden="true">
+                        <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs5.webp}" alt=""></span><span class="monitoring-hotspot-label"><span class="monitoring-hotspot-metric">정서적 안정성</span><span class="monitoring-hotspot-value" th:classappend="${good ? 'effect-good' : bad ? 'effect-bad' : 'effect-neutral'}"><strong th:text="${effect != null ? #strings.substringBefore(display, ' ') : display}">데이터 준비 중</strong><span th:text="${effect != null ? (good ? '개선' : bad ? '악화' : '변화 없음') : ''}"></span></span><strong class="monitoring-hotspot-name"><b>HS5</b><span th:text="${effect != null ? effect.spotName : '블로썸 가든'}">블로썸 가든</span></strong></span>
+                    </span>
+                    <span class="landing-preview-spot landing-preview-spot-hs6" style="--spot-x:85.0202%;--spot-y:86.5763%;--spot-tone:#9b7164" th:with="effect=${effectsBySpot['HS6']},display=${effect != null ? effect.stressChangeDisplay : '데이터 준비 중'},good=${#strings.endsWith(display, '감소')},bad=${#strings.endsWith(display, '증가')}" aria-hidden="true">
+                        <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs6.webp}" alt=""></span><span class="monitoring-hotspot-label"><span class="monitoring-hotspot-metric">스트레스</span><span class="monitoring-hotspot-value" th:classappend="${good ? 'effect-good' : bad ? 'effect-bad' : 'effect-neutral'}"><strong th:text="${effect != null ? #strings.substringBefore(display, ' ') : display}">데이터 준비 중</strong><span th:text="${effect != null ? (good ? '개선' : bad ? '악화' : '변화 없음') : ''}"></span></span><strong class="monitoring-hotspot-name"><b>HS6</b><span th:text="${effect != null ? effect.spotName : '극림원'}">극림원</span></strong></span>
+                    </span>
+                </figure>
+                <div class="landing-preview-meta"><p id="landing-spatial-caption">실제 공간 모니터링의 배치도, 저장된 HS 위치와 전체 평균을 사용한 읽기 전용 미리보기입니다.</p></div>
+            </div>
+            <div class="landing-capabilities" aria-label="모니터링 핵심 기능" data-reveal>
+                <ol class="landing-capability-list">
+                    <li><span>01</span><h3>바이오마커</h3><p>스트레스와 이완감의 변화</p></li>
+                    <li><span>02</span><h3>뇌파</h3><p>안정감과 집중의 흐름</p></li>
+                    <li><span>03</span><h3>맥파</h3><p>몸의 리듬과 안정도</p></li>
+                    <li><span>04</span><h3>공간별 치유효과</h3><p>코스에 따른 반응 비교</p></li>
+                </ol>
+            </div>
         </div>
     </section>
 
@@ -140,7 +155,6 @@
                             <small data-comparison-value th:text="${effect.stressChangeDisplay}"></small>
                         </button>
                     </div>
-                    <button class="landing-rotation-toggle" type="button" data-rotation-toggle aria-pressed="false">자동 전환 일시정지</button>
                     <p class="landing-selection-status" data-selection-status role="status"></p>
                 </div>
             </div>
@@ -157,21 +171,21 @@
         </div>
         <div class="landing-section-content landing-connection-content">
             <ol class="landing-connection-flow" aria-label="모니터링부터 개인 힐링코스 구성까지" data-reveal>
-                <li><span class="landing-step-label">01 / MONITORING</span><h3>나의 상태 이해</h3></li>
-                <li><span class="landing-step-label">02 / HEALING EFFECT</span><h3>공간별 효과 확인</h3></li>
-                <li><span class="landing-step-label">03 / PERSONAL COURSE</span><h3>개인 힐링코스 구성</h3></li>
+                <li><strong>01</strong><span class="landing-step-label">MONITORING</span><h3>나의 상태 이해</h3></li>
+                <li><strong>02</strong><span class="landing-step-label">HEALING EFFECT</span><h3>공간별 효과 확인</h3></li>
+                <li><strong>03</strong><span class="landing-step-label">PERSONAL COURSE</span><h3>개인 힐링코스 구성</h3></li>
             </ol>
             <ol class="landing-course-journey" aria-label="Healing Course와 실제 공간">
-                <li data-course-id="HC-A" data-reveal>
-                    <div class="landing-journey-name"><span>01 / HC-A</span><h3>회복 코스</h3><p>HS1 · 호스타 정원<br>HS2 · 곶자왈원</p></div>
+                <li class="landing-journey-a" data-course-id="HC-A" data-reveal>
+                    <div class="landing-journey-name"><span>01 / HC-A</span><h3>회복 코스</h3><div class="landing-course-route"><span><small>HS1</small><strong>호스타 정원</strong></span><i aria-hidden="true">→</i><span><small>HS2</small><strong>곶자왈원</strong></span></div></div>
                     <figure><img th:src="@{/images/landing/optimized/effect-hs2.webp}" width="1200" height="783" loading="lazy" decoding="async" alt="HC-A 회복 코스의 HS2 곶자왈원"><figcaption>HS2 · 곶자왈원</figcaption></figure>
                 </li>
-                <li data-course-id="HC-B" data-reveal>
-                    <div class="landing-journey-name"><span>02 / HC-B</span><h3>감각 코스</h3><p>HS3 · 가든 위스퍼스<br>HS4 · 콜로네이드 가든</p></div>
+                <li class="landing-journey-b" data-course-id="HC-B" data-reveal>
+                    <div class="landing-journey-name"><span>02 / HC-B</span><h3>감각 코스</h3><div class="landing-course-route"><span><small>HS3</small><strong>가든 위스퍼스</strong></span><i aria-hidden="true">→</i><span><small>HS4</small><strong>콜로네이드 가든</strong></span></div></div>
                     <figure><img th:src="@{/images/landing/optimized/personal-hs4.webp}" width="1440" height="960" loading="lazy" decoding="async" alt="HC-B 감각 코스의 HS4 콜로네이드 가든"><figcaption>HS4 · 콜로네이드 가든</figcaption></figure>
                 </li>
-                <li data-course-id="HC-C" data-reveal>
-                    <div class="landing-journey-name"><span>03 / HC-C</span><h3>힐링 코스</h3><p>HS5 · 블로썸 가든<br>HS6 · 극림원</p></div>
+                <li class="landing-journey-c" data-course-id="HC-C" data-reveal>
+                    <div class="landing-journey-name"><span>03 / HC-C</span><h3>힐링 코스</h3><div class="landing-course-route"><span><small>HS5</small><strong>블로썸 가든</strong></span><i aria-hidden="true">→</i><span><small>HS6</small><strong>극림원</strong></span></div></div>
                     <figure><img th:src="@{/images/landing/optimized/personal-hs6.webp}" width="1440" height="960" loading="lazy" decoding="async" alt="HC-C 힐링 코스의 HS6 극림원"><figcaption>HS6 · 극림원</figcaption></figure>
                 </li>
             </ol>

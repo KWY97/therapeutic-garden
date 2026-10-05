@@ -18,8 +18,7 @@ function element(dataset = {}) {
         querySelector(selector) { return this.one[selector] || null; },
         querySelectorAll(selector) { return this.many[selector] || []; }};
 }
-function boot({reduced = false, empty = false, controls = false} = {}) {
-    const timers = new Map(); let sequence = 0;
+function boot({reduced = false, empty = false} = {}) {
     const changes = [];
     const motion = {matches: reduced, addEventListener(_, fn) { changes.push(fn); }};
     const page = element(); const chart = element(); const course = element();
@@ -37,12 +36,8 @@ function boot({reduced = false, empty = false, controls = false} = {}) {
     chart.many['[data-personal-metric]'] = metrics;
     for (const selector of ['[data-current-spot]', '[data-current-metric]', '[data-current-rate]']) chart.one[selector] = element();
     page.one['[data-personal-change-chart]'] = empty ? null : chart;
-    if (controls) {
-        course.one['[data-rotation-toggle]'] = element();
-        chart.one['[data-rotation-toggle]'] = element();
-        course.one['[data-selection-status]'] = element();
-        chart.one['[data-selection-status]'] = element();
-    }
+    course.one['[data-selection-status]'] = element();
+    chart.one['[data-selection-status]'] = element();
     const buttons = [element({code: 'HS1', name: 'one', stress: empty ? undefined : '19.5% 감소', emotional: empty ? undefined : '54.3% 증가'}),
         element({code: 'HS2', name: 'two', stress: empty ? undefined : '10.8% 감소', emotional: empty ? undefined : '29.2% 증가'})];
     course.many['.landing-course-spots button'] = buttons;
@@ -50,10 +45,9 @@ function boot({reduced = false, empty = false, controls = false} = {}) {
     for (const field of ['stress-reduction', 'emotional-increase']) course.one[`[data-field="${field}"]`] = element();
     page.many['.landing-course-summary'] = [course];
     const document = element(); document.hidden = false; document.one['.landing-page'] = page;
-    const window = {matchMedia() { return motion; }, clearTimeout(id) { timers.delete(id); },
-        setTimeout(fn, delay) { const id = ++sequence; timers.set(id, {fn, delay}); return id; }};
+    const window = {matchMedia() { return motion; }};
     vm.runInNewContext(source, {document, window});
-    return {chart, course, spots, metrics, buttons, timers, changes, motion, document,
+    return {chart, course, spots, metrics, buttons, changes, motion, document,
         value: () => chart.one['[data-current-rate]'].textContent};
 }
 
@@ -70,7 +64,6 @@ test('personal metric and six independent Spot selectors preserve raw sign for b
     ui.metrics[0].events.click();
     assert.equal(ui.value(), '0.0% 변화 없음');
     assert.equal(ui.spots[5].one['[data-comparison-value]'].textContent, '0.0% 변화 없음');
-    assert.ok([...ui.timers.values()].some(t => t.delay === 8500));
 });
 test('garden carousel changes image, active selector and both SSR effect displays together', () => {
     const ui = boot(); ui.buttons[1].events.click();
@@ -85,50 +78,17 @@ test('empty data never creates sample numbers', () => {
     assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '데이터 준비 중');
     assert.equal(ui.course.one['[data-field="emotional-increase"]'].textContent, '데이터 준비 중');
 });
-test('reduced motion stops auto browsing and still allows immediate selections', () => {
+test('manual selectors work immediately with reduced motion and never require timer APIs', () => {
     const ui = boot({reduced: true});
-    assert.equal(ui.timers.size, 0);
     ui.spots[4].events.click(); ui.metrics[1].events.click();
-    assert.equal(ui.value(), '6.5% 감소'); assert.equal(ui.timers.size, 0);
+    assert.equal(ui.value(), '6.5% 감소');
     ui.motion.matches = false; ui.changes.forEach(fn => fn({matches: false}));
-    assert.equal(ui.timers.size, 2);
-    ui.motion.matches = true; ui.changes.forEach(fn => fn({matches: true}));
-    assert.equal(ui.timers.size, 0);
-});
-test('automatic browsing advances only the selected Spot, keeping the chosen metric', () => {
-    const ui = boot();
-    const [id, timer] = [...ui.timers].find(([, t]) => t.delay === 6500);
-    ui.timers.delete(id); timer.fn();
-    assert.equal(ui.spots[1].attrs['aria-pressed'], 'true');
-    assert.equal(ui.chart.dataset.activeMetric, 'stress');
-});
-
-test('explicit pause persists through pointer, focus, visibility and motion changes', () => {
-    const ui = boot({controls: true});
-    const pause = ui.course.one['[data-rotation-toggle]'];
-    pause.events.click();
-    assert.equal(pause.attrs['aria-pressed'], 'true');
-    assert.equal(ui.timers.size, 1);
-    ui.course.events.pointerenter();
-    ui.course.events.pointerleave();
-    ui.document.hidden = true; ui.document.events.visibilitychange();
-    assert.equal(ui.timers.size, 0);
-    ui.document.hidden = false; ui.document.events.visibilitychange();
-    assert.equal(ui.timers.size, 1);
-    ui.motion.matches = true; ui.changes.forEach(fn => fn({matches: true}));
-    assert.equal(pause.disabled, true); assert.equal(ui.timers.size, 0);
-    ui.motion.matches = false; ui.changes.forEach(fn => fn({matches: false}));
-    assert.equal(ui.timers.size, 1);
-    pause.events.click();
-    assert.equal(ui.timers.size, 2);
-    ui.course.events.focusin();
-    assert.equal(ui.timers.size, 1);
-    ui.course.events.focusout({relatedTarget: null});
-    assert.equal(ui.timers.size, 2);
+    ui.buttons[1].events.click();
+    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '10.8% 감소');
 });
 
 test('semantic colors distinguish metric directions, and only manual choices announce', () => {
-    const ui = boot({controls: true});
+    const ui = boot();
     const rate = ui.chart.one['[data-current-rate]'];
     assert.equal(rate.dataset.effectStatus, 'worsened');
     assert.equal(ui.chart.one['[data-selection-status]'].textContent, '');

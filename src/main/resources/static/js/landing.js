@@ -66,39 +66,6 @@
         }
     }
 
-    // Pause for explicit controls, keyboard focus, pointer inspection and hidden tabs.
-    function rotationControl(container, stop, restart) {
-        const button = container.querySelector('[data-rotation-toggle]');
-        let paused = false;
-        let inspecting = false;
-        let focused = false;
-        const update = () => {
-            if (button) {
-                button.disabled = motion.matches;
-                button.setAttribute('aria-pressed', String(paused));
-                button.textContent = motion.matches ? '자동 전환 꺼짐 · 모션 줄이기'
-                    : paused ? '자동 전환 재생' : '자동 전환 일시정지';
-            }
-            stop();
-            restart();
-        };
-        if (button) button.addEventListener('click', () => { paused = !paused; update(); });
-        container.addEventListener('pointerenter', () => { inspecting = true; stop(); });
-        container.addEventListener('pointerleave', () => { inspecting = false; restart(); });
-        container.addEventListener('focusin', () => { focused = true; stop(); });
-        container.addEventListener('focusout', (event) => {
-            focused = Boolean(event.relatedTarget && container.contains(event.relatedTarget));
-            if (!focused) restart();
-        });
-        document.addEventListener('visibilitychange', update);
-        if (motion.addEventListener) motion.addEventListener('change', update);
-        if (button) {
-            button.disabled = motion.matches;
-            if (motion.matches) button.textContent = '자동 전환 꺼짐 · 모션 줄이기';
-        }
-        return { canRun: () => !motion.matches && !document.hidden && !paused && !inspecting && !focused };
-    }
-
     function announceSelection(container, text) {
         const status = container.querySelector('[data-selection-status]');
         if (status) status.textContent = text;
@@ -139,11 +106,10 @@
         if (indexLabel) indexLabel.textContent = `${String(nextIndex + 1).padStart(2, '0')} / ${String(spots.length).padStart(2, '0')}`;
     }
 
-    function initializeHealingSpotCarousels() {
+    function initializeHealingSpotSelectors() {
         const courses = Array.from(page.querySelectorAll('.landing-course-summary'));
-        const rotationDelay = 7500;
 
-        courses.forEach((course, courseIndex) => {
+        courses.forEach((course) => {
             const buttons = Array.from(course.querySelectorAll('.landing-course-spots button'));
             course.healingEffectSpots = buttons.map((button) => ({
                 code: button.dataset.code,
@@ -155,34 +121,18 @@
             })).filter((spot) => spot.image);
             course.activeSpotIndex = 0;
 
-            let control;
-            const stop = () => window.clearTimeout(course.healingEffectTimer);
-            const scheduleNext = (delay = rotationDelay) => {
-                window.clearTimeout(course.healingEffectTimer);
-                if (!control.canRun() || course.healingEffectSpots.length < 2) return;
-                course.healingEffectTimer = window.setTimeout(() => {
-                    changeHealingSpot(course, course.activeSpotIndex + 1);
-                    scheduleNext();
-                }, delay);
-            };
-            control = rotationControl(course, stop, scheduleNext);
-
             course.healingEffectSpots.forEach((spot, index) => {
                 spot.button.addEventListener('click', () => {
                     changeHealingSpot(course, index);
                     announceSelection(course, `${spot.code} · ${spot.name}, 스트레스 ${spot.stress || '데이터 준비 중'}, 정서적 안정성 ${spot.emotional || '데이터 준비 중'}`);
-                    scheduleNext(8500);
                 });
             });
 
             changeHealingSpot(course, 0);
-            scheduleNext(rotationDelay + (courseIndex * 750));
-            course.scheduleNextHealingSpot = scheduleNext;
         });
-
     }
 
-    function initializePersonalChangeAnimation() {
+    function initializePersonalChangeSelectors() {
         const chart = page.querySelector('[data-personal-change-chart]');
         if (!chart) return;
         const spots = Array.from(chart.querySelectorAll('[data-personal-spot]'));
@@ -194,8 +144,6 @@
         };
         let activeMetric = 'stress';
         let activeIndex = 0;
-        let timer;
-        let control;
 
         const render = () => {
             chart.dataset.activeMetric = activeMetric;
@@ -225,16 +173,6 @@
             chart.querySelector('[data-current-metric]').textContent = labels[activeMetric].title;
             renderDirectionalValue(chart.querySelector('[data-current-rate]'), spot.dataset[`${activeMetric}Display`], activeMetric);
         };
-        const scheduleNext = (delay = 6500) => {
-            window.clearTimeout(timer);
-            if (!control.canRun()) return;
-            timer = window.setTimeout(() => {
-                activeIndex = (activeIndex + 1) % spots.length;
-                render();
-                scheduleNext();
-            }, delay);
-        };
-        control = rotationControl(chart, () => window.clearTimeout(timer), scheduleNext);
         const announce = () => {
             const spot = spots[activeIndex];
             announceSelection(chart, `${spot.dataset.personalSpot} · ${spot.dataset.name}, ${labels[activeMetric].title} ${spot.dataset[`${activeMetric}Display`]}`);
@@ -243,21 +181,18 @@
             activeIndex = index;
             render();
             announce();
-            scheduleNext(8500);
         }));
         metrics.forEach(button => button.addEventListener('click', () => {
             activeMetric = button.dataset.personalMetric;
             render();
             announce();
-            scheduleNext(8500);
         }));
         render();
-        scheduleNext();
     }
 
     initializeRevealAnimations();
-    initializeHealingSpotCarousels();
-    initializePersonalChangeAnimation();
+    initializeHealingSpotSelectors();
+    initializePersonalChangeSelectors();
     page.querySelectorAll('[data-effect-metric]').forEach(element => {
         renderDirectionalValue(element, element.textContent, element.dataset.effectMetric);
     });
