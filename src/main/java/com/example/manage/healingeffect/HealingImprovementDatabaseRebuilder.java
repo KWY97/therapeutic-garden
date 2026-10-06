@@ -16,9 +16,21 @@ public final class HealingImprovementDatabaseRebuilder {
             int memberSpotRows, int participantOverallRows, List<String> warnings) {
         public Result { warnings = List.copyOf(warnings); }
     }
+    public record ExpectedResult(int overallRows, int memberSpotRows, int participantOverallRows) {
+        public ExpectedResult {
+            if (overallRows <= 0 || memberSpotRows <= 0 || participantOverallRows <= 0)
+                throw new IllegalArgumentException("expected rebuild count는 양수여야 합니다.");
+        }
+    }
     private record MemberSpotKey(long memberId, long spotId) {}
 
     public Result execute(Connection connection, long siteId, boolean dryRun) throws SQLException {
+        return execute(connection, siteId, dryRun, null);
+    }
+
+    /** Production callers may require reviewed dataset counts before any Summary update begins. */
+    public Result execute(Connection connection, long siteId, boolean dryRun, ExpectedResult expected)
+            throws SQLException {
         if (!connection.getAutoCommit()) throw new IllegalArgumentException("독립적인 새 connection이 필요합니다.");
         connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         connection.setReadOnly(dryRun);
@@ -38,6 +50,10 @@ public final class HealingImprovementDatabaseRebuilder {
                     HealingMeasurementRepository.findForSiteAggregation(connection, siteId));
             if (aggregate.overallSpots().isEmpty())
                 throw new IllegalArgumentException("집계할 Raw measurement가 없습니다.");
+            if (expected != null && (aggregate.overallSpots().size() != expected.overallRows()
+                    || aggregate.memberSpots().size() != expected.memberSpotRows()
+                    || aggregate.participantOverall().size() != expected.participantOverallRows()))
+                throw new IllegalArgumentException("Rebuild 결과가 expected rollout count와 일치하지 않습니다.");
 
             validateSummaryCoverage(connection, siteId, aggregate, !dryRun);
             if (dryRun) {
