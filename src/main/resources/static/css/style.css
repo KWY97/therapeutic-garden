@@ -7298,6 +7298,7 @@ input[type="time"].form-input {
 .survey-highlight-card strong { display: block; margin-top: 7px; font-size: 14px; }
 .survey-highlight-card p { margin: 6px 0 0; font-weight: 700; }
 .survey-highlight-label { color: #64748b; font-size: 12px; font-weight: 700; }
+.improvement-count { display: block; margin: 5px 0 8px; color: #64748b; font-size: 12px; }
 .participant-analysis-page .effect-good { color: #347553; }
 .participant-analysis-page .effect-bad { color: #b4534b; }
 .participant-analysis-page .effect-neutral { color: #86743f; }

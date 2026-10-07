@@ -2,6 +2,7 @@ package com.example.manage;
 
 import com.example.manage.domain.*;
 import com.example.manage.dto.HealingEffectView;
+import com.example.manage.dto.HealingSpotImprovementView;
 import com.example.manage.dto.MonitoringSpotEffectView;
 import com.example.manage.repository.*;
 import com.example.manage.service.HealingEffectQueryService;
@@ -46,18 +47,36 @@ class HealingEffectUiTests {
         laterComplete = members.save(new Member(4, 1, "secret-login-four", "unused", "비공개이름넷", "01044445555"));
         firstComplete = members.save(new Member(2, 1, "secret-login-two", "unused", "비공개이름둘", "01022223333"));
         var courseNames = List.of("회복 코스", "감각 코스", "힐링 코스");
+        int[] overallValid = {17, 16, 22, 23, 17, 18};
+        int[] overallStressImproved = {15, 13, 16, 13, 11, 13};
+        int[] overallEmotionalImproved = {10, 11, 15, 16, 11, 16};
+        int[] personalValid = {2, 2, 3, 3, 1, 2};
+        int[] personalStressImproved = {2, 2, 1, 2, 0, 1};
+        int[] personalEmotionalImproved = {2, 1, 1, 2, 0, 1};
         HealingCourse course = null;
         for (int i = 0; i < 6; i++) {
             if (i % 2 == 0) course = courses.save(new HealingCourse(site, "HC-"+(char)('A'+i/2), courseNames.get(i/2), null,null,null));
             var spot = spots.save(new HealingSpot(course, "HS"+(i+1), HealingEffectExcelParser.NAMES.get(i),37.0,127.0));
             BigDecimal stress = new BigDecimal(i == 0 ? "19.500108327673271" : i == 5 ? "21.213120597090558" : "10.25");
             BigDecimal emotional = new BigDecimal(i == 0 ? "54.267121115714403" : i == 5 ? "200.422124968168790" : "30.25");
-            overall.save(new HealingSpotEffectSummary(spot, 3, 5, stress, 3, 5, emotional));
+            var overallSummary = new HealingSpotEffectSummary(spot, 3, 5, stress, 3, 5, emotional);
+            overallSummary.updateImprovementCounts(3, overallValid[i], overallValid[i], overallStressImproved[i],
+                    overallValid[i], overallEmotionalImproved[i]);
+            overall.save(overallSummary);
             BigDecimal personalStress = new BigDecimal(i == 1 ? "-38.6" : i == 2 ? "0" : "10.5");
             BigDecimal personalEmotional = new BigDecimal(i == 4 ? "-6.5" : i == 3 ? "0" : "100.4");
-            personal.save(new MemberHealingSpotEffectSummary(firstComplete,spot,2,personalStress,2,personalEmotional));
-            personal.save(new MemberHealingSpotEffectSummary(laterComplete,spot,2,new BigDecimal("33.33"),2,new BigDecimal("44.44")));
-            if(i < 4) personal.save(new MemberHealingSpotEffectSummary(partial,spot,2,BigDecimal.ZERO,2,new BigDecimal("-4.25")));
+            var exampleSummary = new MemberHealingSpotEffectSummary(firstComplete,spot,2,personalStress,2,personalEmotional);
+            exampleSummary.updateImprovementCounts(personalValid[i], personalValid[i], personalStressImproved[i],
+                    personalValid[i], personalEmotionalImproved[i]);
+            personal.save(exampleSummary);
+            var laterSummary = new MemberHealingSpotEffectSummary(laterComplete,spot,2,new BigDecimal("33.33"),2,new BigDecimal("44.44"));
+            laterSummary.updateImprovementCounts(2, 2, 1, 2, 1);
+            personal.save(laterSummary);
+            if(i < 4) {
+                var partialSummary = new MemberHealingSpotEffectSummary(partial,spot,2,BigDecimal.ZERO,2,new BigDecimal("-4.25"));
+                partialSummary.updateImprovementCounts(2, 2, 0, 2, 1);
+                personal.save(partialSummary);
+            }
         }
         batches.save(new HealingEffectImportBatch("a".repeat(64), "synthetic-ui.xlsx", LocalDateTime.now(), 6, 16, site.getSiteId()));
         batches.flush();
@@ -69,26 +88,26 @@ class HealingEffectUiTests {
                 .andExpect(model().attributeExists("healingEffects", "effectsBySpot", "anonymousEffects"))
                 .andReturn();
         var model = result.getModelAndView().getModel();
-        @SuppressWarnings("unchecked") var data = (List<HealingEffectView>) model.get("healingEffects");
-        assertThat(data).extracting(HealingEffectView::spotCode).containsExactly("HS1","HS2","HS3","HS4","HS5","HS6");
-        assertThat(data.getFirst().stressReductionDisplay()).isEqualTo("19.5%");
-        assertThat(data.getFirst().emotionalIncreaseDisplay()).isEqualTo("54.3%");
-        assertThat(data.getLast().stressReductionDisplay()).isEqualTo("21.2%");
-        assertThat(data.getLast().emotionalIncreaseDisplay()).isEqualTo("200.4%");
+        @SuppressWarnings("unchecked") var data = (List<HealingSpotImprovementView>) model.get("healingEffects");
+        assertThat(data).extracting(HealingSpotImprovementView::spotCode).containsExactly("HS1","HS2","HS3","HS4","HS5","HS6");
+        assertThat(data.getFirst().stress().improvementRateDisplay()).isEqualTo("88.2%");
+        assertThat(data.getFirst().emotional().improvementRateDisplay()).isEqualTo("58.8%");
+        assertThat(data.getLast().stress().improvementRateDisplay()).isEqualTo("72.2%");
+        assertThat(data.getLast().emotional().improvementRateDisplay()).isEqualTo("88.9%");
+        assertThat(data).extracting(view -> view.stress().improvementRateDisplay())
+                .containsExactly("88.2%", "81.3%", "72.7%", "56.5%", "64.7%", "72.2%");
+        assertThat(data).extracting(view -> view.emotional().improvementRateDisplay())
+                .containsExactly("58.8%", "68.8%", "68.2%", "69.6%", "64.7%", "88.9%");
         String html = result.getResponse().getContentAsString();
-        assertThat(html).contains("데이터 변화", "data-stress=\"19.5% 감소\"", "data-emotional=\"200.4% 증가\"",
-                        "data-stress=\"-38.6\"", "data-stress-display=\"38.6% 증가\"",
-                        "data-emotional=\"-6.5\"", "data-emotional-display=\"6.5% 감소\"",
-                        "평균 스트레스 증감률", "PERSON / HEALING SPOT")
+        assertThat(html).contains("데이터 변화", "data-stress=\"88.2% 개선\"", "data-emotional=\"88.9% 개선\"",
+                        "data-stress-display=\"100.0% 개선\"", "data-emotional-display=\"50.0% 개선\"",
+                        "스트레스 개선율", "정서적 안정성 개선율", "PERSON / HEALING SPOT")
                 .doesNotContain("P001", "P002", "P004", "participantNo", "memberId", "participantCode", "loginId",
                         "secret-login-one", "secret-login-two", "secret-login-four", "비공개이름하나", "비공개이름둘", "비공개이름넷",
                         "01012345678", "01022223333", "01044445555", "010-1234-5678", "010-2222-3333", "010-4444-5555",
-                        "참가자 예시", "-38.6% 감소", "-6.5% 증가",
+                        "참가자 예시", "익명 참가자의 측정 결과", "19.5% 감소", "54.3% 증가",
+                        "평균 스트레스 증감률", "평균 정서적 안정성 증감률",
                         "Baseline", "BEFORE &amp; AFTER", "stress-baseline", "stress-followup", "66.7% 증가", "landing-chart-line");
-        assertThat(Arrays.stream(HealingEffectView.class.getRecordComponents()).map(c->c.getName()))
-                .containsExactly("spotCode","spotName","stressReductionRate","stressReductionDisplay","stressChangeDisplay",
-                        "emotionalIncreaseRate","emotionalIncreaseDisplay","emotionalChangeDisplay",
-                        "stressValidSessionCount","emotionalValidSessionCount","hasMeasurement");
     }
 
     @Test void anonymousSelectionIsCompleteStableAndOrderedByParticipantNumber() {
@@ -104,6 +123,33 @@ class HealingEffectUiTests {
         assertThat(service.findAnonymousExample()).hasSize(6).allSatisfy(e->assertThat(e.stressReductionDisplay()).isEqualTo("33.3%"));
         personal.deleteByMemberMemberId(laterComplete.getMemberId()); personal.flush();
         assertThat(service.findAnonymousExample()).isEmpty();
+    }
+
+    @Test void anonymousImprovementExampleUsesCountBackedP004RegressionValues() {
+        fixture();
+        var example = service.findAnonymousExampleImprovements();
+        assertThat(example).hasSize(6);
+        assertThat(example.get(0).stress().improvementRateDisplay()).isEqualTo("100.0%");
+        assertThat(example.get(0).emotional().improvementRateDisplay()).isEqualTo("100.0%");
+        assertThat(example.get(4).stress().improvementRateDisplay()).isEqualTo("0.0%");
+        assertThat(example.get(4).emotional().improvementRateDisplay()).isEqualTo("0.0%");
+        assertThat(example).extracting(view -> view.stress().improvementRateDisplay())
+                .containsExactly("100.0%", "100.0%", "33.3%", "66.7%", "0.0%", "50.0%");
+        assertThat(example).extracting(view -> view.emotional().improvementRateDisplay())
+                .containsExactly("100.0%", "50.0%", "33.3%", "66.7%", "0.0%", "50.0%");
+        var overallView = service.findParticipantOverallImprovement(
+                exampleSiteId(), firstComplete.getMemberId()).orElseThrow();
+        assertThat(overallView.stress().improvedCount()).isEqualTo(8);
+        assertThat(overallView.stress().validCount()).isEqualTo(13);
+        assertThat(overallView.stress().improvementRateDisplay()).isEqualTo("61.5%");
+        assertThat(overallView.emotional().improvedCount()).isEqualTo(7);
+        assertThat(overallView.emotional().validCount()).isEqualTo(13);
+        assertThat(overallView.emotional().improvementRateDisplay()).isEqualTo("53.8%");
+    }
+
+    private Long exampleSiteId() {
+        return sites.findAll().stream().filter(site -> site.getName().equals("effect-ui-site"))
+                .findFirst().orElseThrow().getSiteId();
     }
 
     @Test void adminMonitoringUsesOnlyOverallSummariesAndSpotSelection() throws Exception {
@@ -134,20 +180,21 @@ class HealingEffectUiTests {
         fixture();
         var result = mvc.perform(get("/member").sessionAttr("loginMemberId", partial.getMemberId()))
                 .andExpect(status().isOk()).andExpect(view().name("member/home"))
-                .andExpect(model().attributeExists("spotEffects", "measurementHistory", "schedules"))
+                .andExpect(model().attributeExists("spotEffects", "overallImprovement", "measurementHistory", "schedules"))
                 .andReturn();
-        @SuppressWarnings("unchecked") var effects = (List<HealingEffectView>) result.getModelAndView().getModel().get("spotEffects");
-        assertThat(effects).extracting(HealingEffectView::spotCode).containsExactly("HS1", "HS2", "HS3", "HS4", "HS5", "HS6");
-        assertThat(effects.getFirst().stressChangeDisplay()).isEqualTo("0.0% 변화 없음");
-        assertThat(effects.get(4).hasMeasurement()).isFalse();
+        @SuppressWarnings("unchecked") var effects = (List<HealingSpotImprovementView>) result.getModelAndView().getModel().get("spotEffects");
+        assertThat(effects).extracting(HealingSpotImprovementView::spotCode).containsExactly("HS1", "HS2", "HS3", "HS4", "HS5", "HS6");
+        assertThat(effects.getFirst().stress().improvementRateDisplay()).isEqualTo("0.0%");
+        assertThat(effects.getFirst().stress().validCount()).isEqualTo(2);
+        assertThat(effects.get(4).stress().improvementRateDisplay()).isEqualTo("측정 없음");
         String html = result.getResponse().getContentAsString();
         assertThat(html).contains("나의 치유 분석", "나의 공간별 치유 효과와 측정 변화를 확인합니다.",
                         "Spot별 변화 / 상세 분석", "측정 기록",
                         "memberAnalysisSummary", "memberAnalysisHistory", "memberHealingEffects",
-                        "memberMeasurementHistory", "member-healing-analysis.js", "나의 달력",
+                        "memberOverallImprovement", "memberMeasurementHistory", "member-healing-analysis.js", "나의 달력",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
                 .doesNotContain("상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
-                        "aria-modal=", "\"prev,next today\"", "P002", "P004", "secret-login-two", "secret-login-four");
+                        "aria-modal=", "\"prev,next today\"", "home-survey-analysis.js", "P002", "P004", "secret-login-two", "secret-login-four");
         assertThat(html.indexOf("나의 치유 분석")).isLessThan(html.indexOf("나의 달력"));
         assertThat(html.indexOf("memberAnalysisHighlights")).isLessThan(html.indexOf("memberAnalysisSummary"));
         assertThat(html.indexOf("memberAnalysisSummary")).isLessThan(html.indexOf("memberAnalysisHistory"));

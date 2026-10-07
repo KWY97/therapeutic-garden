@@ -37,6 +37,16 @@ public class HealingSpotEffectSummary {
     @Column(nullable = false, precision = 38, scale = 18)
     private BigDecimal emotionalIncreaseRate;
 
+    /** Nullable during the safe phase-1 backfill of pre-existing summary rows. */
+    private Integer participantCount;
+
+    /** One expected Spot observation in a Course measurement, including invalid measurements. */
+    private Integer totalExperienceCount;
+
+    private Integer stressImprovedCount;
+
+    private Integer emotionalImprovedCount;
+
     public HealingSpotEffectSummary(HealingSpot healingSpot,
             Integer stressParticipantCount, Integer stressValidSessionCount, BigDecimal stressReductionRate,
             Integer emotionalParticipantCount, Integer emotionalValidSessionCount, BigDecimal emotionalIncreaseRate) {
@@ -48,5 +58,31 @@ public class HealingSpotEffectSummary {
         this.emotionalParticipantCount = emotionalParticipantCount;
         this.emotionalValidSessionCount = emotionalValidSessionCount;
         this.emotionalIncreaseRate = emotionalIncreaseRate;
+    }
+
+    public void updateImprovementCounts(Integer participantCount, Integer totalExperienceCount,
+            Integer stressValidCount, Integer stressImprovedCount,
+            Integer emotionalValidCount, Integer emotionalImprovedCount) {
+        requireCounts(totalExperienceCount, stressValidCount, stressImprovedCount,
+                emotionalValidCount, emotionalImprovedCount);
+        if (participantCount == null || participantCount < 0 || participantCount > totalExperienceCount)
+            throw new IllegalArgumentException("invalid participant count");
+        this.participantCount = participantCount;
+        this.totalExperienceCount = totalExperienceCount;
+        this.stressValidSessionCount = stressValidCount;
+        this.stressImprovedCount = stressImprovedCount;
+        this.emotionalValidSessionCount = emotionalValidCount;
+        this.emotionalImprovedCount = emotionalImprovedCount;
+    }
+
+    private static void requireCounts(Integer total, Integer stressValid, Integer stressImproved,
+            Integer emotionalValid, Integer emotionalImproved) {
+        if (total == null || stressValid == null || stressImproved == null
+                || emotionalValid == null || emotionalImproved == null
+                || total < 0 || stressValid < 0 || stressImproved < 0
+                || emotionalValid < 0 || emotionalImproved < 0
+                || stressValid > total || emotionalValid > total
+                || stressImproved > stressValid || emotionalImproved > emotionalValid)
+            throw new IllegalArgumentException("invalid improvement counts");
     }
 }

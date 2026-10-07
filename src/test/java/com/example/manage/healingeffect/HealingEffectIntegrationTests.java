@@ -161,6 +161,29 @@ class HealingEffectIntegrationTests {
         assertThat(participants.count()).isZero(); assertThat(overall.count()).isEqualTo(6);
     }
 
+    @Test void improvementViewsUseStoredCountsAndParticipantOverallIsSummedNotStored() throws Exception {
+        run(source, false);
+        var overallRows = overall.findByHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(site.getSiteId());
+        overallRows.forEach(row -> row.updateImprovementCounts(1, 3, 2, 1, 2, 1));
+        overall.saveAllAndFlush(overallRows);
+        var memberRows = participants.findByMemberMemberIdOrderByHealingSpotCodeAsc(member.getMemberId());
+        memberRows.get(0).updateImprovementCounts(3, 2, 1, 2, 1);
+        memberRows.get(1).updateImprovementCounts(2, 1, 1, 0, 0);
+        participants.saveAllAndFlush(memberRows);
+
+        var spotViews = query.findOverallImprovements(site.getSiteId());
+        assertThat(spotViews).hasSize(6);
+        assertThat(spotViews.getFirst().stress().improvementRateDisplay()).isEqualTo("50.0%");
+        var memberViews = query.findMemberImprovements(site.getSiteId(), member.getMemberId());
+        assertThat(memberViews).hasSize(2);
+        var participantOverall = query.findParticipantOverallImprovement(site.getSiteId(), member.getMemberId()).orElseThrow();
+        assertThat(participantOverall.totalExperienceCount()).isEqualTo(5);
+        assertThat(participantOverall.stress().validCount()).isEqualTo(3);
+        assertThat(participantOverall.stress().improvedCount()).isEqualTo(2);
+        assertThat(participantOverall.emotional().validCount()).isEqualTo(2);
+        assertThat(participantOverall.emotional().improvedCount()).isEqualTo(1);
+    }
+
     @ParameterizedTest @ValueSource(strings = {"member", "site", "missingSpot", "duplicateSpot", "spotName", "courseName", "wrongCourse", "duplicateCourse"})
     void rejectsMappingProblemsBeforeWrites(String problem) {
         switch (problem) {

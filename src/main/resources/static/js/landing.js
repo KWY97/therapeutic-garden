@@ -45,15 +45,13 @@
         }
     }
 
-    // Display the server's directional value verbatim; presentation never recalculates a rate.
-    function renderDirectionalValue(element, display, metric) {
+    // Display the server-formatted improvement rate verbatim; presentation never recalculates it.
+    function renderImprovementValue(element, display) {
         if (!element) return;
         const value = display || '데이터 준비 중';
         element.textContent = value;
         const match = /^(\d[\d.,]*%)\s+(.+)$/.exec(value);
-        const direction = match ? match[2] : '';
-        element.dataset.effectStatus = !match || direction === '변화 없음' ? 'neutral'
-            : direction === (metric === 'stress' ? '감소' : '증가') ? 'improved' : 'worsened';
+        element.dataset.effectStatus = match && match[2] === '개선' ? 'improved' : 'neutral';
         if (match && document.createElement) {
             const number = document.createElement('span');
             number.className = 'landing-effect-number';
@@ -87,9 +85,9 @@
 
         const stress = course.querySelector('[data-field="stress-reduction"]');
         const emotional = course.querySelector('[data-field="emotional-increase"]');
-        renderDirectionalValue(stress, activeSpot.stress, 'stress');
+        renderImprovementValue(stress, activeSpot.stress);
         stress.dataset.value = activeSpot.stress || '';
-        renderDirectionalValue(emotional, activeSpot.emotional, 'emotional');
+        renderImprovementValue(emotional, activeSpot.emotional);
         emotional.dataset.value = activeSpot.emotional || '';
         course.activeSpotIndex = nextIndex;
         const fields = {
@@ -139,16 +137,19 @@
         if (!spots.length) return;
         const metrics = Array.from(chart.querySelectorAll('[data-personal-metric]'));
         const labels = {
-            stress: { title: '평균 스트레스 증감률' },
-            emotional: { title: '평균 정서적 안정성 증감률' }
+            stress: { title: '스트레스 개선율' },
+            emotional: { title: '정서적 안정성 개선율' }
         };
         let activeMetric = 'stress';
         let activeIndex = 0;
 
         const render = () => {
             chart.dataset.activeMetric = activeMetric;
-            const values = spots.map(spot => Number(spot.dataset[activeMetric]));
-            const max = Math.max(...values.map(Math.abs), 1);
+            const values = spots.map(spot => {
+                const value = Number(spot.dataset[activeMetric]);
+                return Number.isFinite(value) ? value : null;
+            });
+            const max = Math.max(...values.filter(value => value != null), 1);
             metrics.forEach(button => {
                 const active = button.dataset.personalMetric === activeMetric;
                 button.classList.toggle('is-active', active);
@@ -162,16 +163,15 @@
                 spot.querySelector('[data-comparison-value]').textContent = display;
                 spot.setAttribute('aria-label', `${spot.dataset.personalSpot} · ${spot.dataset.name}, ${labels[activeMetric].title} ${display}`);
                 const bar = spot.querySelector('.landing-comparison-track i');
-                bar.style.height = `${Math.abs(values[index]) / max * 50}%`;
-                bar.style.top = values[index] < 0 ? '50%' : 'auto';
-                bar.style.bottom = values[index] < 0 ? 'auto' : '50%';
-                bar.dataset.effectStatus = values[index] === 0 ? 'neutral'
-                    : values[index] > 0 ? 'improved' : 'worsened';
+                bar.style.height = `${values[index] == null ? 0 : values[index] / max * 100}%`;
+                bar.style.top = 'auto';
+                bar.style.bottom = '0';
+                bar.dataset.effectStatus = values[index] == null ? 'neutral' : 'improved';
             });
             const spot = spots[activeIndex];
             chart.querySelector('[data-current-spot]').textContent = `${spot.dataset.personalSpot} · ${spot.dataset.name}`;
             chart.querySelector('[data-current-metric]').textContent = labels[activeMetric].title;
-            renderDirectionalValue(chart.querySelector('[data-current-rate]'), spot.dataset[`${activeMetric}Display`], activeMetric);
+            renderImprovementValue(chart.querySelector('[data-current-rate]'), spot.dataset[`${activeMetric}Display`]);
         };
         const announce = () => {
             const spot = spots[activeIndex];
@@ -194,6 +194,6 @@
     initializeHealingSpotSelectors();
     initializePersonalChangeSelectors();
     page.querySelectorAll('[data-effect-metric]').forEach(element => {
-        renderDirectionalValue(element, element.textContent, element.dataset.effectMetric);
+        renderImprovementValue(element, element.textContent);
     });
 })();

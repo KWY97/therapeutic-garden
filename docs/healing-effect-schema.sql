@@ -10,6 +10,10 @@ CREATE TABLE healing_spot_effect_summary (
     emotional_participant_count INT NOT NULL,
     emotional_valid_session_count INT NOT NULL,
     emotional_increase_rate DECIMAL(38,18) NOT NULL,
+    participant_count INT NULL,
+    total_experience_count INT NULL,
+    stress_improved_count INT NULL,
+    emotional_improved_count INT NULL,
     CONSTRAINT uk_spot_effect UNIQUE (spot_id),
     CONSTRAINT fk_effect_spot FOREIGN KEY (spot_id) REFERENCES healing_spot (spot_id)
 ) ENGINE=InnoDB;
@@ -22,6 +26,9 @@ CREATE TABLE member_healing_spot_effect_summary (
     stress_reduction_rate DECIMAL(38,18) NOT NULL,
     emotional_valid_session_count INT NOT NULL,
     emotional_increase_rate DECIMAL(38,18) NOT NULL,
+    total_experience_count INT NULL,
+    stress_improved_count INT NULL,
+    emotional_improved_count INT NULL,
     CONSTRAINT uk_member_spot_effect UNIQUE (member_id, spot_id),
     CONSTRAINT fk_member_effect_member FOREIGN KEY (member_id) REFERENCES member (member_id),
     CONSTRAINT fk_member_effect_spot FOREIGN KEY (spot_id) REFERENCES healing_spot (spot_id)
