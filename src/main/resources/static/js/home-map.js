@@ -21,6 +21,7 @@ var selectedSite =
 var map = null;
 var survey = window.HomeSurvey;
 var monitoringEffects = window.monitoringEffects || {};
+var monitoringMaximums = window.monitoringMaximums || {};
 var selectedSpot = null;
 var loadVersion = 0;
 function validNumber(value) {
@@ -493,9 +494,13 @@ function courseAnalysisColor(course) {
 function currentEffects() {
     return selectedSite ? survey.selectEffects(monitoringEffects, selectedSite.value) : [];
 }
+function currentMaximums() {
+    return selectedSite ? survey.selectMaximums(monitoringMaximums, selectedSite.value)
+        : {stressSpotCodes: [], emotionalSpotCodes: []};
+}
 function updateAnalysis() {
     var effects = currentEffects();
-    spatial.setAnalysis(effects);
+    spatial.setAnalysis(effects, currentMaximums());
     courseCircles.forEach(circle => circle.setOptions({fillColor: courseAnalysisColor(circle.surveyCourse)}));
     document.getElementById('surveyLegendTitle').textContent = 'Healing Spot 개선';
     document.getElementById('surveyLegendRange').textContent = '전체 참가자 평균';

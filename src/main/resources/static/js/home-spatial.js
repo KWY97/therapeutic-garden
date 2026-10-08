@@ -16,8 +16,9 @@ window.HomeSpatial = function(onSelect) {
     var effects = window.HomeCourseOverlay;
     var summary = window.HomeSurvey;
     var effectsByCode = new Map();
+    var maximums = {stressSpotCodes: [], emotionalSpotCodes: []};
     var haloDebug = Boolean(window.location && /(?:\?|&)haloDebug=on(?:&|$)/.test(window.location.search || ''));
-    var debugSpotValues = {HS1: 20, HS2: -15, HS3: 0, HS4: 8, HS5: -5, HS6: 25};
+    var debugSpotValues = {HS1: 100, HS2: 75, HS3: 0, HS4: 50, HS5: 25, HS6: 90};
     function getSpotDisplay(spotId) {
         return summary.getSpotDisplay(spotId, effectsByCode);
     }
@@ -28,16 +29,27 @@ window.HomeSpatial = function(onSelect) {
             entry.number.textContent = display.numberLabel;
             entry.unit.textContent = display.unitLabel;
             entry.value.className = 'monitoring-hotspot-value effect-' + display.status;
-            var ringColor = display.status === 'missing' || display.status === 'neutral'
-                ? 'hsl(40 35% 82%)' : display.color;
+            entry.count.textContent = display.countLabel;
+            entry.count.hidden = !display.countLabel;
+            var isMaximum = summary.isMaximum(maximums, display.metric, entry.code);
+            entry.maximum.textContent = isMaximum ? '최대 개선' : '';
+            entry.maximum.hidden = !isMaximum;
+            var ringColor = display.color;
             if (entry.circle.style.setProperty) entry.circle.style.setProperty('--spot-data-color', ringColor);
             else entry.circle.style['--spot-data-color'] = ringColor;
-            var result = display.value == null ? '데이터 없음' : display.numberLabel + ' ' + display.unitLabel;
-            entry.button.setAttribute('aria-label', entry.name + ' · ' + display.metricLabel + ' ' + result + ' · 상세 보기');
+            var result = [display.numberLabel, display.unitLabel, display.countLabel, isMaximum ? '최대 개선' : '']
+                .filter(Boolean).join(' · ');
+            var detailMetrics = summary.getSpotMetricRows(entry.code, effectsByCode);
+            var detailDescription = detailMetrics.map(metric => metric.metricLabel + ' '
+                + [metric.numberLabel, metric.unitLabel, metric.countLabel].filter(Boolean).join(' · ')).join(' · ');
+            entry.button.setAttribute('aria-label', entry.name + ' · ' + display.metricLabel + ' ' + result
+                + ' · 상세 지표 ' + detailDescription + ' · 상세 보기');
             entry.detailRows.forEach((row, index) => {
-                var metric = summary.getSpotMetricRows(entry.code, effectsByCode)[index];
+                var metric = detailMetrics[index];
                 row.value.textContent = [metric.numberLabel, metric.unitLabel].filter(Boolean).join(' ');
                 row.value.className = 'monitoring-hover-value effect-' + metric.status;
+                row.count.textContent = metric.countLabel;
+                row.count.hidden = !metric.countLabel;
             });
         });
         badges.forEach(entry => {
@@ -48,13 +60,15 @@ window.HomeSpatial = function(onSelect) {
             entry.badge.setAttribute('aria-label', entry.title);
         });
     }
-    function setAnalysis(nextEffects) {
+    function setAnalysis(nextEffects, nextMaximums) {
         effectsByCode = summary.indexByCode(nextEffects);
+        maximums = nextMaximums || {stressSpotCodes: [], emotionalSpotCodes: []};
         if (haloDebug) Object.entries(debugSpotValues).forEach(([spotCode, value]) => effectsByCode.set(spotCode, {
             ...(effectsByCode.get(spotCode) || {}), spotCode: spotCode, hasMeasurement: true,
-            stressReductionRate: value, emotionalIncreaseRate: value,
-            stressChangeDisplay: summary.formatDirection(value, 'stress'),
-            emotionalChangeDisplay: summary.formatDirection(value, 'emotional')
+            stress: {validCount: 100, improvedCount: value, improvementRate: value,
+                improvementRateDisplay: value.toFixed(1) + '%', improvementCountDisplay: '100회 중 ' + value + '회 개선'},
+            emotional: {validCount: 100, improvedCount: value, improvementRate: value,
+                improvementRateDisplay: value.toFixed(1) + '%', improvementCountDisplay: '100회 중 ' + value + '회 개선'}
         }));
         updateSpotEffects();
     }
@@ -293,6 +307,11 @@ window.HomeSpatial = function(onSelect) {
                 var auxiliary = document.createElement('span');
                 auxiliary.className = 'monitoring-hotspot-auxiliary';
                 auxiliary.setAttribute('aria-hidden', 'true');
+                var count = document.createElement('span');
+                count.className = 'monitoring-hotspot-count';
+                var maximum = document.createElement('span');
+                maximum.className = 'monitoring-hotspot-maximum';
+                auxiliary.append(count, maximum);
                 var spotName = document.createElement('strong');
                 spotName.className = 'monitoring-hotspot-name';
                 spotName.textContent = name;
@@ -313,9 +332,14 @@ window.HomeSpatial = function(onSelect) {
                     metricName.textContent = summary.getMetricDisplay(null, metric).metricLabel;
                     var rowValue = document.createElement('strong');
                     rowValue.className = 'monitoring-hover-value effect-missing';
-                    row.append(metricName, rowValue);
+                    var rowCount = document.createElement('small');
+                    rowCount.className = 'monitoring-hover-count';
+                    var rowOutput = document.createElement('span');
+                    rowOutput.className = 'monitoring-hover-output';
+                    rowOutput.append(rowValue, rowCount);
+                    row.append(metricName, rowOutput);
                     detail.append(row);
-                    return {metric: metric, value: rowValue};
+                    return {metric: metric, value: rowValue, count: rowCount};
                 });
                 button.append(circle, label, detail);
                 button.addEventListener('click', () => onSelect({...spot, representativeImageUrl: spot.readUrl}));
@@ -323,7 +347,8 @@ window.HomeSpatial = function(onSelect) {
                 button.addEventListener('focus', positionLabels);
                 buttons.push({id: spot.spotId, code: spot.code, name: name, button: button, circle: circle,
                     label: label, metric: metricTag, value: spotValue, number: number, unit: unit,
-                    auxiliary: auxiliary, detail: detail, detailRows: detailRows, nearCircle: nearCircle,
+                    auxiliary: auxiliary, count: count, maximum: maximum, detail: detail,
+                    detailRows: detailRows, nearCircle: nearCircle,
                     xPercent: Number(spot.xPercent), yPercent: Number(spot.yPercent)});
                 overlay.append(button);
             });

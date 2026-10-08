@@ -488,7 +488,8 @@ class SpatialLayoutTests {
 
     @Test void monitoringTemplatePlacesMapAndLegendInsideSecondaryDialog() throws Exception {
         String html = monitoringHtml();
-        assertThat(html).contains("공간 모니터링", "지도 보기", "id=\"monitoringCanvas\"", "/js/home-spatial.js", "/css/home-spatial.css", "monitoring-effect-legend", "스트레스: 낮아질수록 개선", "정서적 안정성: 높아질수록 개선", "/js/home-course-overlay.js")
+        assertThat(html).contains("공간 모니터링", "지도 보기", "id=\"monitoringCanvas\"", "/js/home-spatial.js", "/css/home-spatial.css",
+                        "monitoring-effect-legend", "개선율 낮음", "개선율 높음", "유효 측정 중 개선된 횟수의 비율", "/js/home-course-overlay.js")
                 .doesNotContain("id=\"hcStress\"", "id=\"hcEmotional\"")
                 .doesNotContain("Demo 데이터", "스트레스 수준", "이완감 수준", "id=\"metricSelect\"");
         int dialogStart = html.indexOf("id=\"mapModal\"");

@@ -30,7 +30,7 @@ test('participant analysis renders overall and Spot count-backed improvements an
     assert.equal(calls.history[2].defaultSpotCode, 'HS1');
     const text = root => [root.textContent, ...root.children.flatMap(child => text(child))].join(' ');
     assert.match(text(elements.memberAnalysisHighlights), /스트레스 개선율.*61.5% 개선.*8 \/ 13회 개선/);
-    assert.match(text(elements.memberAnalysisHighlights), /정서적 안정성 개선율.*53.8% 개선.*7 \/ 13회 개선/);
+    assert.match(text(elements.memberAnalysisHighlights), /정서 안정성 개선율.*53.8% 개선.*7 \/ 13회 개선/);
     assert.match(text(elements.memberAnalysisSummary), /HS1 · 호스타 정원.*100.0% 개선.*2 \/ 2회 개선/);
     assert.match(text(elements.memberAnalysisSummary), /HS5 · 블로썸 가든.*0.0% 개선.*0 \/ 1회 개선/);
     assert.match(text(elements.memberAnalysisSummary), /측정 없음/);

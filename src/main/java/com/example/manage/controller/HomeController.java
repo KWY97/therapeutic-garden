@@ -22,6 +22,9 @@ public class HomeController {
     @Value("${kakao.maps.javascript-key}")
     private String kakaoMapsJavaScriptKey;
 
+    @Value("${landing.personal-change-participant-no:6}")
+    private Integer personalChangeParticipantNo;
+
     @GetMapping("/")
     public String landing(HttpSession session, Model model) {
         if (session.getAttribute("loginAdminId") != null) {
@@ -34,7 +37,10 @@ public class HomeController {
         model.addAttribute("healingEffects", overall);
         model.addAttribute("effectsBySpot", overall.stream().collect(java.util.stream.Collectors.toMap(
                 com.example.manage.dto.HealingSpotImprovementView::spotCode, java.util.function.Function.identity())));
-        model.addAttribute("anonymousEffects", healingEffects.findAnonymousExampleImprovements());
+        model.addAttribute("overallMaximums", healingEffects.findMaximumImprovements(overall));
+        var personal = healingEffects.findPublishedMemberImprovementsByParticipantNo(personalChangeParticipantNo);
+        model.addAttribute("personalEffects", personal);
+        model.addAttribute("personalMaximums", healingEffects.findMaximumImprovements(personal));
         return "landing";
     }
 
@@ -53,9 +59,15 @@ public class HomeController {
         model.addAttribute("siteImageUrls", imageUrls);
 
         var monitoringEffects = new java.util.LinkedHashMap<String, java.util.List<com.example.manage.dto.MonitoringSpotEffectView>>();
-        sites.forEach(site -> monitoringEffects.put(String.valueOf(site.getSiteId()),
-                healingEffects.findMonitoringOverallForSite(site.getSiteId())));
+        var monitoringMaximums = new java.util.LinkedHashMap<String, com.example.manage.dto.ImprovementMaximumView>();
+        sites.forEach(site -> {
+            var siteEffects = healingEffects.findMonitoringOverallForSite(site.getSiteId());
+            var siteKey = String.valueOf(site.getSiteId());
+            monitoringEffects.put(siteKey, siteEffects);
+            monitoringMaximums.put(siteKey, healingEffects.findMonitoringMaximumImprovements(siteEffects));
+        });
         model.addAttribute("monitoringEffects", monitoringEffects);
+        model.addAttribute("monitoringMaximums", monitoringMaximums);
 
         return "home";
     }
