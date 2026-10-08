@@ -78,3 +78,24 @@ tasks.register('productionHealingImprovementRebuild', JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.example.manage.healingeffect.ProductionHealingImprovementRebuildCli'
 }
+
+// Used only by scripts/participant-password-reset. Gradle JavaExec does not
+// reliably preserve a controlling terminal, which hidden input requires.
+tasks.register('participantPasswordResetClasspath') {
+    group = 'application'
+    description = 'Builds and prints the classpath for the guarded password-reset launcher'
+    dependsOn tasks.named('classes')
+    doLast {
+        println sourceSets.main.runtimeClasspath.asPath
+    }
+}
+
+tasks.register('participantPasswordResetJavaExecutable') {
+    group = 'application'
+    description = 'Prints the Java 21 executable used by the password-reset launcher'
+    doLast {
+        println javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }.get().executablePath.asFile.absolutePath
+    }
+}

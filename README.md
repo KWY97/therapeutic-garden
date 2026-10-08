@@ -122,3 +122,5 @@ Healing Course / Healing Spot 데이터는 REST API를 통해 조회하여 Kakao
 ```text
 http://localhost:8080
 ```
+
+P001~P011 일회성 비밀번호 변경은 [안전 실행 절차](docs/participant-password-reset.md)를 따르세요.
