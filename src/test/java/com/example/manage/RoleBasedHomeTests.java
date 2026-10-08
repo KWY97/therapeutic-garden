@@ -70,19 +70,24 @@ class RoleBasedHomeTests {
 
     @Test
     void memberLoginReplacesAdminSessionAndKeepsMemberHome() throws Exception {
-        Member member = members.save(new Member(987654, 1, "role-home-member", encoder.encode("password")));
+        Member member = members.save(new Member(987654, 1, "role-home-member", encoder.encode("password"), "역할 참가자", null));
         MockHttpSession session = new MockHttpSession();
         session.setAttribute("loginAdminId", 10L);
         mvc.perform(post("/member/login").session(session)
                         .param("loginId", member.getLoginId()).param("password", "password"))
                 .andExpect(redirectedUrl("/member"));
         assertThat(session.getAttribute("loginMemberId")).isEqualTo(member.getMemberId());
+        assertThat(session.getAttribute("loginMemberName")).isEqualTo("역할 참가자");
         assertThat(session.getAttribute("loginAdminId")).isNull();
         String html = mvc.perform(get("/member").session(session)).andExpect(status().isOk())
                 .andExpect(view().name("member/home")).andReturn().getResponse().getContentAsString();
-        assertThat(html).contains("id=\"calendar\"", "id=\"schedule-data\"", "id=\"schedule-detail\"",
-                "MY HEALING ANALYSIS", "나의 치유 분석", "MY CALENDAR", "나의 달력", "SELECTED SCHEDULE", "일정을 선택해 주세요.")
-                .doesNotContain("PARTICIPANT", "나의 일정", "참가자님의 일정을 확인해 주세요.", "landing.js");
+        assertThat(html).contains("id=\"calendar\"", "id=\"schedule-data\"",
+                "MY HEALING ANALYSIS", "나의 치유 분석", "MY CALENDAR", "나의 달력", "역할 참가자",
+                "calendar-report-notice", "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.")
+                .doesNotContain("id=\"schedule-detail\"", "SELECTED SCHEDULE", "일정을 선택해 주세요.",
+                        "selected-date-title", "selected-course", "selected-group", "selected-weather", "selected-spots",
+                        "/member/api/schedules/", "eventClick", "PARTICIPANT", "나의 일정",
+                        "참가자님의 일정을 확인해 주세요.", "landing.js");
         String header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));
         assertThat(header).contains("href=\"/member\"", "href=\"/member/logout\"")
                 .doesNotContain("/admin", "/member/login");
@@ -263,12 +268,22 @@ class RoleBasedHomeTests {
                         "landing-section-content", "landing-capability-list",
                         ".landing-page .landing-course-journey > li { position: relative; min-height: min(850px, 78vw); width: 100vw;",
                         ".landing-page .landing-journey-b .landing-journey-name { right: 7vw; left: auto; }",
-                        "linear-gradient(270deg, #112c25d9")
+                        "linear-gradient(270deg, #112c25d9",
+                        ".monitoring-hotspot-label {", "padding: 8px 10px 9px; border: 2px solid transparent",
+                        ".monitoring-hotspot-label.is-maximum { border: 2px solid #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22)",
+                        ".monitoring-hotspot-label.is-maximum .monitoring-hotspot-metric { background: #f5dea0; color: #755414",
+                        ".landing-preview-legend")
                 .doesNotContain("landing-chart-line-stress", "landing-chart-line-emotional", "landing-rotation-toggle",
                         "landing-capability-flow", "animation-play-state", "landing-capability-track", "landing-keywords",
                         "landing-preview-affordance", "landing-monitoring-preview:hover", "landing-monitoring-preview:focus-visible");
         assertThat(Files.readString(resources.resolve("static/css/style.css")))
-                .contains("@media (prefers-reduced-motion: reduce)", ".landing-reveal-enabled .landing-page");
+                .contains("@media (prefers-reduced-motion: reduce)", ".landing-reveal-enabled .landing-page",
+                        ".participant-analysis-page .survey-summary-card { padding: 12px; border: 2px solid transparent; }",
+                        ".participant-analysis-page .survey-summary-card.is-maximum { border-color: #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22); }",
+                        ".participant-result-summary", ".participant-result-name", ".participant-result-metric.is-stress",
+                        ".participant-result-metric.is-stress { color: #347553; }",
+                        ".participant-result-metric.is-emotional { color: #347553; }", ".participant-result-spots",
+                        ".calendar-report-notice");
         try (var paths = Files.walk(resources.resolve("templates"))) {
             for (Path path : paths.filter(p -> p.toString().endsWith(".html"))
                     .filter(p -> !p.getFileName().toString().equals("landing.html")).toList()) {

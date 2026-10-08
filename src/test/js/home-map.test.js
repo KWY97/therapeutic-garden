@@ -8,7 +8,8 @@ function setup(options = {}) {
     const elements = {};
     function element(id) {
         return elements[id] ||= {hidden: true, dataset: {}, style: {}, children: [],
-            classList: {add() {}, remove() {}},
+            classList: {values: new Set(), add(name) { this.values.add(name); }, remove(name) { this.values.delete(name); },
+                toggle(name, active) { active ? this.values.add(name) : this.values.delete(name); }, contains(name) { return this.values.has(name); }},
             setAttribute(name, value) { this[name] = value; },
             append(...children) { this.children.push(...children); children.forEach(child => child.parent = this); },
             replaceChildren(...children) { this.children = children; },
@@ -342,6 +343,9 @@ test('monitoring uses enlarged circles and floating hover detail without moving 
     assert.match(css, /pointer-events: none/);
     assert.match(css, /focus-visible \.monitoring-hover-panel/);
     assert.match(css, /border-radius: 16px/);
+    assert.match(css, /\.monitoring-hotspot-label\s*\{[^}]*padding: 6px 8px;[^}]*border: 2px solid transparent/);
+    assert.match(css, /\.monitoring-hotspot-label\.is-maximum\s*\{[^}]*border: 2px solid #d6a43a;[^}]*background: #fff3d6;[^}]*box-shadow: 0 4px 16px rgba\(166, 115, 25, \.22\)/);
+    assert.match(css, /\.monitoring-hotspot-label\.is-maximum \.monitoring-hotspot-metric\s*\{[^}]*background: #f5dea0;[^}]*color: #755414/);
     assert.doesNotMatch(script, /spotInformationPanel|showSitePanelButton/);
 });
 
@@ -454,8 +458,9 @@ test('fixed Spot metric, hover rows and overall-only Course score stay synchroni
     assert.equal(hotspots(ui)[0].children[1].children[1].children[1].textContent, '개선');
     const auxiliary=hotspots(ui)[0].children[1].children[2];
     assert.equal(auxiliary.children[0].textContent, '17회 중 15회 개선');
-    assert.equal(auxiliary.children[1].textContent, '최대 개선');
-    assert.equal(auxiliary.children[1].hidden, false);
+    assert.equal(auxiliary.children.length, 1);
+    assert.equal(hotspots(ui)[0].children[1].classList.contains('is-maximum'), true);
+    assert.doesNotMatch(spatialScript, /monitoring-hotspot-maximum|maximum:\s*maximum/);
     assert.deepEqual([halo.style.left, halo.style.top, halo.style.width, halo.style.height], before);
     const hoverRows=hotspots(ui)[0].children[2].children.slice(1);
     assert.deepEqual(hoverRows.map(row=>row.children[0].textContent),['스트레스','정서 안정성']);
@@ -466,6 +471,7 @@ test('fixed Spot metric, hover rows and overall-only Course score stay synchroni
     assert.ok(!hotspots(ui)[0].children[2].children.some(child=>child.textContent==='대표'));
     assert.match(hotspots(ui)[0]['aria-label'], /스트레스 88.2% · 개선 · 17회 중 15회 개선/);
     assert.match(hotspots(ui)[0]['aria-label'], /정서 안정성 58.8% · 개선 · 17회 중 10회 개선/);
+    assert.match(hotspots(ui)[0]['aria-label'], /최대 개선/);
     hotspots(ui)[0].click(); await flush(); assert.equal(ui.elements.spotDetailModal.hidden, false);
     assert.ok(ui.elements.spotAnalysis.children.some(row => row.children && row.children.some(child => child.textContent === '측정 인원')));
     ui.change(1); assert.equal(canvas(ui).children.length, 0); await flush();
