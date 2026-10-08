@@ -10,7 +10,7 @@
     <link
             rel="stylesheet"
             th:href="@{/css/style.css}">
-    <link rel="stylesheet" th:href="@{/css/home-spatial.css}">
+    <link rel="stylesheet" th:href="@{/css/home-spatial.css(v='count-improvement')}">
 </head>
 
 
@@ -104,11 +104,11 @@
             <h1 id="spatialTitle">공간 모니터링</h1>
             <button type="button" id="openMapButton" aria-haspopup="dialog">지도 보기</button>
         </div>
-        <div class="monitoring-effect-legend" aria-label="Healing Spot 개선 상태 범례">
-            <span><i class="is-good" aria-hidden="true"></i>개선</span>
-            <span><i class="is-bad" aria-hidden="true"></i>악화</span>
+        <div class="monitoring-effect-legend" aria-label="Healing Spot 개선율 색상 범례">
+            <span><i class="is-low" aria-hidden="true"></i>개선율 낮음</span>
+            <span><i class="is-high" aria-hidden="true"></i>개선율 높음</span>
             <span class="monitoring-legend-divider" aria-hidden="true">|</span>
-            <span>스트레스: 낮아질수록 개선 · 정서 안정성: 높아질수록 개선</span>
+            <span>유효 측정 중 개선된 횟수의 비율</span>
         </div>
         <div class="monitoring-content">
             <p id="monitoringStatus" role="status" data-loading="true">공간 정보를 불러오는 중입니다.</p>
@@ -175,12 +175,15 @@
      홈 지도 JavaScript
 ================================ -->
 
-<script th:inline="javascript">window.monitoringEffects = /*[[${monitoringEffects}]]*/ {};</script>
-<script th:src="@{/js/home-survey-analysis.js?v=analysis-ux}"></script>
+<script th:inline="javascript">
+    window.monitoringEffects = /*[[${monitoringEffects}]]*/ {};
+    window.monitoringMaximums = /*[[${monitoringMaximums}]]*/ {};
+</script>
+<script th:src="@{/js/home-survey-analysis.js?v=count-improvement}"></script>
 <script th:src="@{/js/home-course-overlay.js?v=analysis-ux}"></script>
-<script th:src="@{/js/home-spatial.js?v=analysis-ux}"></script>
+<script th:src="@{/js/home-spatial.js?v=count-improvement}"></script>
 <script
-        th:src="@{/js/home-map.js?v=analysis-ux}">
+        th:src="@{/js/home-map.js?v=count-improvement}">
 </script>
 
 

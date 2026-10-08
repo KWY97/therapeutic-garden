@@ -235,25 +235,64 @@ class HealingEffectUiTests {
         fixture();
         var result = mvc.perform(get("/admin/monitoring").sessionAttr("loginAdminId", 1L))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("monitoringEffects"))
+                .andExpect(model().attributeExists("monitoringEffects", "monitoringMaximums"))
                 .andExpect(model().attributeDoesNotExist("monitoringParticipants", "monitoringHistory"))
                 .andReturn();
         @SuppressWarnings("unchecked")
         var bySite = (Map<String, List<MonitoringSpotEffectView>>) result.getModelAndView().getModel().get("monitoringEffects");
         var data = bySite.values().iterator().next();
         assertThat(data).hasSize(6);
-        assertThat(data.getFirst().stressChangeDisplay()).isEqualTo("19.5% 감소");
-        assertThat(data.getFirst().emotionalChangeDisplay()).isEqualTo("54.3% 증가");
-        assertThat(data.getLast().stressChangeDisplay()).isEqualTo("21.2% 감소");
-        assertThat(data.getLast().emotionalChangeDisplay()).isEqualTo("200.4% 증가");
+        assertThat(data).extracting(view -> view.stress().improvementRateDisplay())
+                .containsExactly("88.2%", "81.3%", "72.7%", "56.5%", "64.7%", "72.2%");
+        assertThat(data).extracting(view -> view.emotional().improvementRateDisplay())
+                .containsExactly("58.8%", "68.8%", "68.2%", "69.6%", "64.7%", "88.9%");
+        assertThat(data).extracting(view -> view.stress().improvementCountDisplay())
+                .containsExactly("17회 중 15회 개선", "16회 중 13회 개선", "22회 중 16회 개선",
+                        "23회 중 13회 개선", "17회 중 11회 개선", "18회 중 13회 개선");
+        assertThat(data).extracting(view -> view.emotional().improvementCountDisplay())
+                .containsExactly("17회 중 10회 개선", "16회 중 11회 개선", "22회 중 15회 개선",
+                        "23회 중 16회 개선", "17회 중 11회 개선", "18회 중 16회 개선");
+        @SuppressWarnings("unchecked")
+        var maximumsBySite = (Map<String, ImprovementMaximumView>) result.getModelAndView().getModel()
+                .get("monitoringMaximums");
+        var maximums = maximumsBySite.values().iterator().next();
+        assertThat(maximums.stressSpotCodes()).containsExactly("HS1");
+        assertThat(maximums.emotionalSpotCodes()).containsExactly("HS6");
 
         String html = result.getResponse().getContentAsString();
-        assertThat(html).contains("스팟 설정", "HS 선택", "19.5% 감소", "54.3% 증가", "200.4% 증가",
-                        "스트레스: 낮아질수록 개선", "정서 안정성: 높아질수록 개선", "상세 분석 보기", "측정 데이터")
+        assertThat(html).contains("스팟 설정", "HS 선택", "88.2%", "68.8%", "88.9%",
+                        "17회 중 15회 개선", "16회 중 11회 개선", "18회 중 16회 개선",
+                        "개선율 낮음", "개선율 높음", "유효 측정 중 개선된 횟수의 비율",
+                        "monitoringMaximums", "상세 분석 보기", "측정 데이터")
                 .doesNotContain("정서적 안정성")
+                .doesNotContain("19.5% 감소", "54.3% 증가", "200.4% 증가", "stressReductionRate",
+                        "emotionalIncreaseRate", "스트레스: 낮아질수록 개선", "정서 안정성: 높아질수록 개선")
                 .doesNotContain("Demo 데이터", "시연용 데이터", "id=\"metricSelect\"", "id=\"hcStress\"", "id=\"hcEmotional\"", ">ISI<", ">PSS<",
                         "P001", "P002", "P004", "participantSelect", "분석 대상", "monitoringHistory", "analysisHistorySection",
                         "1차", "2차", "3차", "4차", "5차", "방문 횟수", "<details id=\"analysisHistorySection\"");
+    }
+
+    @Test void adminMonitoringDoesNotFallbackWhenCountsAreMissingOrValidCountIsZero() {
+        fixture();
+        var summaries = overall.findAll().stream()
+                .sorted(Comparator.comparing(summary -> summary.getHealingSpot().getCode())).toList();
+        summaries.getFirst().updateImprovementCounts(3, 17, 0, 0, 0, 0);
+        overall.delete(summaries.get(1));
+        overall.flush();
+        var spot = summaries.get(1).getHealingSpot();
+        overall.save(new HealingSpotEffectSummary(spot, 3, 16, new BigDecimal("999.9"),
+                3, 16, new BigDecimal("999.9")));
+        overall.flush();
+
+        var views = service.findMonitoringOverallForSite(exampleSiteId());
+        assertThat(views.getFirst().stress().improvementRate()).isNull();
+        assertThat(views.getFirst().stress().improvementRateDisplay()).isEqualTo("측정 없음");
+        assertThat(views.getFirst().stress().improvementCountDisplay()).isEqualTo("측정 없음");
+        assertThat(views.get(1).stress()).isNull();
+        assertThat(views.get(1).emotional()).isNull();
+        var maximums = service.findMonitoringMaximumImprovements(views);
+        assertThat(maximums.stressSpotCodes()).doesNotContain("HS1", "HS2");
+        assertThat(maximums.emotionalSpotCodes()).doesNotContain("HS1", "HS2");
     }
 
     @Test void participantHomeUsesOnlyAuthenticatedMembersSummaryAndHistory() throws Exception {

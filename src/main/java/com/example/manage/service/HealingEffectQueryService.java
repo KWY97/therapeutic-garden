@@ -118,8 +118,16 @@ public class HealingEffectQueryService {
     public ImprovementMaximumView findMaximumImprovements(List<HealingSpotImprovementView> views) {
         if (views == null || views.isEmpty()) return ImprovementMaximumView.empty();
         return new ImprovementMaximumView(
-                findMaximumSpotCodes(views, HealingSpotImprovementView::stress),
-                findMaximumSpotCodes(views, HealingSpotImprovementView::emotional));
+                findMaximumSpotCodes(views, HealingSpotImprovementView::spotCode, HealingSpotImprovementView::stress),
+                findMaximumSpotCodes(views, HealingSpotImprovementView::spotCode, HealingSpotImprovementView::emotional));
+    }
+
+    /** Applies the public landing maximum rule to the protected Monitoring snapshot. */
+    public ImprovementMaximumView findMonitoringMaximumImprovements(List<MonitoringSpotEffectView> views) {
+        if (views == null || views.isEmpty()) return ImprovementMaximumView.empty();
+        return new ImprovementMaximumView(
+                findMaximumSpotCodes(views, MonitoringSpotEffectView::spotCode, MonitoringSpotEffectView::stress),
+                findMaximumSpotCodes(views, MonitoringSpotEffectView::spotCode, MonitoringSpotEffectView::emotional));
     }
 
     /** Authenticated participant UI data, including explicit missing HS1-HS6 entries. */
@@ -214,9 +222,12 @@ public class HealingEffectQueryService {
                 .collect(Collectors.toSet()).equals(Set.of("HS1", "HS2", "HS3", "HS4", "HS5", "HS6"));
     }
 
-    private Set<String> findMaximumSpotCodes(List<HealingSpotImprovementView> views,
-            Function<HealingSpotImprovementView, ImprovementMetricView> metricExtractor) {
-        var available = views.stream().filter(view -> metricExtractor.apply(view).improvementRate() != null).toList();
+    private <T> Set<String> findMaximumSpotCodes(List<T> views, Function<T, String> spotCodeExtractor,
+            Function<T, ImprovementMetricView> metricExtractor) {
+        var available = views.stream().filter(view -> {
+            var metric = metricExtractor.apply(view);
+            return metric != null && metric.improvementRate() != null;
+        }).toList();
         if (available.isEmpty()) return Set.of();
         var maximumRate = available.stream().map(metricExtractor)
                 .map(ImprovementMetricView::improvementRate).max(java.math.BigDecimal::compareTo).orElseThrow();
@@ -229,7 +240,7 @@ public class HealingEffectQueryService {
                     return metric.improvementRate().compareTo(maximumRate) == 0
                             && metric.validCount() == maximumValidCount;
                 })
-                .map(HealingSpotImprovementView::spotCode)
+                .map(spotCodeExtractor)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

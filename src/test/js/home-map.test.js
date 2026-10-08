@@ -31,20 +31,28 @@ function setup(options = {}) {
         Marker: function(options) { Object.assign(this, options); this.setMap = m => this.map = m; markers.push(this); },
         event: {addListener(target, event, fn) { target[event] = fn; }}
     }};
+    const metric = (validCount, improvedCount, rate) => ({validCount, improvedCount, improvementRate: rate,
+        improvementRateDisplay: rate.toFixed(1) + '%',
+        improvementCountDisplay: validCount + '회 중 ' + improvedCount + '회 개선'});
     const effect = (stress, emotional) => ({spotCode: 'HS1', spotName: '정원', hasMeasurement: true,
-        stressReductionRate: stress, stressChangeDisplay: Math.abs(stress).toFixed(1) + '% ' + (stress >= 0 ? '감소' : '증가'),
-        emotionalIncreaseRate: emotional, emotionalChangeDisplay: Math.abs(emotional).toFixed(1) + '% ' + (emotional >= 0 ? '증가' : '감소'),
-        stressParticipantCount: 3, emotionalParticipantCount: 2, stressValidSessionCount: 5, emotionalValidSessionCount: 4});
+        stress: metric(17, 15, stress), emotional: metric(17, 10, emotional),
+        stressParticipantCount: 3, emotionalParticipantCount: 2});
     const monitoringEffects = {
-        '1': [effect(19.5, 54.3)],
-        '2': [effect(21.2, 200.4)],
+        '1': [effect(88.2, 58.8)],
+        '2': [effect(72.2, 88.9)],
         '3': []
+    };
+    const monitoringMaximums = {
+        '1': {stressSpotCodes: ['HS1'], emotionalSpotCodes: []},
+        '2': {stressSpotCodes: [], emotionalSpotCodes: ['HS1']},
+        '3': {stressSpotCodes: [], emotionalSpotCodes: []}
     };
     const context = {document: {getElementById: element, querySelector: element,
             createElementNS(ns, tag) { return this.createElement(tag); },
             createElement(tag) { return Object.assign(element('created' + ++elementSequence), {tag}); },
             addEventListener(event, fn) { (documentEvents[event] ||= []).push(fn); }, body: {style: {}}},
-        window: {kakao: options.noSdk ? null : kakao, monitoringEffects, location: {search: options.search || ''},
+        window: {kakao: options.noSdk ? null : kakao, monitoringEffects, monitoringMaximums,
+            location: {search: options.search || ''},
             requestAnimationFrame(fn) { frames.push(fn); },
             addEventListener(event, fn) { const previous = windowEvents[event]; windowEvents[event] = (...args) => { if (previous) previous(...args); fn(...args); }; }}, kakao, Option: function() {},
         fetch: options.fetch || (async url => ({ok: true, json: async () => url.endsWith('/data')
@@ -72,10 +80,10 @@ test('Monitoring Spot selector targets shared detail without changing overall ma
     assert.equal(ui.elements.openSpotDetailButton.disabled,true);
     assert.equal(ui.elements.healingSpotSelect.children[0].textContent,'HS 선택');
     assert.equal(ui.elements.healingSpotSelect.children[1].textContent,'HS1 · 정원');
-    const overallBefore=ui.context.currentEffects()[0].stressReductionRate;
+    const overallBefore=ui.context.currentEffects()[0].stress.improvementRate;
     ui.elements.healingSpotSelect.value='1';ui.elements.healingSpotSelect.change();
     assert.equal(ui.elements.openSpotDetailButton.disabled,false);
-    assert.equal(ui.context.currentEffects()[0].stressReductionRate,overallBefore);
+    assert.equal(ui.context.currentEffects()[0].stress.improvementRate,overallBefore);
     ui.elements.openSpotDetailButton.click();await flush();
     assert.equal(ui.elements.spotDetailModal.hidden,false);
     assert.equal(ui.elements.spotDetailTitle.textContent,'HS1 · 정원');
@@ -115,7 +123,7 @@ function layoutFetch(layout) {
 const baseLayout = () => ({siteId: 1, name: 'Site', image: {readUrl: '/storage/spatial'}, spots: [
     {spotId: 9, code: 'GARDEN', name: '정원', course: 'HC · 코스', xPercent: 0, yPercent: 100, readUrl: '/storage/representative'}
 ]});
-test('halo debug values are opt-in and exercise good, bad and neutral Spot colors', async () => {
+test('halo debug values are opt-in and exercise the count-backed 0-100 color range', async () => {
     const layout = {siteId: 1, name: 'Site', image: {readUrl: '/storage/spatial'}, spots:
         [20, -15, 0, 8, -5, 25].map((value, index) => ({spotId: index + 1, code: 'HS' + (index + 1),
             name: 'Spot ' + (index + 1), courseId: Math.floor(index / 2) + 1,
@@ -123,10 +131,10 @@ test('halo debug values are opt-in and exercise good, bad and neutral Spot color
             xPercent: 15 + index * 13, yPercent: 20 + Math.floor(index / 2) * 30}))};
     const ui = setup({search: '?haloDebug=on', fetch: layoutFetch(layout)}); await flush(); image(ui).load();
     assert.deepEqual(hotspots(ui).map(button => button.children[1].children[0].textContent),
-        ['스트레스', '정서 안정성', '스트레스', '정서 안정성', '정서 안정성', '스트레스']);
+        ['스트레스', '정서 안정성', '스트레스', '정서 안정성', '스트레스', '정서 안정성']);
     assert.deepEqual(hotspots(ui).map(button => button.children[1].children[1].children.map(child => child.textContent).join(' ')),
-        ['20.0% 개선', '15.0% 악화', '0.0% 변화 없음', '8.0% 개선', '5.0% 악화', '25.0% 개선']);
-    assert.equal(hotspots(ui)[2].children[0].style['--spot-data-color'], 'hsl(40 35% 82%)');
+        ['100.0% 개선', '75.0% 개선', '0.0% 개선', '50.0% 개선', '25.0% 개선', '90.0% 개선']);
+    assert.equal(hotspots(ui)[2].children[0].style['--spot-data-color'], 'hsl(40.0 35.0% 82.0%)');
     assert.equal(halos(ui).length, 3);
 });
 test('right image is spatial; hotspot percentages and representative photo open the shared detail modal', async () => {
@@ -440,16 +448,24 @@ test('fixed Spot metric, hover rows and overall-only Course score stay synchroni
     const before = [halo.style.left, halo.style.top, halo.style.width, halo.style.height];
     assert.equal(badges(ui)[0].children.length, 1);
     assert.equal(badges(ui)[0].children[0].textContent, 'HC1 · 코스');
-    assert.equal(hotspots(ui)[0].children[0].style['--spot-data-color'],ui.context.window.HomeSurvey.haloColor(19.5,'stress'));
+    assert.equal(hotspots(ui)[0].children[0].style['--spot-data-color'],ui.context.window.HomeSurvey.haloColor(88.2,'stress'));
     assert.equal(hotspots(ui)[0].children[1].children[0].textContent, '스트레스');
-    assert.equal(hotspots(ui)[0].children[1].children[1].children[0].textContent, '19.5%');
+    assert.equal(hotspots(ui)[0].children[1].children[1].children[0].textContent, '88.2%');
     assert.equal(hotspots(ui)[0].children[1].children[1].children[1].textContent, '개선');
+    const auxiliary=hotspots(ui)[0].children[1].children[2];
+    assert.equal(auxiliary.children[0].textContent, '17회 중 15회 개선');
+    assert.equal(auxiliary.children[1].textContent, '최대 개선');
+    assert.equal(auxiliary.children[1].hidden, false);
     assert.deepEqual([halo.style.left, halo.style.top, halo.style.width, halo.style.height], before);
     const hoverRows=hotspots(ui)[0].children[2].children.slice(1);
     assert.deepEqual(hoverRows.map(row=>row.children[0].textContent),['스트레스','정서 안정성']);
-    assert.deepEqual(hoverRows.map(row=>row.children[1].textContent),['19.5% 개선','54.3% 개선']);
+    assert.deepEqual(hoverRows.map(row=>row.children[1].children[0].textContent),['88.2% 개선','58.8% 개선']);
+    assert.deepEqual(hoverRows.map(row=>row.children[1].children[1].textContent),
+        ['17회 중 15회 개선','17회 중 10회 개선']);
     assert.ok(hoverRows.every(row=>row.children.length===2));
     assert.ok(!hotspots(ui)[0].children[2].children.some(child=>child.textContent==='대표'));
+    assert.match(hotspots(ui)[0]['aria-label'], /스트레스 88.2% · 개선 · 17회 중 15회 개선/);
+    assert.match(hotspots(ui)[0]['aria-label'], /정서 안정성 58.8% · 개선 · 17회 중 10회 개선/);
     hotspots(ui)[0].click(); await flush(); assert.equal(ui.elements.spotDetailModal.hidden, false);
     assert.ok(ui.elements.spotAnalysis.children.some(row => row.children && row.children.some(child => child.textContent === '측정 인원')));
     ui.change(1); assert.equal(canvas(ui).children.length, 0); await flush();

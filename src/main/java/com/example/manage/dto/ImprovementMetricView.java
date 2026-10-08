@@ -20,4 +20,9 @@ public record ImprovementMetricView(int validCount, int improvedCount, BigDecima
     public String improvementCountDisplay() {
         return validCount == 0 ? "측정 없음" : validCount + "회 중 " + improvedCount + "회 개선";
     }
+
+    /** Conventional accessor keeps the server-formatted count label in inline JSON payloads. */
+    public String getImprovementCountDisplay() {
+        return improvementCountDisplay();
+    }
 }

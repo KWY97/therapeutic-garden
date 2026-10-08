@@ -59,9 +59,15 @@ public class HomeController {
         model.addAttribute("siteImageUrls", imageUrls);
 
         var monitoringEffects = new java.util.LinkedHashMap<String, java.util.List<com.example.manage.dto.MonitoringSpotEffectView>>();
-        sites.forEach(site -> monitoringEffects.put(String.valueOf(site.getSiteId()),
-                healingEffects.findMonitoringOverallForSite(site.getSiteId())));
+        var monitoringMaximums = new java.util.LinkedHashMap<String, com.example.manage.dto.ImprovementMaximumView>();
+        sites.forEach(site -> {
+            var siteEffects = healingEffects.findMonitoringOverallForSite(site.getSiteId());
+            var siteKey = String.valueOf(site.getSiteId());
+            monitoringEffects.put(siteKey, siteEffects);
+            monitoringMaximums.put(siteKey, healingEffects.findMonitoringMaximumImprovements(siteEffects));
+        });
         model.addAttribute("monitoringEffects", monitoringEffects);
+        model.addAttribute("monitoringMaximums", monitoringMaximums);
 
         return "home";
     }
