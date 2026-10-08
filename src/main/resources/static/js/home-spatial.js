@@ -32,8 +32,7 @@ window.HomeSpatial = function(onSelect) {
             entry.count.textContent = display.countLabel;
             entry.count.hidden = !display.countLabel;
             var isMaximum = summary.isMaximum(maximums, display.metric, entry.code);
-            entry.maximum.textContent = isMaximum ? '최대 개선' : '';
-            entry.maximum.hidden = !isMaximum;
+            entry.label.classList.toggle('is-maximum', isMaximum);
             var ringColor = display.color;
             if (entry.circle.style.setProperty) entry.circle.style.setProperty('--spot-data-color', ringColor);
             else entry.circle.style['--spot-data-color'] = ringColor;
@@ -309,9 +308,7 @@ window.HomeSpatial = function(onSelect) {
                 auxiliary.setAttribute('aria-hidden', 'true');
                 var count = document.createElement('span');
                 count.className = 'monitoring-hotspot-count';
-                var maximum = document.createElement('span');
-                maximum.className = 'monitoring-hotspot-maximum';
-                auxiliary.append(count, maximum);
+                auxiliary.append(count);
                 var spotName = document.createElement('strong');
                 spotName.className = 'monitoring-hotspot-name';
                 spotName.textContent = name;
@@ -347,7 +344,7 @@ window.HomeSpatial = function(onSelect) {
                 button.addEventListener('focus', positionLabels);
                 buttons.push({id: spot.spotId, code: spot.code, name: name, button: button, circle: circle,
                     label: label, metric: metricTag, value: spotValue, number: number, unit: unit,
-                    auxiliary: auxiliary, count: count, maximum: maximum, detail: detail,
+                    auxiliary: auxiliary, count: count, detail: detail,
                     detailRows: detailRows, nearCircle: nearCircle,
                     xPercent: Number(spot.xPercent), yPercent: Number(spot.yPercent)});
                 overlay.append(button);

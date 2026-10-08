@@ -45,6 +45,7 @@ public class MemberController {
 
         session.removeAttribute("loginAdminId");
         session.setAttribute("loginMemberId", member.getMemberId());
+        session.setAttribute("loginMemberName", member.getName());
 
         return "redirect:/member";
     }
@@ -57,9 +58,17 @@ public class MemberController {
         Long memberId = (Long) session.getAttribute("loginMemberId");
 
         List<ScheduleResponse> schedules = scheduleService.findScheduleByMemberId(memberId);
+        String memberName = (String) session.getAttribute("loginMemberName");
+        if ((memberName == null || memberName.isBlank()) && !schedules.isEmpty()) {
+            memberName = schedules.getFirst().getMember().getName();
+        }
+        if (memberName == null || memberName.isBlank()) memberName = "참가자";
 
+        var spotEffects = healingEffects.findImportedMemberImprovements(memberId);
         model.addAttribute("schedules", schedules);
-        model.addAttribute("spotEffects", healingEffects.findImportedMemberImprovements(memberId));
+        model.addAttribute("spotEffects", spotEffects);
+        model.addAttribute("maximumImprovements", healingEffects.findMaximumImprovements(spotEffects));
+        model.addAttribute("memberDisplayName", memberName);
         model.addAttribute("overallImprovement", healingEffects.findImportedMemberOverallImprovement(memberId).orElse(null));
         model.addAttribute("measurementHistory", measurementHistory.findImportedMember(memberId));
         return "member/home";

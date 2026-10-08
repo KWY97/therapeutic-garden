@@ -72,6 +72,8 @@
                     나의 달력
                 </h2>
 
+                <p class="calendar-report-notice">측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.</p>
+
             </div>
 
         </div>
@@ -106,91 +108,13 @@
         </div>
 
     </div>
-
-
-    <!-- ================================
-         선택한 일정 상세
-    ================================= -->
-    <section
-            id="schedule-detail"
-            class="schedule-detail-card">
-
-        <div class="schedule-detail-header">
-
-            <div>
-
-                <p class="section-label">
-                    SELECTED SCHEDULE
-                </p>
-
-                <h2
-                        id="selected-date-title"
-                        class="schedule-detail-title">
-
-                    일정을 선택해 주세요.
-
-                </h2>
-
-            </div>
-
-
-            <span
-                    id="selected-course"
-                    class="course-badge">
-
-                -
-
-            </span>
-
-        </div>
-
-
-        <div class="schedule-summary">
-
-
-            <!-- 그룹 -->
-            <div class="schedule-summary-item">
-
-                <span>
-                    그룹
-                </span>
-
-                <strong id="selected-group">
-                    -
-                </strong>
-
-            </div>
-
-
-            <!-- 날씨 -->
-            <div class="schedule-summary-item">
-
-                <span>
-                    날씨
-                </span>
-
-                <strong id="selected-weather">
-                    -
-                </strong>
-
-            </div>
-
-        </div>
-
-
-        <!-- 스팟 일정 -->
-        <div
-                id="selected-spots"
-                class="schedule-list">
-        </div>
-
-    </section>
-
 </main>
 
 <script th:inline="javascript">
     window.memberHealingEffects = /*[[${spotEffects}]]*/ [];
     window.memberOverallImprovement = /*[[${overallImprovement}]]*/ null;
+    window.memberMaximumImprovements = /*[[${maximumImprovements}]]*/ {stressSpotCodes: [], emotionalSpotCodes: []};
+    window.memberDisplayName = /*[[${memberDisplayName}]]*/ '참가자';
     window.memberMeasurementHistory = /*[[${measurementHistory}]]*/ [];
 </script>
 <script th:src="@{/js/measurement-history.js?v=participant-analysis}"></script>
@@ -213,45 +137,6 @@
             const calendarElement =
                 document.getElementById(
                     "calendar"
-                );
-
-
-            /*
-             * 상세정보 출력 요소
-             */
-            const selectedDateTitle =
-                document.getElementById(
-                    "selected-date-title"
-                );
-
-
-            const selectedCourse =
-                document.getElementById(
-                    "selected-course"
-                );
-
-
-            const selectedGroup =
-                document.getElementById(
-                    "selected-group"
-                );
-
-
-            const selectedWeather =
-                document.getElementById(
-                    "selected-weather"
-                );
-
-
-            const selectedSpots =
-                document.getElementById(
-                    "selected-spots"
-                );
-
-
-            const scheduleDetailSection =
-                document.getElementById(
-                    "schedule-detail"
                 );
 
 
@@ -426,243 +311,9 @@
                                 info.el.classList.add(
                                     "member-calendar-event"
                                 );
-                            },
-
-
-                        /*
-                         * 코스 A/B/C 클릭
-                         */
-                        eventClick:
-                            function (info) {
-
-
-                                /*
-                                 * 클릭한 일정의
-                                 * scheduleId
-                                 */
-                                const scheduleId =
-                                    info.event.id;
-
-
-                                /*
-                                 * 일정 상세 API 호출
-                                 */
-                                fetch(
-                                    `/member/api/schedules/${scheduleId}`
-                                )
-
-
-                                    /*
-                                     * 서버 응답 확인
-                                     */
-                                    .then(function (response) {
-
-                                        if (!response.ok) {
-
-                                            throw new Error(
-                                                "일정 상세정보를 불러올 수 없습니다."
-                                            );
-                                        }
-
-                                        return response.json();
-                                    })
-
-
-                                    /*
-                                     * 상세정보 출력
-                                     */
-                                    .then(function (scheduleDetail) {
-
-
-                                        /*
-                                         * 일정 날짜
-                                         */
-                                        selectedDateTitle.textContent =
-                                            scheduleDetail.scheduleDate;
-
-
-                                        /*
-                                         * 코스
-                                         */
-                                        selectedCourse.textContent =
-                                            scheduleDetail.siteName + " / "
-                                            + scheduleDetail.courseCode + " " + scheduleDetail.courseName;
-
-
-                                        /*
-                                         * 그룹
-                                         */
-                                        selectedGroup.textContent =
-                                            scheduleDetail.groupNo
-                                            + "그룹";
-
-
-                                        /*
-                                         * 날씨
-                                         */
-                                        selectedWeather.textContent =
-                                            scheduleDetail.weather
-                                                ? scheduleDetail.weather
-                                                : "-";
-
-
-                                        /*
-                                         * 기존 스팟 목록 제거
-                                         */
-                                        selectedSpots.innerHTML =
-                                            "";
-
-
-                                        /*
-                                         * 스팟 일정 출력
-                                         */
-                                        scheduleDetail.spots
-                                            .forEach(function (spot) {
-
-
-                                                /*
-                                                 * 스팟 전체 요소
-                                                 */
-                                                const spotItem =
-                                                    document.createElement(
-                                                        "article"
-                                                    );
-
-                                                spotItem.classList.add(
-                                                    "schedule-item"
-                                                );
-
-
-                                                /*
-                                                 * 순서
-                                                 */
-                                                const sequenceElement =
-                                                    document.createElement(
-                                                        "span"
-                                                    );
-
-                                                sequenceElement.classList.add(
-                                                    "schedule-sequence"
-                                                );
-
-                                                sequenceElement.textContent =
-                                                    spot.sequence;
-
-
-                                                /*
-                                                 * 시간 / 스팟 정보 영역
-                                                 */
-                                                const spotInformation =
-                                                    document.createElement(
-                                                        "div"
-                                                    );
-
-
-                                                /*
-                                                 * 시간
-                                                 */
-                                                const timeElement =
-                                                    document.createElement(
-                                                        "strong"
-                                                    );
-
-                                                timeElement.classList.add(
-                                                    "schedule-time"
-                                                );
-
-                                                timeElement.textContent =
-                                                    spot.startTime.substring(
-                                                        0,
-                                                        5
-                                                    );
-
-
-                                                /*
-                                                 * 스팟
-                                                 */
-                                                const spotElement =
-                                                    document.createElement(
-                                                        "p"
-                                                    );
-
-                                                spotElement.classList.add(
-                                                    "schedule-spot"
-                                                );
-
-                                                spotElement.textContent =
-                                                    spot.code + " " + spot.name;
-
-
-                                                /*
-                                                 * 조립
-                                                 */
-                                                spotInformation.appendChild(
-                                                    timeElement
-                                                );
-
-                                                spotInformation.appendChild(
-                                                    spotElement
-                                                );
-
-                                                spotItem.appendChild(
-                                                    sequenceElement
-                                                );
-
-                                                spotItem.appendChild(
-                                                    spotInformation
-                                                );
-
-                                                selectedSpots.appendChild(
-                                                    spotItem
-                                                );
-
-                                            });
-
-
-                                        /*
-                                         * 상세 카드로 이동
-                                         */
-                                        scheduleDetailSection
-                                            .scrollIntoView({
-
-                                                behavior:
-                                                    "smooth",
-
-                                                block:
-                                                    "start"
-                                            });
-
-                                    })
-
-
-                                    /*
-                                     * 오류
-                                     */
-                                    .catch(function (error) {
-
-                                        console.error(
-                                            error
-                                        );
-
-
-                                        selectedDateTitle.textContent =
-                                            "일정 정보를 불러오지 못했습니다.";
-
-                                        selectedCourse.textContent =
-                                            "-";
-
-                                        selectedGroup.textContent =
-                                            "-";
-
-                                        selectedWeather.textContent =
-                                            "-";
-
-                                        selectedSpots.innerHTML =
-                                            "";
-
-                                    });
-
                             }
+
+
 
                     }
                 );

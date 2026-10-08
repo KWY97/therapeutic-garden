@@ -6,8 +6,20 @@
 .measurement-metric h4 { margin: 0; font-size: 15px; }
 .measurement-metric svg { display: block; width: 100%; max-height: 260px; }
 .measurement-metric svg text { fill: #64748b; font: 11px sans-serif; }
+.measurement-metric-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 8px; }
+.measurement-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; color: #526259; font-size: 12px; }
+.measurement-legend-item { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.measurement-legend-swatch { display: inline-block; width: 18px; height: 8px; border-radius: 2px; }
+.measurement-legend-swatch.is-baseline { background: #94a3b8; }
+.measurement-legend-swatch.is-post { background: #5f9875; }
+.measurement-chart-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; }
+.measurement-grouped-chart { min-width: 660px; }
 .measurement-table-scroll { overflow-x: auto; }
 .measurement-history table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .measurement-history th, .measurement-history td { padding: 8px; text-align: right; border-bottom: 1px solid #e5e7eb; font-variant-numeric: tabular-nums; }
 .measurement-history th:first-child, .measurement-history td:first-child { text-align: left; white-space: nowrap; }
 .measurement-history td { overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+    .measurement-metric-heading { align-items: flex-start; flex-direction: column; }
+    .measurement-chart-scroll { margin-right: -4px; padding-bottom: 4px; }
+}

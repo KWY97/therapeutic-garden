@@ -4,6 +4,7 @@ import com.example.manage.domain.*;
 import com.example.manage.dto.HealingEffectView;
 import com.example.manage.dto.HealingSpotImprovementView;
 import com.example.manage.dto.ImprovementMaximumView;
+import com.example.manage.dto.ImprovementMetricView;
 import com.example.manage.dto.MonitoringSpotEffectView;
 import com.example.manage.repository.*;
 import com.example.manage.service.HealingEffectQueryService;
@@ -133,7 +134,7 @@ class HealingEffectUiTests {
                         "data-stress-display=\"100.0% 개선\"", "data-emotional-display=\"100.0% 개선\"",
                         "data-stress-count=\"3회 중 3회 개선\"", "data-emotional-count=\"3회 중 2회 개선\"",
                         "스트레스 개선율", "정서 안정성 개선율", "PERSON / HEALING SPOT",
-                        "스트레스 최대 개선", "정서 안정성 최대 개선")
+                        "최대 개선 스팟", "landing-preview-legend")
                 .doesNotContain("P001", "P002", "P004", "participantNo", "memberId", "participantCode", "loginId",
                         "secret-login-one", "secret-login-two", "secret-login-four", "secret-login-six", "비공개이름하나", "비공개이름둘", "비공개이름넷", "비공개이름육",
                         "01012345678", "01022223333", "01044445555", "01066667777", "010-1234-5678", "010-2222-3333", "010-4444-5555", "010-6666-7777",
@@ -141,12 +142,14 @@ class HealingEffectUiTests {
                         "평균 스트레스 증감률", "평균 정서 안정성 증감률", "정서적 안정성",
                         "Baseline", "BEFORE &amp; AFTER", "stress-baseline", "stress-followup", "66.7% 증가", "landing-chart-line");
 
-        assertMapCard(html, "HS1", "스트레스", "88.2%", "17회 중 15회 개선", "스트레스 최대 개선");
+        assertMapCard(html, "HS1", "스트레스", "88.2%", "17회 중 15회 개선", "is-maximum", "aria-label=\"최대 개선 스팟\"");
         assertMapCard(html, "HS2", "정서 안정성", "68.8%", "16회 중 11회 개선");
         assertMapCard(html, "HS3", "스트레스", "72.7%", "22회 중 16회 개선");
         assertMapCard(html, "HS4", "정서 안정성", "69.6%", "23회 중 16회 개선");
         assertMapCard(html, "HS5", "스트레스", "64.7%", "17회 중 11회 개선");
-        assertMapCard(html, "HS6", "정서 안정성", "88.9%", "18회 중 16회 개선", "정서 안정성 최대 개선");
+        assertMapCard(html, "HS6", "정서 안정성", "88.9%", "18회 중 16회 개선", "is-maximum", "aria-label=\"최대 개선 스팟\"");
+        String mapSection = html.substring(html.indexOf("landing-monitoring-preview"), html.indexOf("landing-capabilities"));
+        assertThat(mapSection).doesNotContain("monitoring-hotspot-maximum", "스트레스 최대 개선", "정서 안정성 최대 개선");
         String personalSection = html.substring(html.indexOf("landing-person-scene"), html.indexOf("landing-connection"));
         assertThat(personalSection).contains(">최대 개선</span>")
                 .doesNotContain("스트레스 최대 개선", "정서 안정성 최대 개선");
@@ -295,13 +298,50 @@ class HealingEffectUiTests {
         assertThat(maximums.emotionalSpotCodes()).doesNotContain("HS1", "HS2");
     }
 
+    @Test void participantMaximumsReuseRateThenValidCountPolicyAndExcludeMissing() {
+        var missing = ImprovementMetricView.of(0, 0);
+        var zeroFromOne = ImprovementMetricView.of(1, 0);
+        var zeroFromThree = ImprovementMetricView.of(3, 0);
+        var views = List.of(
+                new HealingSpotImprovementView("HS1", "측정 없음", 0, 0, missing, missing),
+                new HealingSpotImprovementView("HS2", "1회 측정", 1, 1, zeroFromOne, missing),
+                new HealingSpotImprovementView("HS3", "3회 측정", 1, 3, zeroFromThree, missing));
+
+        var maximums = service.findMaximumImprovements(views);
+
+        assertThat(maximums.stressSpotCodes()).containsExactly("HS3");
+        assertThat(maximums.emotionalSpotCodes()).isEmpty();
+    }
+
+    @Test void participantMaximumsKeepJointWinnersOnlyWhenRateAndValidCountBothTie() {
+        var missing = ImprovementMetricView.of(0, 0);
+        var half = ImprovementMetricView.of(2, 1);
+        var perfectTwo = ImprovementMetricView.of(2, 2);
+        var perfectThree = ImprovementMetricView.of(3, 3);
+        var views = List.of(
+                new HealingSpotImprovementView("HS1", "하나", 1, 2, perfectTwo, missing),
+                new HealingSpotImprovementView("HS2", "둘", 1, 2, perfectTwo, perfectTwo),
+                new HealingSpotImprovementView("HS3", "셋", 1, 2, half, half),
+                new HealingSpotImprovementView("HS4", "넷", 1, 3, perfectThree, half),
+                new HealingSpotImprovementView("HS6", "여섯", 1, 3, perfectThree, perfectTwo));
+
+        var maximums = service.findMaximumImprovements(views);
+
+        assertThat(maximums.stressSpotCodes()).containsExactlyInAnyOrder("HS4", "HS6");
+        assertThat(maximums.emotionalSpotCodes()).containsExactlyInAnyOrder("HS2", "HS6");
+    }
+
     @Test void participantHomeUsesOnlyAuthenticatedMembersSummaryAndHistory() throws Exception {
         fixture();
-        var result = mvc.perform(get("/member").sessionAttr("loginMemberId", partial.getMemberId()))
+        var result = mvc.perform(get("/member").sessionAttr("loginMemberId", partial.getMemberId())
+                        .sessionAttr("loginMemberName", partial.getName()))
                 .andExpect(status().isOk()).andExpect(view().name("member/home"))
-                .andExpect(model().attributeExists("spotEffects", "overallImprovement", "measurementHistory", "schedules"))
+                .andExpect(model().attributeExists("spotEffects", "overallImprovement", "maximumImprovements", "memberDisplayName", "measurementHistory", "schedules"))
                 .andReturn();
         @SuppressWarnings("unchecked") var effects = (List<HealingSpotImprovementView>) result.getModelAndView().getModel().get("spotEffects");
+        assertThat(result.getModelAndView().getModel().get("memberDisplayName")).isEqualTo(partial.getName());
+        assertThat(result.getModelAndView().getModel().get("maximumImprovements"))
+                .isEqualTo(service.findMaximumImprovements(effects));
         assertThat(effects).extracting(HealingSpotImprovementView::spotCode).containsExactly("HS1", "HS2", "HS3", "HS4", "HS5", "HS6");
         assertThat(effects.getFirst().stress().improvementRateDisplay()).isEqualTo("0.0%");
         assertThat(effects.getFirst().stress().validCount()).isEqualTo(2);
@@ -310,10 +350,12 @@ class HealingEffectUiTests {
         assertThat(html).contains("나의 치유 분석", "나의 공간별 치유 효과와 측정 변화를 확인합니다.",
                         "Spot별 변화 / 상세 분석", "측정 기록",
                         "memberAnalysisSummary", "memberAnalysisHistory", "memberHealingEffects",
-                        "memberOverallImprovement", "memberMeasurementHistory", "member-healing-analysis.js", "나의 달력",
+                        "memberOverallImprovement", "memberMaximumImprovements", "memberDisplayName", "memberMeasurementHistory", "member-healing-analysis.js", "나의 달력",
+                        "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
                 .doesNotContain("상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
-                        "aria-modal=", "\"prev,next today\"", "home-survey-analysis.js", "P002", "P004", "secret-login-two", "secret-login-four");
+                        "aria-modal=", "\"prev,next today\"", "home-survey-analysis.js", "P002", "P004", "secret-login-two", "secret-login-four",
+                        "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
         assertThat(html.indexOf("나의 치유 분석")).isLessThan(html.indexOf("나의 달력"));
         assertThat(html.indexOf("memberAnalysisHighlights")).isLessThan(html.indexOf("memberAnalysisSummary"));
         assertThat(html.indexOf("memberAnalysisSummary")).isLessThan(html.indexOf("memberAnalysisHistory"));

@@ -7303,9 +7303,18 @@ input[type="time"].form-input {
 .participant-analysis-page .effect-bad { color: #b4534b; }
 .participant-analysis-page .effect-neutral { color: #86743f; }
 .participant-analysis-page .effect-missing { color: #9ca3af; font-weight: 500; }
+.participant-analysis-page .survey-summary-card { padding: 12px; border: 2px solid transparent; }
+.participant-analysis-page .survey-summary-card.is-maximum { border-color: #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22); }
+.participant-result-summary { margin: 16px 0 0; color: #526259; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
+.participant-result-name { color: #334155; font-weight: 700; }
+.participant-result-metric { font-weight: 700; }
+.participant-result-metric.is-stress { color: #347553; }
+.participant-result-metric.is-emotional { color: #347553; }
+.participant-result-spots { color: #755414; font-weight: 700; }
 .my-healing-section { margin-bottom: 28px; }
 .my-healing-heading { align-items: center; }
 .my-healing-description { margin: 8px 0 0; color: #64748b; font-size: 14px; line-height: 1.6; }
+.calendar-report-notice { max-width: 680px; margin: 8px 0 0; color: #64748b; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
 .my-healing-card { padding: 4px 20px 22px; }
 .my-healing-card #memberAnalysisHighlights > .survey-analysis-section { border-top: 0; margin-top: 0; padding-top: 18px; }
 .member-analysis-detail { margin-top: 28px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
