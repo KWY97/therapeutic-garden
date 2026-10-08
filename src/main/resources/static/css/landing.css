@@ -107,11 +107,13 @@ html:has(> body.landing-page) { overflow-x: clip; }
 .landing-page .landing-preview-spot .monitoring-hotspot-circle img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .landing-page .landing-preview-spot .monitoring-hotspot-label { display: flex; flex-direction: column; align-items: center; box-sizing: border-box; width: 100%; padding: 9px 11px 10px; border-radius: 16px; background: #fffefaf7; color: #244b3b; line-height: 1.35; box-shadow: 0 3px 10px #1e342542; pointer-events: none; }
 .landing-page .landing-preview-spot .monitoring-hotspot-metric { display: inline-flex; justify-content: center; min-width: 98px; box-sizing: border-box; padding: 3px 9px; border-radius: 999px; background: #eef1ee; color: #4a5a52; font-size: 12px; font-weight: 400; }
+.landing-page .landing-preview-spot .monitoring-hotspot-maximum { margin-top: 5px; padding: 2px 7px; border-radius: 999px; background: #315f49; color: #fff; font-size: 9px; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; }
 .landing-page .landing-preview-spot .monitoring-hotspot-value { display: flex; align-items: baseline; justify-content: center; gap: 5px; margin-top: 4px; color: #665d4a; white-space: nowrap; }
 .landing-page .landing-preview-spot .monitoring-hotspot-value strong { font-size: clamp(20px, 1.65vw, 28px); line-height: 1.15; font-weight: 800; font-variant-numeric: tabular-nums; }
 .landing-page .landing-preview-spot .monitoring-hotspot-value > span { font-size: 13px; font-weight: 600; }
 .landing-page .landing-preview-spot .monitoring-hotspot-value.effect-good { color: hsl(150 55% 24%); }
 .landing-page .landing-preview-spot .monitoring-hotspot-value.effect-bad { color: hsl(8 62% 38%); }
+.landing-page .landing-preview-spot .monitoring-hotspot-count { margin-top: 1px; color: #667169; font-size: 10px; font-weight: 500; white-space: nowrap; }
 .landing-page .landing-preview-spot .monitoring-hotspot-name { display: flex; justify-content: center; gap: 5px; margin-top: 3px; color: #273f34; font-size: clamp(12px, .95vw, 15px); font-weight: 700; white-space: nowrap; }
 .landing-page .landing-preview-spot .monitoring-hotspot-name b { letter-spacing: .04em; }
 .landing-page .landing-preview-meta { padding: 18px 3vw 21px; }
@@ -143,10 +145,15 @@ html:has(> body.landing-page) { overflow-x: clip; }
 .landing-page .landing-person-current p { font-size: 12px; color: var(--landing-muted); margin: 26px 0 12px; }
 .landing-page .landing-person-current strong { display: block; font-weight: 400; font-size: 32px; line-height: 1.1; letter-spacing: -.055em; }
 .landing-page .landing-person-current .landing-effect-number { font-size: clamp(52px, 6.2vw, 108px); }
+.landing-page .landing-person-current .landing-person-count { display: block; min-height: 1.5em; margin-top: 10px; color: #5f6c64; font-size: 13px; font-weight: 600; }
 .landing-page .landing-spot-comparison { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .landing-page .landing-spot-comparison button { min-width: 0; padding: 10px 2px; border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--landing-muted); font-size: 11px; }
 .landing-page .landing-spot-comparison button.is-active { border-bottom-color: var(--landing-forest); color: var(--landing-forest); }
 .landing-page .landing-spot-comparison small { display: block; font-size: 9px; line-height: 1.5; overflow-wrap: anywhere; }
+.landing-page .landing-spot-comparison [data-comparison-count]:empty { display: none; }
+.landing-page .landing-maximum-badge { display: block; width: fit-content; max-width: 100%; margin: 6px auto 0; padding: 2px 5px; border-radius: 999px; background: #315f49; color: #fff; font-size: 8px; font-weight: 700; line-height: 1.35; }
+.landing-page .landing-person-chart[data-active-metric="stress"] .landing-maximum-badge-emotional,
+.landing-page .landing-person-chart[data-active-metric="emotional"] .landing-maximum-badge-stress { display: none; }
 .landing-page .landing-comparison-track { display: block; position: relative; width: 7px; height: 54px; margin: 12px auto; background: linear-gradient(transparent 49%, #b3baa9 49%, #b3baa9 51%, transparent 51%); }
 .landing-page .landing-comparison-track i { position: absolute; left: 0; right: 0; background: currentColor; }
 .landing-page .landing-person-chart[data-active-metric="stress"], .landing-page .landing-person-chart[data-active-metric="emotional"] { min-width: 0; }
@@ -253,9 +260,11 @@ html:has(> body.landing-page) { overflow-x: clip; }
     .landing-page .landing-preview-spot .monitoring-hotspot-circle { width: clamp(64px, 14vw, 102px); height: clamp(64px, 14vw, 102px); border-width: 1px; box-shadow: 0 0 0 2px var(--spot-tone), 0 0 12px 3px color-mix(in srgb, var(--spot-tone) 30%, transparent), 0 4px 10px #10231944; }
     .landing-page .landing-preview-spot .monitoring-hotspot-label { padding: 5px 5px 6px; border-radius: 9px; }
     .landing-page .landing-preview-spot .monitoring-hotspot-metric { min-width: 64px; padding: 2px 5px; font-size: clamp(7px, 1.2vw, 9px); }
+    .landing-page .landing-preview-spot .monitoring-hotspot-maximum { margin-top: 3px; padding: 1px 4px; font-size: clamp(5px, .9vw, 7px); }
     .landing-page .landing-preview-spot .monitoring-hotspot-value { gap: 3px; margin-top: 2px; }
     .landing-page .landing-preview-spot .monitoring-hotspot-value strong { font-size: clamp(11px, 2vw, 15px); }
     .landing-page .landing-preview-spot .monitoring-hotspot-value > span { font-size: clamp(7px, 1.2vw, 9px); }
+    .landing-page .landing-preview-spot .monitoring-hotspot-count { font-size: clamp(5px, 1vw, 7px); }
     .landing-page .landing-preview-spot .monitoring-hotspot-name { gap: 3px; margin-top: 2px; font-size: clamp(7px, 1.2vw, 9px); }
     .landing-page .landing-preview-course { gap: 4px; padding: 5px 7px; border-radius: 6px; font-size: clamp(7px, 1.25vw, 10px); }
     .landing-page .landing-preview-spot-hs5 { --spot-offset-y: -7%; }

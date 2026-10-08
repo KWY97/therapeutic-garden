@@ -2,6 +2,7 @@ package com.example.manage.service;
 
 import com.example.manage.dto.HealingEffectView;
 import com.example.manage.dto.HealingSpotImprovementView;
+import com.example.manage.dto.ImprovementMaximumView;
 import com.example.manage.dto.ImprovementMetricView;
 import com.example.manage.dto.MonitoringSpotEffectView;
 import com.example.manage.dto.ParticipantOverallImprovementView;
@@ -103,6 +104,24 @@ public class HealingEffectQueryService {
         }).orElse(List.of());
     }
 
+    /** Public landing example selected by participant number, never by Member primary key. */
+    public List<HealingSpotImprovementView> findPublishedMemberImprovementsByParticipantNo(Integer participantNo) {
+        if (participantNo == null) return List.of();
+        return batches.findFirstByOrderByIdAsc()
+                .flatMap(batch -> members.findByParticipantNo(participantNo)
+                        .map(member -> findMemberImprovements(batch.getTargetSiteId(), member.getMemberId())))
+                .filter(this::hasAllSixHealingSpots)
+                .orElse(List.of());
+    }
+
+    /** Highest rate wins, then highest valid count; exact ties remain joint maxima. */
+    public ImprovementMaximumView findMaximumImprovements(List<HealingSpotImprovementView> views) {
+        if (views == null || views.isEmpty()) return ImprovementMaximumView.empty();
+        return new ImprovementMaximumView(
+                findMaximumSpotCodes(views, HealingSpotImprovementView::stress),
+                findMaximumSpotCodes(views, HealingSpotImprovementView::emotional));
+    }
+
     /** Authenticated participant UI data, including explicit missing HS1-HS6 entries. */
     public List<HealingSpotImprovementView> findImportedMemberImprovements(Long memberId) {
         return batches.findFirstByOrderByIdAsc()
@@ -188,5 +207,29 @@ public class HealingEffectQueryService {
     private static boolean hasImprovementCounts(MemberHealingSpotEffectSummary summary) {
         return summary.getTotalExperienceCount() != null
                 && summary.getStressImprovedCount() != null && summary.getEmotionalImprovedCount() != null;
+    }
+
+    private boolean hasAllSixHealingSpots(List<HealingSpotImprovementView> views) {
+        return views.size() == 6 && views.stream().map(HealingSpotImprovementView::spotCode)
+                .collect(Collectors.toSet()).equals(Set.of("HS1", "HS2", "HS3", "HS4", "HS5", "HS6"));
+    }
+
+    private Set<String> findMaximumSpotCodes(List<HealingSpotImprovementView> views,
+            Function<HealingSpotImprovementView, ImprovementMetricView> metricExtractor) {
+        var available = views.stream().filter(view -> metricExtractor.apply(view).improvementRate() != null).toList();
+        if (available.isEmpty()) return Set.of();
+        var maximumRate = available.stream().map(metricExtractor)
+                .map(ImprovementMetricView::improvementRate).max(java.math.BigDecimal::compareTo).orElseThrow();
+        int maximumValidCount = available.stream().map(metricExtractor)
+                .filter(metric -> metric.improvementRate().compareTo(maximumRate) == 0)
+                .mapToInt(ImprovementMetricView::validCount).max().orElseThrow();
+        return available.stream()
+                .filter(view -> {
+                    var metric = metricExtractor.apply(view);
+                    return metric.improvementRate().compareTo(maximumRate) == 0
+                            && metric.validCount() == maximumValidCount;
+                })
+                .map(HealingSpotImprovementView::spotCode)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 }

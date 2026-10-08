@@ -6,7 +6,7 @@ window.MemberHealingAnalysis = (() => {
     const history = Array.isArray(window.memberMeasurementHistory) ? window.memberMeasurementHistory : [];
     const metrics = {
         stress: {label: '스트레스 개선율'},
-        emotional: {label: '정서적 안정성 개선율'}
+        emotional: {label: '정서 안정성 개선율'}
     };
     const element = (tag, text, className) => {
         const node = document.createElement(tag);

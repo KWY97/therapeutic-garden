@@ -50,17 +50,20 @@
         if (!element) return;
         const value = display || '데이터 준비 중';
         element.textContent = value;
-        const match = /^(\d[\d.,]*%)\s+(.+)$/.exec(value);
-        element.dataset.effectStatus = match && match[2] === '개선' ? 'improved' : 'neutral';
+        const match = /^(\d[\d.,]*%)(?:\s+(.+))?$/.exec(value);
+        element.dataset.effectStatus = match ? 'improved' : 'neutral';
         if (match && document.createElement) {
             const number = document.createElement('span');
             number.className = 'landing-effect-number';
             number.textContent = match[1];
-            const context = document.createElement('span');
-            context.className = 'landing-effect-direction';
-            context.textContent = match[2];
             element.textContent = '';
-            element.append(number, document.createTextNode(' '), context);
+            element.append(number);
+            if (match[2]) {
+                const context = document.createElement('span');
+                context.className = 'landing-effect-direction';
+                context.textContent = match[2];
+                element.append(document.createTextNode(' '), context);
+            }
         }
     }
 
@@ -122,7 +125,7 @@
             course.healingEffectSpots.forEach((spot, index) => {
                 spot.button.addEventListener('click', () => {
                     changeHealingSpot(course, index);
-                    announceSelection(course, `${spot.code} · ${spot.name}, 스트레스 ${spot.stress || '데이터 준비 중'}, 정서적 안정성 ${spot.emotional || '데이터 준비 중'}`);
+                    announceSelection(course, `${spot.code} · ${spot.name}, 스트레스 ${spot.stress || '데이터 준비 중'}, 정서 안정성 ${spot.emotional || '데이터 준비 중'}`);
                 });
             });
 
@@ -138,7 +141,7 @@
         const metrics = Array.from(chart.querySelectorAll('[data-personal-metric]'));
         const labels = {
             stress: { title: '스트레스 개선율' },
-            emotional: { title: '정서적 안정성 개선율' }
+            emotional: { title: '정서 안정성 개선율' }
         };
         let activeMetric = 'stress';
         let activeIndex = 0;
@@ -160,8 +163,16 @@
                 spot.classList.toggle('is-active', active);
                 spot.setAttribute('aria-pressed', String(active));
                 const display = spot.dataset[`${activeMetric}Display`];
+                const count = spot.dataset[`${activeMetric}Count`] || '';
+                const maximum = spot.dataset[`${activeMetric}Maximum`] === 'true' ? '최대 개선' : '';
                 spot.querySelector('[data-comparison-value]').textContent = display;
-                spot.setAttribute('aria-label', `${spot.dataset.personalSpot} · ${spot.dataset.name}, ${labels[activeMetric].title} ${display}`);
+                spot.querySelector('[data-comparison-count]').textContent = count.replace(/ 개선$/, '');
+                spot.setAttribute('aria-label', [
+                    `${spot.dataset.personalSpot} · ${spot.dataset.name}`,
+                    `${labels[activeMetric].title} ${display}`,
+                    count,
+                    maximum
+                ].filter(Boolean).join(', '));
                 const bar = spot.querySelector('.landing-comparison-track i');
                 bar.style.height = `${values[index] == null ? 0 : values[index] / max * 100}%`;
                 bar.style.top = 'auto';
@@ -171,11 +182,18 @@
             const spot = spots[activeIndex];
             chart.querySelector('[data-current-spot]').textContent = `${spot.dataset.personalSpot} · ${spot.dataset.name}`;
             chart.querySelector('[data-current-metric]').textContent = labels[activeMetric].title;
-            renderImprovementValue(chart.querySelector('[data-current-rate]'), spot.dataset[`${activeMetric}Display`]);
+            renderImprovementValue(chart.querySelector('[data-current-rate]'), spot.dataset[`${activeMetric}RateDisplay`]);
+            chart.querySelector('[data-current-count]').textContent = spot.dataset[`${activeMetric}Count`] || '';
         };
         const announce = () => {
             const spot = spots[activeIndex];
-            announceSelection(chart, `${spot.dataset.personalSpot} · ${spot.dataset.name}, ${labels[activeMetric].title} ${spot.dataset[`${activeMetric}Display`]}`);
+            const maximum = spot.dataset[`${activeMetric}Maximum`] === 'true' ? '최대 개선' : '';
+            announceSelection(chart, [
+                `${spot.dataset.personalSpot} · ${spot.dataset.name}`,
+                `${labels[activeMetric].title} ${spot.dataset[`${activeMetric}Display`]}`,
+                spot.dataset[`${activeMetric}Count`],
+                maximum
+            ].filter(Boolean).join(', '));
         };
         spots.forEach((spot, index) => spot.addEventListener('click', () => {
             activeIndex = index;

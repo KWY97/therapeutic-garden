@@ -73,7 +73,7 @@ test('fixed Spot metric display is the only field-selection and direction bounda
     assert.equal(api.getSpotDisplay('HS4', effects).numberLabel, '데이터 없음');
     const rows=api.getSpotMetricRows('HS2',effects);
     assert.deepEqual(JSON.parse(JSON.stringify(rows.map(row=>row.metric))),['stress','emotional']);
-    assert.deepEqual(JSON.parse(JSON.stringify(rows.map(row=>row.metricLabel))),['스트레스','정서적 안정성']);
+    assert.deepEqual(JSON.parse(JSON.stringify(rows.map(row=>row.metricLabel))),['스트레스','정서 안정성']);
     assert.ok(rows.every(row=>!Object.hasOwn(row,'representative')));
 });
 
@@ -100,8 +100,8 @@ test('overall and member Spot detail keep count semantics and missing state', ()
     const overall = node('div');
     api.renderSpot(overall, {participant: 'all', participantLabel: '전체 평균', effect: measured});
     assert.deepEqual(overall.children.filter(child => child.children.length).map(row => row.children[0].textContent),
-        ['측정 인원', '평균 스트레스 증감률', '평균 정서적 안정성 증감률']);
-    assert.equal(overall.children[0].children[1].textContent,'스트레스 11명 · 정서적 안정성 10명');
+        ['측정 인원', '평균 스트레스 증감률', '평균 정서 안정성 증감률']);
+    assert.equal(overall.children[0].children[1].textContent,'스트레스 11명 · 정서 안정성 10명');
     const equal = node('div');
     api.renderSpot(equal, {participant: 'all', effect: {...measured, emotionalParticipantCount: 11}});
     assert.equal(equal.children[0].children[1].textContent,'11명');
@@ -109,7 +109,7 @@ test('overall and member Spot detail keep count semantics and missing state', ()
     api.renderSpot(member, {participant: '3', participantLabel: 'P003', effect: measured});
     assert.equal(member.children[0].textContent, 'P003');
     assert.equal(member.children[1].children[0].textContent, '스트레스 유효 측정');
-    assert.equal(member.children[3].children[0].textContent, '정서적 안정성 유효 측정');
+    assert.equal(member.children[3].children[0].textContent, '정서 안정성 유효 측정');
     api.renderSpot(member, {participant: '3', participantLabel: 'P003', effect: missing});
     assert.equal(member.children[0].textContent, '측정 없음');
 });
@@ -119,7 +119,7 @@ test('detail analysis renders two categorical Summary sections without line char
     api.renderSummary(container, [measured, missing]);
     assert.equal(container.children.length, 2);
     assert.equal(container.children[0].children[0].textContent, '스트레스 변화');
-    assert.equal(container.children[1].children[0].textContent, '정서적 안정성 변화');
+    assert.equal(container.children[1].children[0].textContent, '정서 안정성 변화');
     assert.doesNotMatch(fs.readFileSync('src/main/resources/static/js/home-survey-analysis.js', 'utf8'), /<svg|1차|ISI|PSS/);
 });
 

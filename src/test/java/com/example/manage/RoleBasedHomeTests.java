@@ -213,7 +213,7 @@ class RoleBasedHomeTests {
         assertThat(html).contains("바이오마커", "뇌파", "맥파", "공간별 치유효과", "landing-monitoring-preview",
                 "landing-preview-stage", "landing-capabilities", "landing-capability-list", "monitoring-hotspot-circle",
                 "monitoring-hotspot-label", "monitoring-hotspot-metric", "monitoring-hotspot-value",
-                "스트레스", "정서적 안정성", "개선", "데이터 준비 중", "개인 힐링코스 구성",
+                "스트레스", "정서 안정성", "개선", "데이터 준비 중", "개인 힐링코스 구성",
                 "href=\"/css/landing.css\"")
                 .doesNotContain(".codex-reference", "home-course-overlay.js", "id=\"siteSelect\"", "<canvas", "<iframe",
                         "landing-capability-track", "landing-keywords");

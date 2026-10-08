@@ -62,9 +62,11 @@ class HealingImprovementAggregatorTests {
         var metric = ImprovementMetricView.of(17, 15);
         assertThat(metric.improvementRate()).isEqualByComparingTo("88.235294117647058824");
         assertThat(metric.improvementRateDisplay()).isEqualTo("88.2%");
+        assertThat(metric.improvementCountDisplay()).isEqualTo("17회 중 15회 개선");
         var unavailable = ImprovementMetricView.of(0, 0);
         assertThat(unavailable.improvementRate()).isNull();
         assertThat(unavailable.improvementRateDisplay()).isEqualTo("측정 없음");
+        assertThat(unavailable.improvementCountDisplay()).isEqualTo("측정 없음");
         assertThatThrownBy(() -> ImprovementMetricView.of(1, 2)).isInstanceOf(IllegalArgumentException.class);
     }
 }

@@ -27,16 +27,22 @@ function boot({reduced = false, empty = false} = {}) {
     const spots = Array.from({length: 6}, (_, index) => {
         const n = element({personalSpot: `HS${index+1}`, name: `Spot ${index+1}`,
             stress: String(stressRates[index]), emotional: String(emotionalRates[index]),
+            stressRateDisplay: stressRates[index].toFixed(1) + '%',
+            emotionalRateDisplay: emotionalRates[index].toFixed(1) + '%',
             stressDisplay: stressRates[index].toFixed(1) + '% 개선',
-            emotionalDisplay: emotionalRates[index].toFixed(1) + '% 개선'});
+            emotionalDisplay: emotionalRates[index].toFixed(1) + '% 개선',
+            stressCount: '3회 중 2회 개선', emotionalCount: '3회 중 1회 개선',
+            stressMaximum: String(index === 2 || index === 4 || index === 5),
+            emotionalMaximum: String(index === 4 || index === 5)});
         n.one['[data-comparison-value]'] = element();
+        n.one['[data-comparison-count]'] = element();
         n.one['.landing-comparison-track i'] = element();
         return n;
     });
     const metrics = ['stress', 'emotional'].map(personalMetric => element({personalMetric}));
     chart.many['[data-personal-spot]'] = spots;
     chart.many['[data-personal-metric]'] = metrics;
-    for (const selector of ['[data-current-spot]', '[data-current-metric]', '[data-current-rate]']) chart.one[selector] = element();
+    for (const selector of ['[data-current-spot]', '[data-current-metric]', '[data-current-rate]', '[data-current-count]']) chart.one[selector] = element();
     page.one['[data-personal-change-chart]'] = empty ? null : chart;
     course.one['[data-selection-status]'] = element();
     chart.one['[data-selection-status]'] = element();
@@ -55,17 +61,21 @@ function boot({reduced = false, empty = false} = {}) {
 
 test('personal metric and six independent Spot selectors show server-formatted improvement rates', () => {
     const ui = boot();
-    assert.equal(ui.value(), '100.0% 개선');
+    assert.equal(ui.value(), '100.0%');
+    assert.equal(ui.chart.one['[data-current-count]'].textContent, '3회 중 2회 개선');
     assert.equal(ui.spots[0].one['.landing-comparison-track i'].style.bottom, '0');
     ui.metrics[1].events.click();
-    assert.equal(ui.value(), '100.0% 개선');
+    assert.equal(ui.value(), '100.0%');
     assert.equal(ui.chart.dataset.activeMetric, 'emotional');
     ui.spots[5].events.click();
     assert.equal(ui.chart.one['[data-current-spot]'].textContent, 'HS6 · Spot 6');
     assert.equal(ui.spots[5].attrs['aria-pressed'], 'true');
     ui.metrics[0].events.click();
-    assert.equal(ui.value(), '50.0% 개선');
+    assert.equal(ui.value(), '50.0%');
     assert.equal(ui.spots[5].one['[data-comparison-value]'].textContent, '50.0% 개선');
+    assert.equal(ui.spots[5].one['[data-comparison-count]'].textContent, '3회 중 2회');
+    assert.match(ui.spots[5].attrs['aria-label'], /최대 개선/);
+    assert.doesNotMatch(ui.spots[5].attrs['aria-label'], /스트레스 최대 개선|정서 안정성 최대 개선/);
 });
 test('garden carousel changes image, active selector and both SSR effect displays together', () => {
     const ui = boot(); ui.buttons[1].events.click();
@@ -83,7 +93,7 @@ test('empty data never creates sample numbers', () => {
 test('manual selectors work immediately with reduced motion and never require timer APIs', () => {
     const ui = boot({reduced: true});
     ui.spots[4].events.click(); ui.metrics[1].events.click();
-    assert.equal(ui.value(), '0.0% 개선');
+    assert.equal(ui.value(), '0.0%');
     ui.motion.matches = false; ui.changes.forEach(fn => fn({matches: false}));
     ui.buttons[1].events.click();
     assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3% 개선');

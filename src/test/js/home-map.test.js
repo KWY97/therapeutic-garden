@@ -123,7 +123,7 @@ test('halo debug values are opt-in and exercise good, bad and neutral Spot color
             xPercent: 15 + index * 13, yPercent: 20 + Math.floor(index / 2) * 30}))};
     const ui = setup({search: '?haloDebug=on', fetch: layoutFetch(layout)}); await flush(); image(ui).load();
     assert.deepEqual(hotspots(ui).map(button => button.children[1].children[0].textContent),
-        ['스트레스', '정서적 안정성', '스트레스', '정서적 안정성', '정서적 안정성', '스트레스']);
+        ['스트레스', '정서 안정성', '스트레스', '정서 안정성', '정서 안정성', '스트레스']);
     assert.deepEqual(hotspots(ui).map(button => button.children[1].children[1].children.map(child => child.textContent).join(' ')),
         ['20.0% 개선', '15.0% 악화', '0.0% 변화 없음', '8.0% 개선', '5.0% 악화', '25.0% 개선']);
     assert.equal(hotspots(ui)[2].children[0].style['--spot-data-color'], 'hsl(40 35% 82%)');
@@ -446,7 +446,7 @@ test('fixed Spot metric, hover rows and overall-only Course score stay synchroni
     assert.equal(hotspots(ui)[0].children[1].children[1].children[1].textContent, '개선');
     assert.deepEqual([halo.style.left, halo.style.top, halo.style.width, halo.style.height], before);
     const hoverRows=hotspots(ui)[0].children[2].children.slice(1);
-    assert.deepEqual(hoverRows.map(row=>row.children[0].textContent),['스트레스','정서적 안정성']);
+    assert.deepEqual(hoverRows.map(row=>row.children[0].textContent),['스트레스','정서 안정성']);
     assert.deepEqual(hoverRows.map(row=>row.children[1].textContent),['19.5% 개선','54.3% 개선']);
     assert.ok(hoverRows.every(row=>row.children.length===2));
     assert.ok(!hotspots(ui)[0].children[2].children.some(child=>child.textContent==='대표'));

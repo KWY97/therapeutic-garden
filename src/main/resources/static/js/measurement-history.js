@@ -87,7 +87,7 @@ window.MeasurementHistory = (() => {
             const selected=histories.find(h=>h.spotCode===select.value);
             if (!selected || !selected.records.length) { content.append(element('p','측정 기록 없음')); return; }
             content.append(element('p','변화량과 증감률은 같은 측정일의 Baseline과 비교합니다. Baseline이 없거나 0이면 증감률을 계산할 수 없습니다.','survey-note'));
-            content.append(metricSection(selected.records,'stress','스트레스'),metricSection(selected.records,'emotional','정서적 안정성'));
+            content.append(metricSection(selected.records,'stress','스트레스'),metricSection(selected.records,'emotional','정서 안정성'));
         }
         select.addEventListener('change',update); update();
     }

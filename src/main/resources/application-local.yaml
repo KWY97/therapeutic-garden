@@ -9,3 +9,6 @@ storage:
   mode: local
   local-directory: ${STORAGE_LOCAL_DIRECTORY:.local/uploads}
   recovery-directory: ${STORAGE_RECOVERY_DIRECTORY:.local/image-recovery}
+
+landing:
+  personal-change-participant-no: ${LANDING_PERSONAL_CHANGE_PARTICIPANT_NO:6}

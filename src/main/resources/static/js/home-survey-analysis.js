@@ -3,7 +3,7 @@ window.HomeSurvey = (() => {
     'use strict';
     const metrics = {
         stress: {name: '스트레스 변화', rate: 'stressReductionRate', display: 'stressChangeDisplay'},
-        emotional: {name: '정서적 안정성 변화', rate: 'emotionalIncreaseRate', display: 'emotionalChangeDisplay'}
+        emotional: {name: '정서 안정성 변화', rate: 'emotionalIncreaseRate', display: 'emotionalChangeDisplay'}
     };
     const SPOT_METRIC = Object.freeze({
         HS1: 'stress', HS2: 'emotional', HS3: 'stress',
@@ -72,7 +72,7 @@ window.HomeSurvey = (() => {
         const status = semanticState(value, metric);
         return {
             metric,
-            metricLabel: metric === 'stress' ? '스트레스' : metric === 'emotional' ? '정서적 안정성' : '',
+            metricLabel: metric === 'stress' ? '스트레스' : metric === 'emotional' ? '정서 안정성' : '',
             value,
             numberLabel: value == null ? '데이터 없음' : Math.abs(value).toFixed(1) + '%',
             unitLabel: value == null ? '' : status === 'good' ? '개선' : status === 'bad' ? '악화' : '변화 없음',
@@ -147,19 +147,19 @@ window.HomeSurvey = (() => {
             const emotionalCount = effect.emotionalParticipantCount;
             const audience = stressCount === emotionalCount
                 ? stressCount + '명'
-                : '스트레스 ' + stressCount + '명 · 정서적 안정성 ' + emotionalCount + '명';
+                : '스트레스 ' + stressCount + '명 · 정서 안정성 ' + emotionalCount + '명';
             container.append(
                 valueRow('측정 인원', audience),
                 valueRow('평균 스트레스 증감률', metricDisplay(effect, 'stress'), semanticState(metricValue(effect, 'stress'), 'stress')),
-                valueRow('평균 정서적 안정성 증감률', metricDisplay(effect, 'emotional'), semanticState(metricValue(effect, 'emotional'), 'emotional'))
+                valueRow('평균 정서 안정성 증감률', metricDisplay(effect, 'emotional'), semanticState(metricValue(effect, 'emotional'), 'emotional'))
             );
         } else {
             container.append(
                 element('p', participantLabel, 'spot-measurement-audience'),
                 valueRow('스트레스 유효 측정', effect.stressValidSessionCount + '회'),
                 valueRow('평균 스트레스 증감률', metricDisplay(effect, 'stress'), semanticState(metricValue(effect, 'stress'), 'stress')),
-                valueRow('정서적 안정성 유효 측정', effect.emotionalValidSessionCount + '회'),
-                valueRow('평균 정서적 안정성 증감률', metricDisplay(effect, 'emotional'), semanticState(metricValue(effect, 'emotional'), 'emotional'))
+                valueRow('정서 안정성 유효 측정', effect.emotionalValidSessionCount + '회'),
+                valueRow('평균 정서 안정성 증감률', metricDisplay(effect, 'emotional'), semanticState(metricValue(effect, 'emotional'), 'emotional'))
             );
         }
     }
@@ -201,7 +201,7 @@ window.HomeSurvey = (() => {
         const section = element('section', null, 'survey-analysis-section survey-highlight-section');
         section.append(element('h3', '핵심 변화'));
         const grid = element('div', null, 'survey-highlight-grid');
-        [['stress', '스트레스 가장 큰 개선'], ['emotional', '정서적 안정성 가장 큰 개선']].forEach(([metric, title]) => {
+        [['stress', '스트레스 가장 큰 개선'], ['emotional', '정서 안정성 가장 큰 개선']].forEach(([metric, title]) => {
             const card = element('article', null, 'survey-highlight-card');
             card.append(element('span', title, 'survey-highlight-label'));
             const best = bestImprovement(effects, metric);

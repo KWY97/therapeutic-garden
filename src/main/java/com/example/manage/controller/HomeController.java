@@ -22,6 +22,9 @@ public class HomeController {
     @Value("${kakao.maps.javascript-key}")
     private String kakaoMapsJavaScriptKey;
 
+    @Value("${landing.personal-change-participant-no:6}")
+    private Integer personalChangeParticipantNo;
+
     @GetMapping("/")
     public String landing(HttpSession session, Model model) {
         if (session.getAttribute("loginAdminId") != null) {
@@ -34,7 +37,10 @@ public class HomeController {
         model.addAttribute("healingEffects", overall);
         model.addAttribute("effectsBySpot", overall.stream().collect(java.util.stream.Collectors.toMap(
                 com.example.manage.dto.HealingSpotImprovementView::spotCode, java.util.function.Function.identity())));
-        model.addAttribute("anonymousEffects", healingEffects.findAnonymousExampleImprovements());
+        model.addAttribute("overallMaximums", healingEffects.findMaximumImprovements(overall));
+        var personal = healingEffects.findPublishedMemberImprovementsByParticipantNo(personalChangeParticipantNo);
+        model.addAttribute("personalEffects", personal);
+        model.addAttribute("personalMaximums", healingEffects.findMaximumImprovements(personal));
         return "landing";
     }
 

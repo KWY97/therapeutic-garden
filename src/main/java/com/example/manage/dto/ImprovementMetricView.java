@@ -16,4 +16,8 @@ public record ImprovementMetricView(int validCount, int improvedCount, BigDecima
         return new ImprovementMetricView(validCount, improvedCount, rate,
                 rate == null ? "측정 없음" : rate.setScale(1, RoundingMode.HALF_UP).toPlainString() + "%");
     }
+
+    public String improvementCountDisplay() {
+        return validCount == 0 ? "측정 없음" : validCount + "회 중 " + improvedCount + "회 개선";
+    }
 }
