@@ -33,19 +33,12 @@
 #monitoringStatus:empty { display: none; }
 #monitoringSettings { display: inline-block; color: #36644d; font-size: 13px; margin-bottom: 18px; text-underline-offset: 4px; }
 .monitoring-canvas {
-    --focus-far-blur: 3.4px;
-    --focus-far-saturate: .75;
-    --focus-far-brightness: .99;
-    --focus-mid-blur: 1.2px;
-    --focus-mid-saturate: .9;
     --focus-mid-feather: 36px;
     --focus-mid-padding: 20px;
     --context-corridor-center-ratio: .5;
     --context-corridor-width-ratio: .16;
     --context-corridor-min-width: 120px;
     --context-corridor-max-width: 210px;
-    --focus-near-saturate: 1.15;
-    --focus-near-contrast: 1.04;
     --focus-near-feather: 20px;
     --focus-near-padding: 12px;
     --halo-opacity: .68;
@@ -55,18 +48,18 @@
     --spot-glow-size: 12px;
     --spot-glow-alpha: 28%;
     --spot-data-color: var(--effect-neutral-color);
-    position: relative; width: 100%; margin-top: 12px; overflow: hidden; border-radius: 6px;
+    position: relative; width: 100%; margin-top: 12px; overflow: hidden; border-radius: 6px; background: #dce2d7;
 }
 .monitoring-image {
     display: block; width: 100%; height: auto; min-height: inherit; object-fit: cover; border-radius: inherit;
     position: relative; z-index: 0;
-    filter: blur(var(--focus-far-blur)) brightness(var(--focus-far-brightness)) saturate(var(--focus-far-saturate));
+    filter: blur(1.5px) brightness(.94) saturate(.78);
+    transform: scale(1.008);
 }
-.monitoring-focus-layer { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+.monitoring-canvas::after { content: ''; position: absolute; z-index: 2; inset: 0; background: linear-gradient(180deg, #1c342515, transparent 50%, #1c342526); pointer-events: none; }
+.monitoring-focus-layer { display: none; position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
 .monitoring-focus-mid-layer { z-index: 1; }
 .monitoring-focus-near-layer { z-index: 2; }
-.monitoring-focus-mid-image { filter: blur(var(--focus-mid-blur)) saturate(var(--focus-mid-saturate)); }
-.monitoring-focus-near-image { filter: saturate(var(--focus-near-saturate)) contrast(var(--focus-near-contrast)); }
 .monitoring-focus-image { pointer-events: none; user-select: none; }
 .monitoring-hotspots { position: absolute; inset: 0; pointer-events: none; }
 .monitoring-hotspot { position: absolute; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; }
