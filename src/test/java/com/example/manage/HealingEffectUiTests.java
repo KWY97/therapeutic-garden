@@ -130,7 +130,7 @@ class HealingEffectUiTests {
         assertThat(personalMaximums.stressSpotCodes()).containsExactlyInAnyOrder("HS3", "HS5", "HS6");
         assertThat(personalMaximums.emotionalSpotCodes()).containsExactlyInAnyOrder("HS5", "HS6");
         String html = result.getResponse().getContentAsString();
-        assertThat(html).contains("데이터 변화", "data-stress=\"88.2% 개선\"", "data-emotional=\"88.9% 개선\"",
+        assertThat(html).contains("데이터 변화", "data-stress=\"88.2%\"", "data-emotional=\"88.9%\"",
                         "data-stress-display=\"100.0% 개선\"", "data-emotional-display=\"100.0% 개선\"",
                         "data-stress-count=\"3회 중 3회 개선\"", "data-emotional-count=\"3회 중 2회 개선\"",
                         "스트레스 개선율", "정서 안정성 개선율", "PERSON / HEALING SPOT",
