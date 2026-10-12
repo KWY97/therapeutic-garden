@@ -239,7 +239,7 @@ class RoleBasedHomeTests {
             assertThat(Files.isRegularFile(Path.of("src/main/resources/static" + source))).isTrue();
             if (source.startsWith("/images/landing/")) spacePhotos++;
         }
-        assertThat(spacePhotos).isEqualTo(21);
+        assertThat(spacePhotos).isEqualTo(27);
         assertThat(html).contains("landing-image-scene", "landing-person-scene", "landing-course-journey",
                         "landing-course-route", "aria-live=\"off\"")
                 .doesNotContain("data-rotation-toggle", "Sample Monitoring", "landing-waveform", "--level:",
