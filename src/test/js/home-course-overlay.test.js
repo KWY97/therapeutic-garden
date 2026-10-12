@@ -48,29 +48,19 @@ test('exact obstacle edges find a narrow mobile gap missed by grid candidates', 
     assert.ok(pos.x >= 114 && pos.x + pos.w <= 197);
     assert.ok(pos.y <= 4);
 });
-test('photo-only visual layers preserve hotspot priority and mobile styling', () => {
+test('monitoring map matches the landing treatment while preserving hotspot priority and mobile styling', () => {
     const css = fs.readFileSync('src/main/resources/static/css/home-spatial.css', 'utf8');
     assert.match(css, /\.monitoring-course-halos, \.monitoring-course-badges\s*\{[^}]*pointer-events: none/);
     assert.match(css, /\.monitoring-course-halos\s*\{[^}]*z-index: 3/);
     assert.match(css, /\.monitoring-course-badges\s*\{[^}]*z-index: 4/);
     assert.match(css, /\.monitoring-hotspots\s*\{ z-index: 5/);
-    assert.match(css, /--focus-far-blur: 3\.4px/);
-    assert.match(css, /--focus-far-saturate: \.75/);
-    assert.match(css, /--focus-far-brightness: \.99/);
-    assert.match(css, /--focus-mid-blur: 1\.2px/);
-    assert.match(css, /--focus-mid-feather: 36px/);
-    assert.match(css, /--context-corridor-width-ratio: \.16/);
-    assert.match(css, /--context-corridor-min-width: 120px/);
-    assert.match(css, /--context-corridor-max-width: 210px/);
-    assert.match(css, /--focus-near-saturate: 1\.15/);
-    assert.match(css, /--focus-near-feather: 20px/);
     assert.match(css, /--spot-ring-white-width: 2px/);
     assert.match(css, /--spot-ring-color-width: 3px/);
     assert.match(css, /--spot-glow-size: 12px/);
     assert.match(css, /--spot-glow-alpha: 28%/);
-    assert.match(css, /filter: blur\(var\(--focus-far-blur\)\) brightness\(var\(--focus-far-brightness\)\) saturate\(var\(--focus-far-saturate\)\)/);
-    assert.match(css, /\.monitoring-focus-layer\s*\{[^}]*overflow: hidden;[^}]*pointer-events: none/);
-    assert.match(css, /\.monitoring-focus-near-image\s*\{[^}]*saturate\(var\(--focus-near-saturate\)\)/);
+    assert.match(css, /\.monitoring-image\s*\{[^}]*filter: blur\(1\.5px\) brightness\(\.94\) saturate\(\.78\);[^}]*transform: scale\(1\.008\)/);
+    assert.match(css, /\.monitoring-canvas::after\s*\{[^}]*linear-gradient\(180deg, #1c342515, transparent 50%, #1c342526\)/);
+    assert.match(css, /\.monitoring-focus-layer\s*\{[^}]*display: none;[^}]*overflow: hidden;[^}]*pointer-events: none/);
     assert.match(css, /--halo-opacity: \.68/);
     assert.match(css, /\.monitoring-course-halo\s*\{[^}]*radial-gradient/);
     assert.match(css, /mix-blend-mode: normal/);

@@ -46,8 +46,8 @@ function boot({reduced = false, empty = false} = {}) {
     page.one['[data-personal-change-chart]'] = empty ? null : chart;
     course.one['[data-selection-status]'] = element();
     chart.one['[data-selection-status]'] = element();
-    const buttons = [element({code: 'HS1', name: 'one', stress: empty ? undefined : '88.2% 개선', emotional: empty ? undefined : '58.8% 개선'}),
-        element({code: 'HS2', name: 'two', stress: empty ? undefined : '81.3% 개선', emotional: empty ? undefined : '68.8% 개선'})];
+    const buttons = [element({code: 'HS1', name: 'one', stress: empty ? undefined : '88.2%', emotional: empty ? undefined : '58.8%'}),
+        element({code: 'HS2', name: 'two', stress: empty ? undefined : '81.3%', emotional: empty ? undefined : '68.8%'})];
     course.many['.landing-course-spots button'] = buttons;
     for (const code of ['HS1', 'HS2']) course.one[`[data-spot-image="${code}"]`] = element();
     for (const field of ['stress-reduction', 'emotional-increase']) course.one[`[data-field="${field}"]`] = element();
@@ -79,8 +79,8 @@ test('personal metric and six independent Spot selectors show server-formatted i
 });
 test('garden carousel changes image, active selector and both SSR effect displays together', () => {
     const ui = boot(); ui.buttons[1].events.click();
-    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3% 개선');
-    assert.equal(ui.course.one['[data-field="emotional-increase"]'].textContent, '68.8% 개선');
+    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3%');
+    assert.equal(ui.course.one['[data-field="emotional-increase"]'].textContent, '68.8%');
     assert.equal(ui.course.one['[data-spot-image="HS2"]'].attrs['aria-hidden'], 'false');
     assert.equal(ui.buttons[0].attrs['aria-pressed'], 'false');
     assert.equal(ui.buttons[1].attrs['aria-pressed'], 'true');
@@ -96,7 +96,7 @@ test('manual selectors work immediately with reduced motion and never require ti
     assert.equal(ui.value(), '0.0%');
     ui.motion.matches = false; ui.changes.forEach(fn => fn({matches: false}));
     ui.buttons[1].events.click();
-    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3% 개선');
+    assert.equal(ui.course.one['[data-field="stress-reduction"]'].textContent, '81.3%');
 });
 
 test('improvement rates use improvement semantics, and only manual choices announce', () => {
@@ -113,5 +113,5 @@ test('improvement rates use improvement semantics, and only manual choices annou
     assert.equal(rate.dataset.effectStatus, 'improved');
     ui.buttons[1].events.click();
     assert.equal(ui.course.one['[data-field="stress-reduction"]'].dataset.effectStatus, 'improved');
-    assert.match(ui.course.one['[data-selection-status]'].textContent, /HS2.*81.3% 개선/);
+    assert.match(ui.course.one['[data-selection-status]'].textContent, /HS2.*81.3%/);
 });

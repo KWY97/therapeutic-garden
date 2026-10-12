@@ -5,6 +5,159 @@
     if (!page) return;
 
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    function initializeCourseConnectors() {
+        const stage = page.querySelector('.landing-preview-stage');
+        if (!stage) return;
+
+        const namespace = 'http://www.w3.org/2000/svg';
+        const courses = [
+            { key: 'a', spots: ['hs1', 'hs2'] },
+            { key: 'b', spots: ['hs3', 'hs4'] },
+            { key: 'c', spots: ['hs5', 'hs6'] }
+        ].map(course => ({
+            ...course,
+            label: stage.querySelector(`.landing-preview-course-${course.key}`),
+            circles: course.spots.map(spot => stage.querySelector(`.landing-preview-spot-${spot} .monitoring-hotspot-circle`))
+        })).filter(course => course.label && course.circles.every(Boolean));
+        if (!courses.length) return;
+
+        const svg = document.createElementNS(namespace, 'svg');
+        svg.classList.add('landing-course-links');
+        svg.setAttribute('aria-hidden', 'true');
+        courses.forEach(course => {
+            const group = document.createElementNS(namespace, 'g');
+            group.classList.add(`landing-course-link-${course.key}`);
+            ['glow'].forEach(type => {
+                const line = document.createElementNS(namespace, 'line');
+                line.classList.add(`landing-course-link-${type}`);
+                group.append(line);
+                course[type] = line;
+            });
+            svg.append(group);
+        });
+        stage.insertBefore(svg, stage.querySelector('.landing-preview-course'));
+
+        const percentToPixels = (value, size) => {
+            const parsed = Number.parseFloat(value);
+            return Number.isFinite(parsed) ? parsed / 100 * size : 0;
+        };
+        const intersectsCircle = (box, obstacle) => {
+            const nearestX = Math.max(box.left, Math.min(obstacle.x, box.right));
+            const nearestY = Math.max(box.top, Math.min(obstacle.y, box.bottom));
+            return Math.hypot(obstacle.x - nearestX, obstacle.y - nearestY) < obstacle.radius;
+        };
+        const intersectsRect = (box, obstacle) => box.left < obstacle.right && box.right > obstacle.left
+            && box.top < obstacle.bottom && box.bottom > obstacle.top;
+
+        let frame = 0;
+        const render = () => {
+            frame = 0;
+            const stageRect = stage.getBoundingClientRect();
+            if (!stageRect.width || !stageRect.height) return;
+            const mobile = window.matchMedia('(max-width: 800px)').matches;
+            svg.setAttribute('viewBox', `0 0 ${stageRect.width} ${stageRect.height}`);
+
+            const circleObstacles = Array.from(stage.querySelectorAll('.monitoring-hotspot-circle')).map(circle => {
+                const rect = circle.getBoundingClientRect();
+                return {
+                    x: rect.left - stageRect.left + rect.width / 2,
+                    y: rect.top - stageRect.top + rect.height / 2,
+                    radius: Math.max(rect.width, rect.height) / 2 + 8
+                };
+            });
+            const cardObstacles = Array.from(stage.querySelectorAll('.monitoring-hotspot-label'))
+                .filter(card => getComputedStyle(card).display !== 'none')
+                .map(card => {
+                    const rect = card.getBoundingClientRect();
+                    return {
+                        left: rect.left - stageRect.left - 5,
+                        top: rect.top - stageRect.top - 5,
+                        right: rect.right - stageRect.left + 5,
+                        bottom: rect.bottom - stageRect.top + 5
+                    };
+                });
+            const placedLabels = [];
+
+            courses.forEach(course => {
+                const circleRects = course.circles.map(circle => circle.getBoundingClientRect());
+                const centers = circleRects.map(rect => ({
+                    x: rect.left - stageRect.left + rect.width / 2,
+                    y: rect.top - stageRect.top + rect.height / 2,
+                    radius: Math.max(rect.width, rect.height) / 2
+                }));
+                const [first, second] = centers;
+                const dx = second.x - first.x;
+                const dy = second.y - first.y;
+                const setLine = (line, from, to) => {
+                    line.setAttribute('x1', from.x);
+                    line.setAttribute('y1', from.y);
+                    line.setAttribute('x2', to.x);
+                    line.setAttribute('y2', to.y);
+                };
+                setLine(course.glow, first, second);
+                course.glow.setAttribute('stroke-width', Math.max(first.radius, second.radius) * 2 * (mobile ? 1.3 : 1.35));
+                const style = getComputedStyle(course.label);
+                const nudgeX = percentToPixels(style.getPropertyValue('--course-nudge-x'), stageRect.width);
+                const nudgeY = percentToPixels(style.getPropertyValue('--course-nudge-y'), stageRect.height);
+                const preferred = {
+                    x: (first.x + second.x) / 2 + nudgeX,
+                    y: (first.y + second.y) / 2 + nudgeY
+                };
+                const labelRect = course.label.getBoundingClientRect();
+                const halfWidth = labelRect.width / 2;
+                const halfHeight = labelRect.height / 2;
+                const fits = point => {
+                    const box = {
+                        left: point.x - halfWidth,
+                        right: point.x + halfWidth,
+                        top: point.y - halfHeight,
+                        bottom: point.y + halfHeight
+                    };
+                    if (box.left < 5 || box.right > stageRect.width - 5 || box.top < 5 || box.bottom > stageRect.height - 5) return false;
+                    return !circleObstacles.some(obstacle => intersectsCircle(box, obstacle))
+                        && !cardObstacles.some(obstacle => intersectsRect(box, obstacle))
+                        && !placedLabels.some(obstacle => intersectsRect(box, obstacle));
+                };
+                let position = preferred;
+                if (!fits(position)) {
+                    const angleOffset = nudgeX || nudgeY ? Math.atan2(nudgeY, nudgeX) : Math.atan2(-dx, dy);
+                    search: for (let radius = 4; radius <= Math.max(stageRect.width, stageRect.height) * .4; radius += 4) {
+                        for (let index = 0; index < 24; index += 1) {
+                            const turn = index === 0 ? 0 : Math.ceil(index / 2) * (index % 2 ? 1 : -1);
+                            const angle = angleOffset + turn * Math.PI / 12;
+                            const candidate = {
+                                x: preferred.x + Math.cos(angle) * radius,
+                                y: preferred.y + Math.sin(angle) * radius
+                            };
+                            if (fits(candidate)) {
+                                position = candidate;
+                                break search;
+                            }
+                        }
+                    }
+                }
+                course.label.style.left = `${position.x / stageRect.width * 100}%`;
+                course.label.style.top = `${position.y / stageRect.height * 100}%`;
+                placedLabels.push({
+                    left: position.x - halfWidth - 4,
+                    right: position.x + halfWidth + 4,
+                    top: position.y - halfHeight - 4,
+                    bottom: position.y + halfHeight + 4
+                });
+            });
+        };
+        const scheduleRender = () => {
+            if (frame) cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(render);
+        };
+        const map = stage.querySelector('.landing-preview-map');
+        if (map && !map.complete) map.addEventListener('load', scheduleRender, { once: true });
+        if ('ResizeObserver' in window) new ResizeObserver(scheduleRender).observe(stage);
+        else window.addEventListener('resize', scheduleRender);
+        if (document.fonts && document.fonts.ready) document.fonts.ready.then(scheduleRender);
+        scheduleRender();
+    }
+
     function initializeRevealAnimations() {
         const elements = page.querySelectorAll('[data-reveal]');
         if (!elements.length || motion.matches || !('IntersectionObserver' in window)) return;
@@ -208,6 +361,7 @@
         render();
     }
 
+    initializeCourseConnectors();
     initializeRevealAnimations();
     initializeHealingSpotSelectors();
     initializePersonalChangeSelectors();
