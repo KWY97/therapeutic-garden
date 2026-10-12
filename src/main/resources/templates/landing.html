@@ -18,8 +18,8 @@
         </div>
         <h1 id="landing-hero-title"><span>THERAPEUTIC </span><span>GARDEN</span></h1>
         <div class="landing-hero-copy">
-            <p class="landing-hero-statement">공간이<br>회복의 경험이 되도록.</p>
-            <p class="landing-description">나의 상태를 이해하고,<br>공간의 변화를 살펴봅니다.</p>
+            <p class="landing-hero-statement">공간이<br>회복의 경험이 되도록</p>
+            <p class="landing-description">나의 상태를 이해하고,<br>공간의 변화를 살펴봅니다</p>
         </div>
         <a class="landing-scroll" href="#healing-effect"><span aria-hidden="true">↓</span> SCROLL TO EXPLORE</a>
     </section>
@@ -28,13 +28,12 @@
         <div class="landing-section-hero landing-effect-overview-hero">
             <div class="landing-section-hero-inner landing-effect-overview-heading" data-reveal>
                 <p class="landing-eyebrow">01 / HEALING EFFECT</p>
-                <h2 id="landing-effect-overview-title">정원의 효과와<br>개인의 변화를 한눈에.</h2>
-                <p class="landing-editorial-note">공간의 경험을, 측정된 변화로.</p>
+                <h2 id="landing-effect-overview-title">정원의 효과와<br>개인의 변화를 한눈에</h2>
             </div>
         </div>
         <div class="landing-section-content landing-effect-overview-content">
             <article class="landing-garden-effect" aria-labelledby="garden-effect-title" data-summary-type="garden-effect">
-                <header class="landing-effect-panel-heading"><h3 id="garden-effect-title">정원의 효과</h3><p>HEALING SPOT / 전체 개선율</p></header>
+                <header class="landing-effect-panel-heading"><h3 id="garden-effect-title">정원의 효과</h3></header>
                 <div class="landing-course-summary-grid">
                     <figure class="landing-course-summary" data-course-id="HC-A">
                         <div class="landing-course-summary-image">
@@ -50,18 +49,18 @@
                             <p class="landing-gallery-course"><span data-field="course-id">HC-A</span><strong data-field="course-name">회복 코스</strong></p>
                             <h4 class="landing-selected-spot" data-field="spot-name" th:text="${effectsBySpot['HS1'] != null ? 'HS1 · ' + effectsBySpot['HS1'].spotName : 'HS1 · 호스타 정원'}">HS1 · 호스타 정원</h4>
                             <dl class="landing-large-effects" aria-live="off">
-                                <div><dt>스트레스 개선율</dt><dd data-field="stress-reduction" th:text="${effectsBySpot['HS1'] != null ? (effectsBySpot['HS1'].stress.validCount > 0 ? effectsBySpot['HS1'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS1'].stress.improvementRateDisplay) : '데이터 준비 중'}">데이터 준비 중</dd></div>
-                                <div><dt>정서 안정성 개선율</dt><dd data-field="emotional-increase" th:text="${effectsBySpot['HS1'] != null ? (effectsBySpot['HS1'].emotional.validCount > 0 ? effectsBySpot['HS1'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS1'].emotional.improvementRateDisplay) : '데이터 준비 중'}">데이터 준비 중</dd></div>
+                                <div><dt>스트레스 개선율</dt><dd data-field="stress-reduction" th:text="${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].stress.improvementRateDisplay : '데이터 준비 중'}">데이터 준비 중</dd></div>
+                                <div><dt>정서 안정성 개선율</dt><dd data-field="emotional-increase" th:text="${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].emotional.improvementRateDisplay : '데이터 준비 중'}">데이터 준비 중</dd></div>
                             </dl>
                             <p class="landing-data-note">전체 유효 측정 중 개선 경험의 비율입니다.</p>
                         </figcaption>
                         <div class="landing-course-spots" role="group" aria-label="Healing Spot 선택">
-<button class="is-active" type="button" aria-pressed="true" data-code="HS1" data-name="호스타 정원" data-course="HC-A" data-course-name="회복 코스" th:attr="data-name=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].spotName : '호스타 정원'},data-stress=${effectsBySpot['HS1'] != null ? (effectsBySpot['HS1'].stress.validCount > 0 ? effectsBySpot['HS1'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS1'].stress.improvementRateDisplay) : null},data-emotional=${effectsBySpot['HS1'] != null ? (effectsBySpot['HS1'].emotional.validCount > 0 ? effectsBySpot['HS1'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS1'].emotional.improvementRateDisplay) : null}"><span>HS1</span><span th:text="${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].spotName : '호스타 정원'}">호스타 정원</span></button>
-<button type="button" aria-pressed="false" data-code="HS2" data-name="곶자왈원" data-course="HC-A" data-course-name="회복 코스" th:attr="data-name=${effectsBySpot['HS2'] != null ? effectsBySpot['HS2'].spotName : '곶자왈원'},data-stress=${effectsBySpot['HS2'] != null ? (effectsBySpot['HS2'].stress.validCount > 0 ? effectsBySpot['HS2'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS2'].stress.improvementRateDisplay) : null},data-emotional=${effectsBySpot['HS2'] != null ? (effectsBySpot['HS2'].emotional.validCount > 0 ? effectsBySpot['HS2'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS2'].emotional.improvementRateDisplay) : null}"><span>HS2</span><span th:text="${effectsBySpot['HS2'] != null ? effectsBySpot['HS2'].spotName : '곶자왈원'}">곶자왈원</span></button>
-<button type="button" aria-pressed="false" data-code="HS3" data-name="가든 위스퍼스" data-course="HC-B" data-course-name="감각 코스" th:attr="data-name=${effectsBySpot['HS3'] != null ? effectsBySpot['HS3'].spotName : '가든 위스퍼스'},data-stress=${effectsBySpot['HS3'] != null ? (effectsBySpot['HS3'].stress.validCount > 0 ? effectsBySpot['HS3'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS3'].stress.improvementRateDisplay) : null},data-emotional=${effectsBySpot['HS3'] != null ? (effectsBySpot['HS3'].emotional.validCount > 0 ? effectsBySpot['HS3'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS3'].emotional.improvementRateDisplay) : null}"><span>HS3</span><span th:text="${effectsBySpot['HS3'] != null ? effectsBySpot['HS3'].spotName : '가든 위스퍼스'}">가든 위스퍼스</span></button>
-<button type="button" aria-pressed="false" data-code="HS4" data-name="콜로네이드 가든" data-course="HC-B" data-course-name="감각 코스" th:attr="data-name=${effectsBySpot['HS4'] != null ? effectsBySpot['HS4'].spotName : '콜로네이드 가든'},data-stress=${effectsBySpot['HS4'] != null ? (effectsBySpot['HS4'].stress.validCount > 0 ? effectsBySpot['HS4'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS4'].stress.improvementRateDisplay) : null},data-emotional=${effectsBySpot['HS4'] != null ? (effectsBySpot['HS4'].emotional.validCount > 0 ? effectsBySpot['HS4'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS4'].emotional.improvementRateDisplay) : null}"><span>HS4</span><span th:text="${effectsBySpot['HS4'] != null ? effectsBySpot['HS4'].spotName : '콜로네이드 가든'}">콜로네이드 가든</span></button>
-<button type="button" aria-pressed="false" data-code="HS5" data-name="블로썸 가든" data-course="HC-C" data-course-name="힐링 코스" th:attr="data-name=${effectsBySpot['HS5'] != null ? effectsBySpot['HS5'].spotName : '블로썸 가든'},data-stress=${effectsBySpot['HS5'] != null ? (effectsBySpot['HS5'].stress.validCount > 0 ? effectsBySpot['HS5'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS5'].stress.improvementRateDisplay) : null},data-emotional=${effectsBySpot['HS5'] != null ? (effectsBySpot['HS5'].emotional.validCount > 0 ? effectsBySpot['HS5'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS5'].emotional.improvementRateDisplay) : null}"><span>HS5</span><span th:text="${effectsBySpot['HS5'] != null ? effectsBySpot['HS5'].spotName : '블로썸 가든'}">블로썸 가든</span></button>
-<button type="button" aria-pressed="false" data-code="HS6" data-name="극림원" data-course="HC-C" data-course-name="힐링 코스" th:attr="data-name=${effectsBySpot['HS6'] != null ? effectsBySpot['HS6'].spotName : '극림원'},data-stress=${effectsBySpot['HS6'] != null ? (effectsBySpot['HS6'].stress.validCount > 0 ? effectsBySpot['HS6'].stress.improvementRateDisplay + ' 개선' : effectsBySpot['HS6'].stress.improvementRateDisplay) : null},data-emotional=${effectsBySpot['HS6'] != null ? (effectsBySpot['HS6'].emotional.validCount > 0 ? effectsBySpot['HS6'].emotional.improvementRateDisplay + ' 개선' : effectsBySpot['HS6'].emotional.improvementRateDisplay) : null}"><span>HS6</span><span th:text="${effectsBySpot['HS6'] != null ? effectsBySpot['HS6'].spotName : '극림원'}">극림원</span></button>
+<button class="is-active" type="button" aria-pressed="true" data-code="HS1" data-name="호스타 정원" data-course="HC-A" data-course-name="회복 코스" th:attr="data-name=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].spotName : '호스타 정원'},data-stress=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].stress.improvementRateDisplay : null},data-emotional=${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].emotional.improvementRateDisplay : null}"><span>HS1</span><span th:text="${effectsBySpot['HS1'] != null ? effectsBySpot['HS1'].spotName : '호스타 정원'}">호스타 정원</span></button>
+<button type="button" aria-pressed="false" data-code="HS2" data-name="곶자왈원" data-course="HC-A" data-course-name="회복 코스" th:attr="data-name=${effectsBySpot['HS2'] != null ? effectsBySpot['HS2'].spotName : '곶자왈원'},data-stress=${effectsBySpot['HS2'] != null ? effectsBySpot['HS2'].stress.improvementRateDisplay : null},data-emotional=${effectsBySpot['HS2'] != null ? effectsBySpot['HS2'].emotional.improvementRateDisplay : null}"><span>HS2</span><span th:text="${effectsBySpot['HS2'] != null ? effectsBySpot['HS2'].spotName : '곶자왈원'}">곶자왈원</span></button>
+<button type="button" aria-pressed="false" data-code="HS3" data-name="가든 위스퍼스" data-course="HC-B" data-course-name="감각 코스" th:attr="data-name=${effectsBySpot['HS3'] != null ? effectsBySpot['HS3'].spotName : '가든 위스퍼스'},data-stress=${effectsBySpot['HS3'] != null ? effectsBySpot['HS3'].stress.improvementRateDisplay : null},data-emotional=${effectsBySpot['HS3'] != null ? effectsBySpot['HS3'].emotional.improvementRateDisplay : null}"><span>HS3</span><span th:text="${effectsBySpot['HS3'] != null ? effectsBySpot['HS3'].spotName : '가든 위스퍼스'}">가든 위스퍼스</span></button>
+<button type="button" aria-pressed="false" data-code="HS4" data-name="콜로네이드 가든" data-course="HC-B" data-course-name="감각 코스" th:attr="data-name=${effectsBySpot['HS4'] != null ? effectsBySpot['HS4'].spotName : '콜로네이드 가든'},data-stress=${effectsBySpot['HS4'] != null ? effectsBySpot['HS4'].stress.improvementRateDisplay : null},data-emotional=${effectsBySpot['HS4'] != null ? effectsBySpot['HS4'].emotional.improvementRateDisplay : null}"><span>HS4</span><span th:text="${effectsBySpot['HS4'] != null ? effectsBySpot['HS4'].spotName : '콜로네이드 가든'}">콜로네이드 가든</span></button>
+<button type="button" aria-pressed="false" data-code="HS5" data-name="블로썸 가든" data-course="HC-C" data-course-name="힐링 코스" th:attr="data-name=${effectsBySpot['HS5'] != null ? effectsBySpot['HS5'].spotName : '블로썸 가든'},data-stress=${effectsBySpot['HS5'] != null ? effectsBySpot['HS5'].stress.improvementRateDisplay : null},data-emotional=${effectsBySpot['HS5'] != null ? effectsBySpot['HS5'].emotional.improvementRateDisplay : null}"><span>HS5</span><span th:text="${effectsBySpot['HS5'] != null ? effectsBySpot['HS5'].spotName : '블로썸 가든'}">블로썸 가든</span></button>
+<button type="button" aria-pressed="false" data-code="HS6" data-name="극림원" data-course="HC-C" data-course-name="힐링 코스" th:attr="data-name=${effectsBySpot['HS6'] != null ? effectsBySpot['HS6'].spotName : '극림원'},data-stress=${effectsBySpot['HS6'] != null ? effectsBySpot['HS6'].stress.improvementRateDisplay : null},data-emotional=${effectsBySpot['HS6'] != null ? effectsBySpot['HS6'].emotional.improvementRateDisplay : null}"><span>HS6</span><span th:text="${effectsBySpot['HS6'] != null ? effectsBySpot['HS6'].spotName : '극림원'}">극림원</span></button>
                         </div>
                         <p class="landing-selection-status" data-selection-status role="status"></p>
                     </figure>
@@ -72,15 +71,14 @@
 
     <section class="landing-image-scene" aria-labelledby="landing-image-title">
         <img th:src="@{/images/landing/optimized/monitoring-background.webp}" width="1920" height="1280" loading="lazy" decoding="async" alt="주거 건축 사이로 정원과 산책 동선이 이어지는 디에이치 방배의 전경">
-        <div data-reveal><p class="landing-eyebrow">A DIFFERENT VIEW OF SPACE</p><h2 id="landing-image-title">공간을 보고,<br>변화를 읽습니다.</h2></div>
+        <div data-reveal><p class="landing-eyebrow">A DIFFERENT VIEW OF SPACE</p><h2 id="landing-image-title">공간을 보고,<br>변화를 읽습니다</h2></div>
     </section>
 
     <section class="landing-section landing-monitoring" aria-labelledby="landing-monitoring-title">
         <div class="landing-section-hero landing-monitoring-hero">
             <div class="landing-section-hero-inner" data-reveal>
                 <p class="landing-eyebrow">02 / MONITORING</p>
-                <h2 id="landing-monitoring-title">몸이 보내는 신호,<br>공간이 만드는 변화</h2>
-                <p class="landing-editorial-note">생체신호에서 공간별 치유효과까지.</p>
+                <h2 id="landing-monitoring-title">몸이 보내는 신호<br>공간이 만드는 변화</h2>
             </div>
         </div>
         <div class="landing-section-content landing-monitoring-content">
@@ -113,7 +111,7 @@
                         <span class="monitoring-hotspot-circle"><img th:src="@{/images/landing/optimized/effect-hs6.webp}" alt=""></span><span class="monitoring-hotspot-label" th:classappend="${overallMaximums.stressSpotCodes.contains('HS6') || overallMaximums.emotionalSpotCodes.contains('HS6') ? 'is-maximum' : ''}"><span class="monitoring-hotspot-metric">정서 안정성</span><span class="monitoring-hotspot-value" th:classappend="${metric != null && metric.validCount > 0 ? 'effect-good' : 'effect-neutral'}"><strong th:text="${metric != null ? metric.improvementRateDisplay : '데이터 준비 중'}">데이터 준비 중</strong><span th:text="${metric != null && metric.validCount > 0 ? '개선' : ''}"></span></span><span class="monitoring-hotspot-count" th:if="${metric != null && metric.validCount > 0}" th:text="${metric.improvementCountDisplay}"></span><strong class="monitoring-hotspot-name"><b>HS6</b><span th:text="${effect != null ? effect.spotName : '극림원'}">극림원</span></strong></span>
                     </span>
                 </figure>
-                <div class="landing-preview-meta"><p id="landing-spatial-caption">실제 공간 모니터링의 배치도, 저장된 HS 위치와 전체 개선율을 사용한 읽기 전용 미리보기입니다.</p><span class="landing-preview-legend"><i aria-hidden="true"></i>최대 개선 스팟</span></div>
+                <div class="landing-preview-meta"><p id="landing-spatial-caption" class="landing-data-note">전체 유효 측정 중 개선 경험의 비율입니다.</p><span class="landing-preview-legend"><i aria-hidden="true"></i>최대 개선 스팟</span></div>
             </div>
             <div class="landing-capabilities" aria-label="모니터링 핵심 기능" data-reveal>
                 <ol class="landing-capability-list">
@@ -130,11 +128,9 @@
         <article class="landing-person-effect" data-summary-type="participant-change">
             <div class="landing-person-heading" data-reveal>
                 <p class="landing-effect-kicker">PERSON / HEALING SPOT</p><h2 id="person-effect-title">개인의 변화</h2>
-                <p class="landing-editorial-note">나의 상태를 이해하는 시간.</p>
             </div>
             <figure class="landing-person-effect-photo" data-reveal>
                 <img th:src="@{/images/landing/optimized/personal-change.webp}" width="1200" height="768" loading="lazy" decoding="async" alt="치유 정원에서 머리와 이마 부위 측정 장비를 착용하고 앉아 있는 참가자">
-                <figcaption>치유 정원에서의 측정 경험</figcaption>
             </figure>
             <div class="landing-person-data" data-reveal>
                 <div class="landing-person-identity"><strong>데이터 변화</strong></div>
@@ -159,6 +155,7 @@
                             <span class="landing-maximum-badge landing-maximum-badge-emotional" th:if="${personalMaximums.emotionalSpotCodes.contains(effect.spotCode)}">최대 개선</span>
                         </button>
                     </div>
+                    <p class="landing-data-note landing-chart-note">실참여자 데이터 샘플입니다.</p>
                     <p class="landing-selection-status" data-selection-status role="status"></p>
                 </div>
             </div>
@@ -169,7 +166,7 @@
         <div class="landing-section-hero landing-connection-hero">
             <div class="landing-section-hero-inner" data-reveal>
                 <p class="landing-eyebrow">03 / PERSONAL HEALING COURSE</p>
-                <h2 id="landing-connection-title">나의 상태에 맞춰,<br>치유의 길을 구성합니다.</h2>
+                <h2 id="landing-connection-title">나의 상태에 맞춰<br>치유의 길을 구성합니다</h2>
             </div>
             <div class="landing-course-landscape"><img th:src="@{/images/landing/optimized/personal-course-background.webp}" width="1920" height="1280" loading="lazy" decoding="async" alt="밤의 정원과 조명이 이어지는 디에이치 방배 산책 동선"></div>
         </div>
@@ -199,8 +196,8 @@
     <section class="landing-section landing-final-cta" aria-labelledby="landing-cta-title">
         <div class="landing-final-image"><img th:src="@{/images/landing/optimized/effect-hs3-cta.webp}" width="1164" height="792" loading="lazy" decoding="async" alt="빛과 나무가 어우러진 가든 위스퍼스의 정원 길"></div>
         <div class="landing-final-copy" data-reveal>
-            <p class="landing-eyebrow">THERAPEUTIC GARDEN MONITORING</p>
-            <h2 id="landing-cta-title">치유 공간의<br>경험을 확인하세요.</h2>
+            <p class="landing-eyebrow">THERAPEUTIC GARDEN</p>
+            <h2 id="landing-cta-title">치유 공간의<br>경험을 확인하세요</h2>
             <a class="landing-cta-link" th:href="@{/admin/monitoring}">공간 모니터링 보기 <span aria-hidden="true">↗</span></a>
         </div>
     </section>

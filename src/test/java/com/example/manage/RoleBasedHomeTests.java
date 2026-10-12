@@ -165,21 +165,21 @@ class RoleBasedHomeTests {
         assertThat(header).contains("href=\"/admin/login\"", "href=\"/member/login\"", "href=\"/\"");
         assertThat(hero).contains("THERAPEUTIC ", "GARDEN", "공간이", "SCROLL TO EXPLORE")
                 .doesNotContain("/admin/login", "/member/login");
-        assertThat(cta).contains("/images/landing/optimized/effect-hs3-cta.webp", "치유 공간의", "경험을 확인하세요.")
+        assertThat(cta).contains("/images/landing/optimized/effect-hs3-cta.webp", "치유 공간의", "경험을 확인하세요")
                 .contains("href=\"/admin/monitoring\"", "공간 모니터링 보기")
                 .doesNotContain("<button", "<nav", "/admin/login", "/member/login");
         assertThat(monitoring).contains("<div class=\"landing-monitoring-preview\"", "landing-preview-stage",
-                        "실제 공간 모니터링의 배치도")
+                        "전체 유효 측정 중 개선 경험의 비율입니다.")
                 .doesNotContain("<a class=\"landing-monitoring-preview\"", "href=\"/admin/monitoring\"",
                         "landing-preview-affordance", "공간 모니터링 보기");
         String experience = html.substring(html.indexOf("<section class=\"landing-section landing-connection"),
                 html.indexOf("<section class=\"landing-section landing-final-cta"));
         assertThat(experience).contains("/images/landing/optimized/personal-hs4.webp",
                 "/images/landing/optimized/effect-hs2.webp", "/images/landing/optimized/personal-hs6.webp",
-                "회복 코스", "감각 코스", "힐링 코스", "나의 상태에 맞춰,", "치유의 길을 구성합니다.")
+                "회복 코스", "감각 코스", "힐링 코스", "나의 상태에 맞춰", "치유의 길을 구성합니다")
                 .doesNotContain("/images/landing/HS2_4.png", "/images/landing/HS4_3.jpg", "/images/landing/HS4_4.png");
         assertThat(html).contains("01 / HEALING EFFECT", "02 / MONITORING", "03 / PERSONAL HEALING COURSE",
-                "PERSONAL HEALING COURSE", "THERAPEUTIC GARDEN MONITORING", "src=\"/js/landing.js\"")
+                "PERSONAL HEALING COURSE", "THERAPEUTIC GARDEN", "src=\"/js/landing.js\"")
                 .doesNotContain("THERAPEUTIC SPACE", "01 / HEALING CHANGE", "04 / PERSONAL HEALING COURSE",
                         "<video", "<iframe", "<footer", "SIGBRAIN");
         assertThat(html.indexOf("landing-hero"))
@@ -222,10 +222,10 @@ class RoleBasedHomeTests {
                 "href=\"/css/landing.css\"")
                 .doesNotContain(".codex-reference", "home-course-overlay.js", "id=\"siteSelect\"", "<canvas", "<iframe",
                         "landing-capability-track", "landing-keywords");
-        assertThat(html).contains("몸이 보내는 신호,", "공간이 만드는 변화", "곶자왈원", "콜로네이드 가든",
+        assertThat(html).contains("몸이 보내는 신호", "공간이 만드는 변화", "곶자왈원", "콜로네이드 가든",
                 "블로썸 가든", "극림원", "데이터 준비 중")
                 .doesNotContain("HRV", "Sample Data", "아래 수치는 설명을 위한 예시 데이터입니다.",
-                        "머리에 착용하는 생체신호 측정 장비");
+                        "머리에 착용하는 생체신호 측정 장비", "몸이 보내는 신호,");
         assertThat(experience).contains("HS1", "호스타 정원", "HS2", "곶자왈원", "HS3", "가든 위스퍼스",
                         "HS4", "콜로네이드 가든", "HS5", "블로썸 가든", "HS6", "극림원")
                 .doesNotContain("긴장 완화", "감각 환기", "정서 안정", "Sample Personal Healing Course", "오늘의 상태 · 예시");
