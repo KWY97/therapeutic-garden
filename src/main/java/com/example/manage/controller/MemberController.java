@@ -3,6 +3,7 @@ package com.example.manage.controller;
 import com.example.manage.domain.Member;
 import com.example.manage.dto.ScheduleResponse;
 import com.example.manage.dto.MemberScheduleDetailResponse;
+import com.example.manage.dto.MemberProfileView;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
 import jakarta.servlet.http.HttpSession;
@@ -74,6 +75,19 @@ public class MemberController {
         session.invalidate();
 
         return "redirect:/";
+    }
+
+    @GetMapping("/mypage")
+    public String myPage(HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        MemberProfileView profile = memberService.findProfile(memberId);
+        if (profile == null) {
+            session.invalidate();
+            return "redirect:/member/login";
+        }
+        model.addAttribute("member", profile);
+        model.addAttribute("formattedPhone", profile.getFormattedPhone());
+        return "member/mypage";
     }
 
     @GetMapping("/api/schedules/{scheduleId}")

@@ -2,6 +2,7 @@ package com.example.manage.service;
 
 import com.example.manage.domain.Member;
 import com.example.manage.dto.MemberCreateForm;
+import com.example.manage.dto.MemberProfileView;
 import com.example.manage.domain.Schedule;
 import com.example.manage.repository.MemberRepository;
 import com.example.manage.repository.ScheduleRepository;
@@ -93,6 +94,11 @@ public class MemberService {
     @Transactional(readOnly = true)
     public Member findMember(Long memberId) {
         return memberRepository.findById(memberId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
+    public MemberProfileView findProfile(Long memberId) {
+        return memberRepository.findById(memberId).map(MemberProfileView::new).orElse(null);
     }
 
     public String updateMember(

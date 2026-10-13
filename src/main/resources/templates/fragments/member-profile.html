@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<dl class="member-detail-list" th:fragment="details(member, formattedPhone)">
+    <div class="member-detail-item">
+        <dt>참가자 번호</dt>
+        <dd th:text="${'P' + #numbers.formatInteger(member.participantNo, 3)}"></dd>
+    </div>
+    <div class="member-detail-item">
+        <dt>그룹</dt>
+        <dd th:text="${member.groupNo}"></dd>
+    </div>
+    <div class="member-detail-item">
+        <dt>로그인 아이디</dt>
+        <dd th:text="${member.loginId}"></dd>
+    </div>
+    <div class="member-detail-item">
+        <dt>이름</dt>
+        <dd th:text="${member.name != null ? member.name : '-'}"></dd>
+    </div>
+    <div class="member-detail-item">
+        <dt>전화번호</dt>
+        <dd th:text="${formattedPhone != null ? formattedPhone : '-'}"></dd>
+    </div>
+</dl>
+</body>
+</html>

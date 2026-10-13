@@ -54,4 +54,8 @@ public class Member {
         this.name = name;
         this.phone = phone;
     }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }

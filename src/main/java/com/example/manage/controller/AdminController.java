@@ -23,6 +23,7 @@ import com.example.manage.domain.Admin;
 import com.example.manage.domain.Member;
 import com.example.manage.domain.Schedule;
 import com.example.manage.dto.MemberEditForm;
+import com.example.manage.dto.MemberProfileView;
 import com.example.manage.dto.MemberCreateForm;
 import com.example.manage.dto.ScheduleForm;
 import com.example.manage.dto.ScheduleResponse;
@@ -562,36 +563,10 @@ public class AdminController {
             Model model
     ) {
 
-        Member member =
-                memberService.findMember(memberId);
+        MemberProfileView member = memberService.findProfile(memberId);
 
         if (member == null) {
             return "redirect:/admin/members";
-        }
-
-
-        /*
-         * DB에는
-         * 01012345678
-         *
-         * 형태로 저장되어 있는 전화번호를
-         * 화면에서는
-         * 010-1234-5678
-         *
-         * 형태로 보여준다.
-         */
-        String formattedPhone =
-                member.getPhone();
-
-        if (formattedPhone != null
-                && formattedPhone.length() == 11) {
-
-            formattedPhone =
-                    formattedPhone.substring(0, 3)
-                            + "-"
-                            + formattedPhone.substring(3, 7)
-                            + "-"
-                            + formattedPhone.substring(7);
         }
 
 
@@ -602,7 +577,7 @@ public class AdminController {
 
         model.addAttribute(
                 "formattedPhone",
-                formattedPhone
+                member.getFormattedPhone()
         );
 
         return "admin/member-detail";

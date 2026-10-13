@@ -8097,3 +8097,27 @@ input[type="time"].form-input {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+.member-my-page .detail-action-list {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.account-form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.account-form-actions > * {
+    flex: 1;
+}
+
+.password-success-message {
+    margin: 0 0 20px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: #ecfdf5;
+    color: #065f46;
+    font-size: 14px;
+    line-height: 1.5;
+}

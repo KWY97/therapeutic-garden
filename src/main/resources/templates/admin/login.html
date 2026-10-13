@@ -23,6 +23,7 @@
            th:if="${errorMessage}"
            th:text="${errorMessage}">
         </p>
+        <p class="password-success-message" role="status" th:if="${param.passwordChanged != null}">비밀번호가 변경되었습니다. 새 비밀번호로 다시 로그인해 주세요.</p>
 
         <!-- 실제 로그인 처리는 다음 단계에서 연결 -->
         <form class="login-form"
