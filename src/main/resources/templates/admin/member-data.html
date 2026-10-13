@@ -6,50 +6,28 @@
     <title>참가자 데이터</title>
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <link rel="stylesheet" th:href="@{/css/measurement-history.css}">
+    <link rel="stylesheet" th:href="@{/css/home-spatial.css(v='count-improvement')}">
 </head>
-<body class="page-body service-page member-data-page">
+<body class="dashboard-body service-page participant-analysis-page member-data-page">
 <header th:replace="~{fragments/header :: header}"></header>
 
 <main class="member-data-container">
-    <nav class="member-data-navigation" aria-label="참가자 화면 이동">
-        <a class="back-link"
-           th:href="@{/admin/members/{memberId}(memberId=${member.memberId})}">← 참가자 상세로</a>
-    </nav>
-
     <header class="member-data-header">
         <p class="card-eyebrow">Administrator</p>
         <h1 class="card-title">참가자 데이터</h1>
-        <p class="member-data-identity"
-           th:text="|P${#numbers.formatInteger(member.participantNo, 3)} · ${member.name != null ? member.name : '-'}|"></p>
+        <div class="member-data-identity-row">
+            <p class="member-data-identity"
+               th:text="|P${#numbers.formatInteger(member.participantNo, 3)} · ${member.name != null ? member.name : '-'}|"></p>
+            <a class="member-data-back-link"
+               th:href="@{/admin/members/{memberId}(memberId=${member.memberId})}">← 참가자 상세로</a>
+        </div>
         <p class="card-description">참가자의 측정 및 분석 데이터를 확인합니다.</p>
     </header>
 
-    <div class="member-data-sections">
-        <section class="card member-data-section healing-effect-section" aria-labelledby="member-effects-title">
-            <header class="member-data-section-header">
-                <div>
-                    <p class="card-eyebrow">Healing Spot</p>
-                    <h2 id="member-effects-title">스팟별 치유 효과</h2>
-                    <p>참가자의 각 힐링스팟 평균 변화를 확인합니다.</p>
-                </div>
-            </header>
-
-            <p class="empty-message" th:if="${#lists.isEmpty(spotEffects)}">데이터 준비 중</p>
-            <div class="member-effects-grid" th:unless="${#lists.isEmpty(spotEffects)}">
-                <article class="member-effect-spot" th:each="effect : ${spotEffects}">
-                    <h3 th:text="${effect.spotCode + ' · ' + effect.spotName}"></h3>
-                    <dl>
-                        <div><dt>평균 스트레스 증감률</dt><dd th:text="${effect.stressChangeDisplay}"></dd></div>
-                        <div><dt>평균 정서 안정성 증감률</dt><dd th:text="${effect.emotionalChangeDisplay}"></dd></div>
-                    </dl>
-                </article>
-            </div>
-        </section>
-        <section id="memberMeasurementHistory" class="card measurement-history" aria-label="측정 기록"></section>
-    </div>
+    <div th:replace="~{fragments/member-healing-analysis :: analysis(false)}"></div>
 </main>
 
-<script th:inline="javascript">window.memberMeasurementHistory = /*[[${measurementHistory}]]*/ [];</script>
-<script th:src="@{/js/measurement-history.js?v=analysis-ux}"></script>
+<div th:replace="~{fragments/spot-detail-modal :: modal}"></div>
+<th:block th:replace="~{fragments/member-healing-analysis :: scripts}"></th:block>
 </body>
 </html>

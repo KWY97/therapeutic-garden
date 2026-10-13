@@ -23,21 +23,21 @@ public class MemberSpatialLayoutController {
                 .map(batch -> batch.getTargetSiteId()).orElse(null);
         if (siteId == null) return ResponseEntity.notFound().build();
         try {
-            return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(memberLayout(layouts.load(siteId)));
+            return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(memberLayout(layouts.load(siteId), "/member/api"));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.notFound().build();
         }
     }
 
-    private SpatialLayoutService.Layout memberLayout(SpatialLayoutService.Layout layout) {
+    public static SpatialLayoutService.Layout memberLayout(SpatialLayoutService.Layout layout, String apiBase) {
         ImageResponse image = layout.image();
-        if (image != null && isAdminPath(image.readUrl())) {
+        if (image != null && (apiBase.startsWith("/admin/") || isAdminPath(image.readUrl()))) {
             image = new ImageResponse(image.imageId(), image.originalFileName(), image.contentType(),
-                    image.displayOrder(), image.representative(), "/member/api/monitoring/site-image", image.spatial());
+                    image.displayOrder(), image.representative(), apiBase + "/monitoring/site-image", image.spatial());
         }
         var spots = layout.spots().stream().map(spot -> {
-            String readUrl = isAdminPath(spot.readUrl())
-                    ? "/member/api/monitoring/spots/" + spot.spotId() + "/thumbnail"
+            String readUrl = apiBase.startsWith("/admin/") || isAdminPath(spot.readUrl())
+                    ? apiBase + "/monitoring/spots/" + spot.spotId() + "/thumbnail"
                     : spot.readUrl();
             return new SpatialLayoutService.Spot(spot.spotId(), spot.course(), spot.courseId(), spot.courseCode(),
                     spot.courseName(), spot.code(), spot.name(), readUrl, spot.xPercent(), spot.yPercent());
@@ -45,7 +45,7 @@ public class MemberSpatialLayoutController {
         return new SpatialLayoutService.Layout(layout.siteId(), layout.name(), layout.revision(), image, spots);
     }
 
-    private boolean isAdminPath(String readUrl) {
+    private static boolean isAdminPath(String readUrl) {
         return readUrl != null && readUrl.startsWith("/admin/");
     }
 }

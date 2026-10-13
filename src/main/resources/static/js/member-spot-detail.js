@@ -131,7 +131,8 @@
         var status = document.getElementById('spotGalleryStatus');
         status.textContent = '이미지를 불러오는 중입니다.';
         try {
-            var response = await fetch('/member/api/monitoring/spots/' + encodeURIComponent(spot.spotId), {cache: 'no-store'});
+            var response = await fetch((window.memberAnalysisApiBase || '/member/api')
+                + '/monitoring/spots/' + encodeURIComponent(spot.spotId), {cache: 'no-store'});
             if (!response.ok) throw new Error('HS 조회 실패');
             var fresh = await response.json();
             if (version !== requestVersion || modal.hidden) return;

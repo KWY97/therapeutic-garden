@@ -416,26 +416,38 @@ class HealingEffectUiTests {
                 .doesNotContain("스팟별 치유 효과", "member-effect-spot", "HS1 ·");
     }
 
-    @Test void adminMemberDataShowsActualMemberAndSixSpotsIncludingMissingAndZero() throws Exception {
+    @Test void adminMemberDataUsesSameAnalysisAsSelectedParticipantWithoutCalendar() throws Exception {
         fixture();
         var result = mvc.perform(get("/admin/members/" + partial.getMemberId() + "/data")
                         .sessionAttr("loginAdminId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/member-data"))
-                .andExpect(model().attributeExists("member", "spotEffects", "measurementHistory"))
+                .andExpect(model().attributeExists("member", "spotEffects", "measurementHistory",
+                        "overallImprovement", "maximumImprovements", "memberMonitoringEffects"))
                 .andReturn();
-        @SuppressWarnings("unchecked") var views=(List<HealingEffectView>)result.getModelAndView().getModel().get("spotEffects");
-        assertThat(views).extracting(HealingEffectView::spotCode).containsExactly("HS1","HS2","HS3","HS4","HS5","HS6");
-        assertThat(views.getFirst().stressReductionDisplay()).isEqualTo("0.0%");
-        assertThat(views.get(4).hasMeasurement()).isFalse();
-        assertThat(views.get(5).stressReductionDisplay()).isEqualTo("측정 없음");
+        var own = mvc.perform(get("/member").sessionAttr("loginMemberId", partial.getMemberId()))
+                .andExpect(status().isOk()).andReturn().getModelAndView().getModel();
+        var admin = result.getModelAndView().getModel();
+        for (String key : List.of("spotEffects", "overallImprovement", "maximumImprovements",
+                "memberMonitoringEffects", "measurementHistory", "memberMonitoringSiteId"))
+            assertThat(admin.get(key)).as(key).isEqualTo(own.get(key));
         String html=result.getResponse().getContentAsString();
-        assertThat(html).contains("P001", "비공개이름하나", "참가자 데이터", "스팟별 치유 효과",
-                        "평균 스트레스 증감률", "평균 정서 안정성 증감률",
-                        "0.0% 변화 없음", "측정 없음", "4.3% 감소", "memberMeasurementHistory", "measurement-history.js",
+        assertThat(html).contains("P001", "비공개이름하나", "참가자 데이터",
+                        "공간 모니터링", "memberAnalysisSummary", "spotMeasurementHistory", "measurement-history.js",
+                        "member-spatial.js", "member-spot-detail.js",
+                        "member-data-identity-row", "member-data-back-link",
+                        "window.memberAnalysisApiBase = \"\\/admin\\/members\\/" + partial.getMemberId() + "\\/data\\/api\"",
                         "href=\"/admin/members/" + partial.getMemberId() + "\"", "← 참가자 상세로")
-                .doesNotContain("secret-login-one", "010-1234-5678", "-4.3% 증가");
-        assertThat(html.indexOf("HS1 ·")).isLessThan(html.indexOf("HS6 ·"));
+                .doesNotContain("MY HEALING ANALYSIS", "나의 치유 분석",
+                        "나의 공간별 치유 효과와 측정 변화를 확인합니다.",
+                        "member-data-navigation", "나의 달력", "calendar-section", "schedule-data", "fullcalendar", "/member/api",
+                        "secret-login-one", "010-1234-5678");
+        var p004 = mvc.perform(get("/admin/members/" + laterComplete.getMemberId() + "/data")
+                .sessionAttr("loginAdminId", 1L)).andExpect(status().isOk()).andReturn().getModelAndView().getModel();
+        var p004Own = mvc.perform(get("/member").sessionAttr("loginMemberId", laterComplete.getMemberId()))
+                .andExpect(status().isOk()).andReturn().getModelAndView().getModel();
+        assertThat(p004.get("spotEffects")).isEqualTo(p004Own.get("spotEffects"));
+        assertThat(p004.get("spotEffects")).isNotEqualTo(admin.get("spotEffects"));
     }
 
     @Test void adminEffectDetailRemainsProtected() throws Exception {

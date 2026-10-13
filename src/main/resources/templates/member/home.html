@@ -38,32 +38,7 @@
 
 
 <main class="dashboard-container">
-    <section class="my-healing-section" aria-labelledby="myHealingTitle">
-        <div class="section-heading my-healing-heading">
-            <div>
-                <p class="section-label">MY HEALING ANALYSIS</p>
-                <h2 id="myHealingTitle" class="section-title">나의 치유 분석</h2>
-                <p class="my-healing-description">나의 공간별 치유 효과와 측정 변화를 확인합니다.</p>
-            </div>
-        </div>
-        <div class="calendar-card my-healing-card">
-            <section class="monitoring-space member-monitoring-space" data-loading="true" aria-labelledby="spatialTitle">
-                <div class="monitoring-heading">
-                    <h1 th:replace="~{fragments/spatial-monitoring :: title}">공간 모니터링</h1>
-                </div>
-                <div th:replace="~{fragments/spatial-monitoring :: legend}"></div>
-                <div class="monitoring-content">
-                    <p th:replace="~{fragments/spatial-monitoring :: status}"></p>
-                    <div th:replace="~{fragments/spatial-monitoring :: canvas}"></div>
-                </div>
-            </section>
-            <div id="memberAnalysisHighlights" aria-live="polite"></div>
-            <section class="member-analysis-detail" aria-labelledby="memberAnalysisDetailTitle">
-                <h3 id="memberAnalysisDetailTitle">Spot별 변화 / 상세 분석</h3>
-                <div id="memberAnalysisSummary"></div>
-            </section>
-        </div>
-    </section>
+    <div th:replace="~{fragments/member-healing-analysis :: analysis(true)}"></div>
 
     <!-- ================================
          FullCalendar
@@ -122,23 +97,7 @@
 
 <div th:replace="~{fragments/spot-detail-modal :: modal}"></div>
 
-<script th:inline="javascript">
-    window.memberHealingEffects = /*[[${spotEffects}]]*/ [];
-    window.memberOverallImprovement = /*[[${overallImprovement}]]*/ null;
-    window.memberMaximumImprovements = /*[[${maximumImprovements}]]*/ {stressSpotCodes: [], emotionalSpotCodes: []};
-    window.memberMonitoringSiteId = /*[[${memberMonitoringSiteId}]]*/ null;
-    window.memberMonitoringEffects = /*[[${memberMonitoringEffects}]]*/ [];
-    window.memberDisplayName = /*[[${memberDisplayName}]]*/ '참가자';
-    window.memberMeasurementHistory = /*[[${measurementHistory}]]*/ [];
-</script>
-<script th:src="@{/js/home-survey-analysis.js?v=count-improvement}"></script>
-<script th:src="@{/js/home-course-overlay.js?v=analysis-ux}"></script>
-<script th:src="@{/js/home-spatial.js?v=count-improvement}"></script>
-<script th:src="@{/js/member-spot-detail.js?v=participant-detail}"></script>
-<script th:src="@{/js/member-spatial.js?v=participant-detail}"></script>
-<script th:src="@{/js/measurement-history.js?v=participant-analysis}"></script>
-<script th:src="@{/js/member-healing-analysis.js?v=participant-analysis}"></script>
-
+<th:block th:replace="~{fragments/member-healing-analysis :: scripts}"></th:block>
 
 <!-- ================================
      FullCalendar 실행

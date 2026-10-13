@@ -47,6 +47,11 @@ public class HealingSpotImageService {
     @Transactional(readOnly = true)
     public ImageContent localThumbnail(Long parentId, Long imageId) {
         if (!(storage instanceof LocalImageStorage)) throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
+        return authenticatedThumbnail(parentId, imageId);
+    }
+
+    @Transactional(readOnly = true)
+    public ImageContent authenticatedThumbnail(Long parentId, Long imageId) {
         requireParent(parentId);
         HealingSpotImage image = owned(ordered(parentId), imageId);
         return thumbnails.content(image.getObjectKey(), image.getContentType());
@@ -156,6 +161,11 @@ public class HealingSpotImageService {
     @Transactional(readOnly = true)
     public ImageContent localContent(Long parentId, Long imageId) {
         if (!(storage instanceof LocalImageStorage)) throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
+        return authenticatedContent(parentId, imageId);
+    }
+
+    @Transactional(readOnly = true)
+    public ImageContent authenticatedContent(Long parentId, Long imageId) {
         requireParent(parentId);
         HealingSpotImage image = owned(ordered(parentId), imageId);
         return new ImageContent(storage.read(image.getObjectKey()), image.getContentType());
