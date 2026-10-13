@@ -16,6 +16,7 @@ import java.util.List;
 public class AdminImageController {
     private final SiteImageService siteImages;
     private final HealingSpotImageService spotImages;
+    private final ImageHttpResponseService imageResponses;
 
     @GetMapping("/sites/{parentId}/images")
     public String siteImages(@PathVariable Long parentId) {
@@ -48,9 +49,7 @@ public class AdminImageController {
     public ResponseEntity<byte[]> contentSite(@PathVariable Long parentId, @PathVariable Long imageId) {
         try {
             var content = siteImages.localContent(parentId, imageId);
-            return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                    .contentType(MediaType.parseMediaType(content.contentType()))
-                    .header("X-Content-Type-Options", "nosniff").body(content.bytes());
+            return imageResponses.noStore(content.bytes(), content.contentType());
         } catch (IllegalArgumentException e) { return ResponseEntity.notFound().build(); }
     }
 
@@ -85,9 +84,7 @@ public class AdminImageController {
     public ResponseEntity<byte[]> contentSpot(@PathVariable Long parentId, @PathVariable Long imageId) {
         try {
             var content = spotImages.localContent(parentId, imageId);
-            return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                    .contentType(MediaType.parseMediaType(content.contentType()))
-                    .header("X-Content-Type-Options", "nosniff").body(content.bytes());
+            return imageResponses.noStore(content.bytes(), content.contentType());
         } catch (IllegalArgumentException e) { return ResponseEntity.notFound().build(); }
     }
 
@@ -95,9 +92,7 @@ public class AdminImageController {
     public ResponseEntity<byte[]> thumbnailSpot(@PathVariable Long parentId, @PathVariable Long imageId) {
         try {
             var content = spotImages.localThumbnail(parentId, imageId);
-            return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                    .contentType(MediaType.parseMediaType(content.contentType()))
-                    .header("X-Content-Type-Options", "nosniff").body(content.bytes());
+            return imageResponses.noStore(content.bytes(), content.contentType());
         } catch (IllegalArgumentException e) { return ResponseEntity.notFound().build(); }
     }
 

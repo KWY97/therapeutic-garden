@@ -3,6 +3,8 @@ package com.example.manage.controller;
 import com.example.manage.domain.Member;
 import com.example.manage.dto.ScheduleResponse;
 import com.example.manage.dto.MemberScheduleDetailResponse;
+import com.example.manage.dto.MemberMonitoringSpotEffectView;
+import com.example.manage.repository.HealingEffectImportBatchRepository;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
 import jakarta.servlet.http.HttpSession;
@@ -23,6 +25,7 @@ public class MemberController {
     private final ScheduleService scheduleService;
     private final com.example.manage.service.HealingEffectQueryService healingEffects;
     private final com.example.manage.service.MeasurementHistoryQueryService measurementHistory;
+    private final HealingEffectImportBatchRepository effectBatches;
 
     @GetMapping("/login")
     public String memberLogin() {
@@ -65,9 +68,14 @@ public class MemberController {
         if (memberName == null || memberName.isBlank()) memberName = "참가자";
 
         var spotEffects = healingEffects.findImportedMemberImprovements(memberId);
+        var monitoringSiteId = effectBatches.findFirstByOrderByIdAsc()
+                .map(batch -> batch.getTargetSiteId()).orElse(null);
         model.addAttribute("schedules", schedules);
         model.addAttribute("spotEffects", spotEffects);
         model.addAttribute("maximumImprovements", healingEffects.findMaximumImprovements(spotEffects));
+        model.addAttribute("memberMonitoringSiteId", monitoringSiteId);
+        model.addAttribute("memberMonitoringEffects", spotEffects.stream()
+                .map(MemberMonitoringSpotEffectView::from).toList());
         model.addAttribute("memberDisplayName", memberName);
         model.addAttribute("overallImprovement", healingEffects.findImportedMemberOverallImprovement(memberId).orElse(null));
         model.addAttribute("measurementHistory", measurementHistory.findImportedMember(memberId));

@@ -40,6 +40,7 @@ class LocalImageHttpTests {
     @Autowired SiteRepository sites;
     @Autowired HealingCourseRepository courses;
     @Autowired HealingSpotRepository spots;
+    @Autowired HealingEffectImportBatchRepository effectBatches;
     @Autowired SiteImageService siteImages;
     @Autowired HealingSpotImageService spotImages;
     HttpClient client;
@@ -52,6 +53,7 @@ class LocalImageHttpTests {
     @RestController static class TestLogin {
         @GetMapping("/test-image-session") String login(HttpServletRequest request) {
             request.getSession().setAttribute("loginAdminId", 1L);
+            request.getSession().setAttribute("loginMemberId", 1L);
             return ((CsrfToken) request.getAttribute(CsrfToken.class.getName())).getToken();
         }
     }
@@ -129,6 +131,67 @@ class LocalImageHttpTests {
         assertThat(anonymous.statusCode()).isEqualTo(302);
         spotImages.delete(id, photo.imageId());
         assertThat(get(url).statusCode()).isEqualTo(404);
+    }
+
+    @Test void memberMonitoringImagesUseDatasetSiteAndPrivateNoStoreResponses() throws Exception {
+        effectBatches.deleteAll();
+        Site dataset = sites.saveAndFlush(new Site("Dataset " + UUID.randomUUID(), "주소", 37.0, 127.0, 3));
+        var course = courses.saveAndFlush(new HealingCourse(dataset, "HC-A", "회복", 37.0, 127.0, 40.0));
+        var spot = spots.saveAndFlush(new HealingSpot(course, "HS1", "곶자왈원", 37.0, 127.0));
+        var disallowedCode = spots.saveAndFlush(new HealingSpot(course, "HS7", "범위 밖 HS", 37.0, 127.0));
+        Site outside = sites.saveAndFlush(new Site("Outside " + UUID.randomUUID(), "주소", 38.0, 128.0, 3));
+        var outsideCourse = courses.saveAndFlush(new HealingCourse(outside, "HC-B", "외부", 38.0, 128.0, 40.0));
+        var outsideSpot = spots.saveAndFlush(new HealingSpot(outsideCourse, "HS1", "외부 HS", 38.0, 128.0));
+
+        byte[] sitePhoto = MonitoringThumbnailTests.photo(900, 600);
+        siteImages.upload(dataset.getSiteId(), List.of(new org.springframework.mock.web.MockMultipartFile(
+                "files", "site.png", "image/png", sitePhoto)));
+        var spatial = siteImages.list(dataset.getSiteId()).getFirst();
+        var siteEdit = new com.example.manage.dto.ImageEditForm();
+        siteEdit.setImageOrder("e:" + spatial.imageId());
+        siteEdit.setImageRepresentative("e:" + spatial.imageId());
+        siteEdit.setImageSpatial("e:" + spatial.imageId());
+        siteImages.edit(dataset.getSiteId(), List.of(), siteEdit);
+
+        byte[] spotPhoto = MonitoringThumbnailTests.photo(1200, 800);
+        spotImages.upload(spot.getSpotId(), List.of(new org.springframework.mock.web.MockMultipartFile(
+                "files", "spot.png", "image/png", spotPhoto)));
+        effectBatches.saveAndFlush(new HealingEffectImportBatch("a".repeat(64), "member-images.xlsx",
+                java.time.LocalDateTime.now(), 0, 0, dataset.getSiteId()));
+
+        var adminSite = getBytes(siteImages.list(dataset.getSiteId()).getFirst().readUrl());
+        var memberSite = getBytes("/member/api/monitoring/site-image");
+        assertThat(memberSite.statusCode()).isEqualTo(200);
+        assertThat(memberSite.headers().firstValue("Content-Type")).contains("image/png");
+        assertThat(memberSite.headers().firstValue("Cache-Control")).hasValueSatisfying(value ->
+                assertThat(value).contains("private", "no-store"));
+        assertThat(memberSite.headers().firstValueAsLong("Content-Length"))
+                .hasValue(adminSite.headers().firstValueAsLong("Content-Length").orElseThrow());
+
+        var adminSpot = getBytes(spotImages.monitoringReadUrl(spot.getSpotId()));
+        var memberSpot = getBytes("/member/api/monitoring/spots/" + spot.getSpotId() + "/thumbnail");
+        assertThat(memberSpot.statusCode()).isEqualTo(200);
+        assertThat(memberSpot.headers().firstValue("Content-Type")).contains("image/jpeg");
+        assertThat(memberSpot.headers().firstValueAsLong("Content-Length"))
+                .hasValue(adminSpot.headers().firstValueAsLong("Content-Length").orElseThrow());
+
+        assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/thumbnail").statusCode())
+                .isEqualTo(404);
+        assertThat(get("/member/api/monitoring/spots/" + disallowedCode.getSpotId() + "/thumbnail").statusCode())
+                .isEqualTo(404);
+        assertThat(get("/member/api/monitoring/spots/9223372036854775807/thumbnail").statusCode())
+                .isEqualTo(404);
+        var anonymous = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build().send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/member/api/monitoring/site-image"))
+                        .GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertThat(anonymous.statusCode()).isEqualTo(302);
+        assertThat(anonymous.headers().firstValue("Location")).hasValueSatisfying(value ->
+                assertThat(value).endsWith("/member/login"));
+    }
+
+    HttpResponse<byte[]> getBytes(String path) throws Exception {
+        return client.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
+                HttpResponse.BodyHandlers.ofByteArray());
     }
 
     @Test void oversizedMultipartShowsFriendlyError() throws Exception {

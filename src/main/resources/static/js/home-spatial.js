@@ -193,7 +193,7 @@ window.HomeSpatial = function(onSelect) {
     }
     if (window.ResizeObserver) new window.ResizeObserver(positionLabels).observe(canvas);
     else window.addEventListener('resize', positionLabels);
-    async function load(site) {
+    async function load(site, options) {
         var current = ++version;
         selectedId = null;
         buttons = [];
@@ -207,19 +207,21 @@ window.HomeSpatial = function(onSelect) {
         canvas.style.minHeight = '';
         canvas.replaceChildren();
         canvas.hidden = true;
-        settings.hidden = true;
+        if (settings) settings.hidden = true;
         updateStatus(site ? '공간 정보를 불러오는 중입니다.' : '등록된 Site가 없습니다.', Boolean(site));
         if (!site) return;
-        settings.href = '/admin/sites/' + encodeURIComponent(site.value) + '/spatial-layout';
+        var layoutUrl = options && options.layoutUrl
+            ? options.layoutUrl : '/admin/sites/' + encodeURIComponent(site.value) + '/spatial-layout/data';
+        if (settings) settings.href = '/admin/sites/' + encodeURIComponent(site.value) + '/spatial-layout';
         try {
-            var response = await fetch(settings.href + '/data', {cache: 'no-store'});
+            var response = await fetch(layoutUrl, {cache: 'no-store'});
             if (!response.ok) throw new Error('공간 조회 실패');
             var layout = await response.json();
             if (current !== version) return;
             if (!layout || !Array.isArray(layout.spots) || String(layout.siteId) !== site.value) throw new Error('잘못된 공간 응답');
             if (!layout.image) {
                 updateStatus('모니터링 이미지가 아직 설정되지 않았습니다.');
-                settings.hidden = false;
+                if (settings) settings.hidden = false;
                 return;
             }
             if (!layout.image.readUrl) throw new Error('모니터링 이미지 URL 없음');
@@ -360,14 +362,14 @@ window.HomeSpatial = function(onSelect) {
                 if (current !== version) return;
                 canvas.hidden = true;
                 updateStatus('모니터링 이미지를 불러오지 못했습니다. Site를 다시 선택하거나 새로고침해 주세요.');
-                settings.hidden = false;
+                if (settings) settings.hidden = false;
             });
             canvas.append(image, midFocus.layer, nearFocus.layer, haloLayer, badgeLayer, overlay);
             image.src = layout.image.readUrl;
         } catch (error) {
             if (current !== version) return;
             updateStatus('공간 모니터링을 불러오지 못했습니다. Site를 다시 선택하거나 새로고침해 주세요.');
-            settings.hidden = false;
+            if (settings) settings.hidden = false;
         }
     }
     return {load: load, select: select, setAnalysis: setAnalysis};
