@@ -92,10 +92,13 @@
 
     function renderAnalysis(spot) {
         var effect = survey.indexByCode(window.memberMonitoringEffects || []).get(spot.code);
+        var dates = measurementDates(spot.code);
         survey.renderSpot(document.getElementById('spotAnalysis'), {
             participant: 'member', participantLabel: window.memberDisplayName,
-            effect: effect, measurementDates: measurementDates(spot.code)
+            effect: dates.length ? effect : null, measurementDates: dates
         });
+        window.MeasurementHistory.renderSpot(document.getElementById('spotMeasurementHistory'),
+            window.memberMeasurementHistory || [], spot.code, {participant: true, compact: true});
     }
 
     function lockBackground() {

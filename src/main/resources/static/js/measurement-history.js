@@ -55,11 +55,13 @@ window.MeasurementHistory = (() => {
         });
         return svg;
     }
-    function participantGraph(records, metric, name) {
-        const width = Math.max(660, records.length * 88 + 100);
+    function participantGraph(records, metric, name, compact) {
+        const fitMobile = compact && window.matchMedia && window.matchMedia('(max-width: 520px)').matches;
+        const shortMobile = fitMobile && records.length <= 2;
+        const width = shortMobile ? 360 : Math.max(660, records.length * 88 + 100);
         const svg = svgElement('svg', {viewBox: `0 0 ${width} 230`, role: 'img',
             'aria-label': name + ' 측정일별 Baseline 및 ' + name + ' 값 그룹형 막대와 연결선',
-            class: 'measurement-grouped-chart', style: `min-width:${width}px`});
+            class: 'measurement-grouped-chart', style: `min-width:${shortMobile ? 0 : width}px`});
         const values = records.flatMap(r => [r[metric].baseline, r[metric].post]).filter(v => v != null);
         const max = Math.max(1, ...values.map(Number));
         const plotLeft = 58, plotRight = width - 42, plotBottom = 180;
@@ -118,7 +120,7 @@ window.MeasurementHistory = (() => {
             heading.append(element('h4',name+' 측정 기록'),legend(name));
             section.append(heading);
             const chartScroll=element('div',null,'measurement-chart-scroll');
-            chartScroll.append(participantGraph(records,metric,name));
+            chartScroll.append(participantGraph(records,metric,name,options.compact));
             section.append(chartScroll);
         } else {
             section.append(element('h4',name+' 측정 기록'),element('p','Baseline · 회색 / Spot 측정값 · 녹색','survey-note'));
@@ -169,7 +171,16 @@ window.MeasurementHistory = (() => {
         }
         select.addEventListener('change',update); update();
     }
-    return {render};
+    function renderSpot(container, histories, spotCode, options = {}) {
+        container.replaceChildren();
+        const selected = (histories || []).find(history => history.spotCode === spotCode);
+        if (!selected || !Array.isArray(selected.records) || !selected.records.length) return;
+        container.append(element('h3','측정 기록'));
+        container.append(element('p','변화량과 증감률은 같은 측정일의 Baseline과 비교합니다. Baseline이 없거나 0이면 증감률을 계산할 수 없습니다.','survey-note'));
+        container.append(metricSection(selected.records,'stress','스트레스',options),
+            metricSection(selected.records,'emotional','정서 안정성',options));
+    }
+    return {render, renderSpot};
 })();
 const memberHistoryContainer = document.getElementById('memberMeasurementHistory');
 if (memberHistoryContainer) window.MeasurementHistory.render(memberHistoryContainer, window.memberMeasurementHistory || []);

@@ -6,7 +6,6 @@ window.MemberHealingAnalysis = (() => {
     const maximums = window.memberMaximumImprovements || {stressSpotCodes: [], emotionalSpotCodes: []};
     const memberName = typeof window.memberDisplayName === 'string' && window.memberDisplayName.trim()
         ? window.memberDisplayName.trim() : '참가자';
-    const history = Array.isArray(window.memberMeasurementHistory) ? window.memberMeasurementHistory : [];
     const metrics = {
         stress: {label: '스트레스 개선율'},
         emotional: {label: '정서 안정성 개선율'}
@@ -119,6 +118,5 @@ window.MemberHealingAnalysis = (() => {
 
     renderHighlights(document.getElementById('memberAnalysisHighlights'), overall, effects);
     renderSummary(document.getElementById('memberAnalysisSummary'), effects);
-    window.MeasurementHistory.render(document.getElementById('memberAnalysisHistory'), history, {defaultSpotCode: 'HS1', participant: true});
     return {display, countDisplay, spotNamesText, renderHighlights, renderSummary};
 })();

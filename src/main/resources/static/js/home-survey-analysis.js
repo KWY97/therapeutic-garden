@@ -136,12 +136,19 @@ window.HomeSurvey = (() => {
     }
     function renderSpot(container, {participant, participantLabel, effect, measurementDates}) {
         container.replaceChildren();
-        if (!effect || !effect.hasMeasurement) {
+        const hasDates = Array.isArray(measurementDates) && measurementDates.length > 0;
+        if ((!effect || !effect.hasMeasurement) && !hasDates) {
             container.append(element('p', '데이터 준비 중', 'survey-empty'));
             return;
         }
         if (Array.isArray(measurementDates)) {
-            container.append(valueRow('측정 일자', measurementDates.join(', ')));
+            const improvements = element('div', null, 'spot-improvement-grid');
+            improvements.append(
+                metricValueRow('스트레스 개선율', effect, 'stress'),
+                metricValueRow('정서 안정성 개선율', effect, 'emotional')
+            );
+            container.append(improvements, valueRow('측정 일자', measurementDates.join(', ')));
+            return;
         } else if (participant !== 'all' && participantLabel) {
             container.append(element('p', participantLabel, 'spot-measurement-audience'));
         } else {

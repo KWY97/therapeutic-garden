@@ -133,7 +133,7 @@ test('Spot detail preserves participant counts and shows both improvement rates 
     assert.equal(equal.children[0].children[1].textContent, '11명');
 });
 
-test('Spot detail measurement dates replace only the audience row and use participant labels', () => {
+test('Spot detail places participant improvements before measurement dates', () => {
     const legacy = node('div');
     api.renderSpot(legacy, {participant: 'member', participantLabel: '참가자', effect: measured});
     assert.equal(legacy.children[0].textContent, '참가자');
@@ -143,11 +143,18 @@ test('Spot detail measurement dates replace only the audience row and use partic
     const member = node('div');
     api.renderSpot(member, {participant: 'member', participantLabel: '참가자', effect: measured,
         measurementDates: ['2026-09-02', '2026-09-04']});
-    assert.deepEqual(member.children.map(row => row.children[0].textContent),
-        ['측정 일자', '스트레스 개선율', '정서 안정성 개선율']);
-    assert.equal(member.children[0].children[1].textContent, '2026-09-02, 2026-09-04');
-    assert.equal(member.children[1].children[1].children[0].textContent, '88.2% 개선');
-    assert.equal(member.children[1].children[1].children[1].textContent, '17회 중 15회 개선');
+    assert.equal(member.children[0].className, 'spot-improvement-grid');
+    assert.deepEqual(member.children[0].children.map(row => row.children[0].textContent),
+        ['스트레스 개선율', '정서 안정성 개선율']);
+    assert.equal(member.children[1].children[0].textContent, '측정 일자');
+    assert.equal(member.children[1].children[1].textContent, '2026-09-02, 2026-09-04');
+    assert.equal(member.children[0].children[0].children[1].children[0].textContent, '88.2% 개선');
+    assert.equal(member.children[0].children[0].children[1].children[1].textContent, '17회 중 15회 개선');
+
+    const historyOnly = node('div');
+    api.renderSpot(historyOnly, {participant: 'member', effect: missing, measurementDates: ['2026-09-04']});
+    assert.equal(historyOnly.children[0].children[0].children[1].children[0].textContent, '데이터 준비 중');
+    assert.equal(historyOnly.children[1].children[1].textContent, '2026-09-04');
 });
 
 test('Spot detail omits misleading zero counts and distinguishes unavailable data', () => {

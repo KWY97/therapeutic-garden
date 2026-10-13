@@ -7312,6 +7312,21 @@ input[type="time"].form-input {
 .participant-analysis-page .spot-information-item .spot-metric-count {
     margin: 0; color: #66776c; font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums;
 }
+.participant-analysis-page #spotAnalysis .spot-improvement-grid {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+}
+.participant-analysis-page #spotAnalysis .spot-improvement-grid + .spot-information-item { margin-top: 12px; }
+.participant-analysis-page #spotMeasurementHistory { min-width: 0; }
+.participant-analysis-page #spotMeasurementHistory .measurement-metric { min-width: 0; }
+.participant-analysis-page #spotMeasurementHistory .measurement-chart-scroll,
+.participant-analysis-page #spotMeasurementHistory .measurement-table-scroll { max-width: 100%; }
+@media (max-width: 520px) {
+    .participant-analysis-page #spotAnalysis .spot-improvement-grid { grid-template-columns: minmax(0, 1fr); }
+    .participant-analysis-page #spotMeasurementHistory .measurement-table-scroll { margin-top: 12px; }
+    .participant-analysis-page #spotMeasurementHistory table { width: max-content; min-width: 100%; }
+    .participant-analysis-page #spotMeasurementHistory th,
+    .participant-analysis-page #spotMeasurementHistory td { white-space: nowrap; overflow-wrap: normal; }
+}
 .participant-analysis-page .survey-summary-card { padding: 12px; border: 2px solid transparent; }
 .participant-analysis-page .survey-summary-card.is-maximum { border-color: #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22); }
 .participant-result-summary { margin: 16px 0 0; color: #526259; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }
