@@ -357,8 +357,8 @@ class HealingEffectUiTests {
         assertThat(monitoringEffects.getFirst().stress()).isSameAs(effects.getFirst().stress());
         String html = result.getResponse().getContentAsString();
         assertThat(html).contains("나의 치유 분석", "나의 공간별 치유 효과와 측정 변화를 확인합니다.",
-                        "Spot별 변화 / 상세 분석", "측정 기록",
-                        "memberAnalysisSummary", "memberAnalysisHistory", "memberHealingEffects",
+                        "Spot별 변화 / 상세 분석", "spotMeasurementHistory",
+                        "memberAnalysisSummary", "memberHealingEffects",
                         "memberOverallImprovement", "memberMaximumImprovements", "memberMonitoringSiteId", "memberMonitoringEffects",
                         "memberDisplayName", "memberMeasurementHistory", "member-healing-analysis.js", "member-spatial.js",
                         "member-spot-detail.js", "id=\"spotDetailModal\" class=\"survey-modal\" hidden",
@@ -370,7 +370,7 @@ class HealingEffectUiTests {
                         "공간 모니터링", "monitoringCanvas", "monitoring-effect-legend", "member-monitoring-space", "나의 달력",
                         "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
-                .doesNotContain("상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
+                .doesNotContain("memberAnalysisHistory", "상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
                         "mapModal", "openMapButton", "monitoringSettings", "\"prev,next today\"",
                         "P002", "P004", "secret-login-two", "secret-login-four",
                         "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
@@ -378,7 +378,6 @@ class HealingEffectUiTests {
         assertThat(html.indexOf("spatialTitle")).isLessThan(html.indexOf("memberAnalysisHighlights"));
         assertThat(html.indexOf("나의 치유 분석")).isLessThan(html.indexOf("나의 달력"));
         assertThat(html.indexOf("memberAnalysisHighlights")).isLessThan(html.indexOf("memberAnalysisSummary"));
-        assertThat(html.indexOf("memberAnalysisSummary")).isLessThan(html.indexOf("memberAnalysisHistory"));
         assertThat(html.indexOf("member-spot-detail.js")).isLessThan(html.indexOf("member-spatial.js"));
     }
 

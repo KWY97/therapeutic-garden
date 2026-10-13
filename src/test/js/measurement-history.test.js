@@ -13,6 +13,7 @@ const context={window:{},document:{createElement:node,createElementNS:(_,t)=>nod
 vm.createContext(context);
 vm.runInContext(fs.readFileSync('src/main/resources/static/js/measurement-history.js','utf8'),context);
 const render=context.window.MeasurementHistory.render;
+const renderSpot=context.window.MeasurementHistory.renderSpot;
 const all=n=>[n,...n.children.flatMap(all)];
 const metric=(baseline,post)=>({baseline,post,changeDisplay:baseline==null?'계산 불가':String(post-baseline),rateDisplay:'25.0% 감소'});
 const record=(date,baseline,post)=>({measurementDate:date,stress:metric(baseline,post),emotional:metric(baseline,post)});
@@ -131,4 +132,56 @@ test('participant change column uses two-decimal HALF_UP formatting without conv
     render(admin,[{spotCode:'HS1',spotName:'정원',records}],{defaultSpotCode:'HS1'});
     const adminTable=all(admin).filter(n=>n.tag==='table')[0];
     assert.equal(adminTable.children.find(n=>n.tag==='tbody').children[0].children[3].textContent,'0');
+});
+
+test('fixed Spot history reuses participant charts and tables without a selector or stale records',()=>{
+    const container=node('div');
+    const histories=[{spotCode:'HS1',records:[record('2026-09-01',20,15)]},
+        {spotCode:'HS2',records:[record('2026-09-02',30,21)]},
+        {spotCode:'HS3',records:[]}];
+    renderSpot(container,histories,'HS1',{participant:true});
+    assert.equal(all(container).filter(n=>n.tag==='select').length,0);
+    assert.equal(all(container).filter(n=>n.tag==='svg').length,2);
+    assert.equal(all(container).filter(n=>n.tag==='table').length,2);
+    assert.ok(all(container).some(n=>n.tag==='td'&&n.textContent==='2026-09-01'));
+    renderSpot(container,histories,'HS2',{participant:true});
+    assert.ok(!all(container).some(n=>n.textContent==='2026-09-01'));
+    assert.ok(all(container).some(n=>n.tag==='td'&&n.textContent==='2026-09-02'));
+    renderSpot(container,histories,'HS3',{participant:true});
+    assert.equal(all(container).filter(n=>n.tag==='svg').length,0);
+    assert.equal(all(container).filter(n=>n.tag==='table').length,0);
+    renderSpot(container,histories,'HS1',{participant:true});
+    assert.equal(all(container).filter(n=>n.tag==='svg').length,2);
+});
+
+test('mobile Spot charts compact only one or two dates and keep original geometry from three dates',()=>{
+    const container=node('div');
+    context.window.matchMedia=()=>({matches:true});
+    const one=[{spotCode:'HS1',records:[record('2026-09-02',20,15)]}];
+    renderSpot(container,one,'HS1',{participant:true,compact:true});
+    let svgs=all(container).filter(n=>n.tag==='svg');
+    assert.equal(svgs.length,2);
+    assert.ok(svgs.every(svg=>svg.attrs.viewBox==='0 0 360 230'&&svg.attrs.style==='min-width:0px'));
+    assert.deepEqual(svgs[0].children.filter(n=>n.tag==='text'&&n.textContent==='09-02').map(n=>Number(n.attrs.x)),[188]);
+    const two=[{spotCode:'HS1',records:[record('2026-09-02',20,15),record('2026-09-04',19,14)]}];
+    renderSpot(container,two,'HS1',{participant:true,compact:true});
+    svgs=all(container).filter(n=>n.tag==='svg');
+    assert.deepEqual(svgs[0].children.filter(n=>n.tag==='text'&&/^09-/.test(n.textContent)).map(n=>Number(n.attrs.x)),[98,278]);
+    assert.equal(all(container).filter(n=>n.tag==='table').length,2);
+    const three=[{spotCode:'HS1',records:[record('2026-09-02',20,15),record('2026-09-04',19,14),
+        record('2026-09-06',18,13)]}];
+    renderSpot(container,three,'HS1',{participant:true,compact:true});
+    svgs=all(container).filter(n=>n.tag==='svg');
+    assert.ok(svgs.every(svg=>svg.attrs.viewBox==='0 0 660 230'&&svg.attrs.style==='min-width:660px'));
+    assert.deepEqual(svgs[0].children.filter(n=>n.tag==='text'&&/^09-/.test(n.textContent)).map(n=>Number(n.attrs.x)),[98,338,578]);
+    const four=[{spotCode:'HS1',records:[record('2026-09-02',20,15),record('2026-09-04',19,14),
+        record('2026-09-06',18,13),record('2026-09-08',17,12)]}];
+    renderSpot(container,four,'HS1',{participant:true,compact:true});
+    svgs=all(container).filter(n=>n.tag==='svg');
+    assert.ok(svgs.every(svg=>svg.attrs.viewBox==='0 0 660 230'&&svg.attrs.style==='min-width:660px'));
+    context.window.matchMedia=()=>({matches:false});
+    renderSpot(container,two,'HS1',{participant:true,compact:true});
+    svgs=all(container).filter(n=>n.tag==='svg');
+    assert.ok(svgs.every(svg=>svg.attrs.viewBox==='0 0 660 230'&&svg.attrs.style==='min-width:660px'));
+    delete context.window.matchMedia;
 });
