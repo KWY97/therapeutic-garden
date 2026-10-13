@@ -52,7 +52,7 @@ public class AccountPasswordController {
         }
         model.addAttribute("errorMessage", switch (result) {
             case INCORRECT_CURRENT -> "현재 비밀번호가 올바르지 않습니다.";
-            case TOO_SHORT -> "새 비밀번호는 12자 이상이어야 합니다.";
+            case TOO_SHORT -> "새 비밀번호는 " + (role.equals("member") ? "8" : "12") + "자 이상이어야 합니다.";
             case TOO_LONG -> "새 비밀번호는 UTF-8 기준 72바이트 이하여야 합니다.";
             case CONFIRMATION_MISMATCH -> "새 비밀번호 확인이 일치하지 않습니다.";
             case REUSED -> "현재 비밀번호와 다른 비밀번호를 입력해 주세요.";

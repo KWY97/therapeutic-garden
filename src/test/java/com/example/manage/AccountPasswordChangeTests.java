@@ -86,6 +86,8 @@ class AccountPasswordChangeTests {
                 .andReturn().getResponse().getContentAsString();
         assertThat(form).contains("name=\"_csrf\"", "name=\"currentPassword\"",
                 "name=\"newPassword\"", "name=\"confirmPassword\"");
+        assertThat(form).contains(role.equals("member") ? "8자 이상" : "12자 이상",
+                "minlength=\"" + (role.equals("member") ? 8 : 12) + "\"");
 
         mvc.perform(change(account, CURRENT, NEXT, NEXT).param(role + "Id", "999999"))
                 .andExpect(redirectedUrl("/" + role + "/login?passwordChanged=1"));
@@ -112,7 +114,9 @@ class AccountPasswordChangeTests {
         String[][] cases = {
                 {"WrongCurrent123!", NEXT, NEXT, "현재 비밀번호가 올바르지"},
                 {CURRENT, NEXT, "DifferentPass123!", "확인이 일치하지"},
-                {CURRENT, "Short123!", "Short123!", "12자 이상"},
+                {CURRENT, role.equals("member") ? "Short12" : "Short123456",
+                        role.equals("member") ? "Short12" : "Short123456",
+                        role.equals("member") ? "8자 이상" : "12자 이상"},
                 {CURRENT, "가".repeat(25), "가".repeat(25), "72바이트 이하"},
                 {CURRENT, CURRENT, CURRENT, "다른 비밀번호"}
         };
@@ -124,6 +128,27 @@ class AccountPasswordChangeTests {
             assertThat(stored(account)).isEqualTo(originalHash);
             assertThat(account.session().isInvalid()).isFalse();
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"member", "admin"})
+    void appliesRoleSpecificMinimumLengthBoundary(String role) throws Exception {
+        Account account = account(role);
+        int minimum = role.equals("member") ? 8 : 12;
+        String originalHash = stored(account);
+        String tooShort = "x".repeat(minimum - 1);
+        String accepted = "y".repeat(minimum);
+
+        mvc.perform(change(account, CURRENT, tooShort, tooShort))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(minimum + "자 이상")));
+        assertThat(stored(account)).isEqualTo(originalHash);
+        assertThat(account.session().isInvalid()).isFalse();
+
+        mvc.perform(change(account, CURRENT, accepted, accepted))
+                .andExpect(redirectedUrl("/" + role + "/login?passwordChanged=1"));
+        assertThat(encoder.matches(accepted, stored(account))).isTrue();
+        assertThat(account.session().isInvalid()).isTrue();
     }
 
     @Test
