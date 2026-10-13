@@ -121,6 +121,8 @@
     </div>
 </main>
 
+<div th:replace="~{fragments/spot-detail-modal :: modal}"></div>
+
 <script th:inline="javascript">
     window.memberHealingEffects = /*[[${spotEffects}]]*/ [];
     window.memberOverallImprovement = /*[[${overallImprovement}]]*/ null;
@@ -133,7 +135,8 @@
 <script th:src="@{/js/home-survey-analysis.js?v=count-improvement}"></script>
 <script th:src="@{/js/home-course-overlay.js?v=analysis-ux}"></script>
 <script th:src="@{/js/home-spatial.js?v=count-improvement}"></script>
-<script th:src="@{/js/member-spatial.js?v=count-improvement}"></script>
+<script th:src="@{/js/member-spot-detail.js?v=participant-detail}"></script>
+<script th:src="@{/js/member-spatial.js?v=participant-detail}"></script>
 <script th:src="@{/js/measurement-history.js?v=participant-analysis}"></script>
 <script th:src="@{/js/member-healing-analysis.js?v=participant-analysis}"></script>
 

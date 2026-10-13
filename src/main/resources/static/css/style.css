@@ -7175,6 +7175,8 @@ input[type="time"].form-input {
    Home Survey Analysis
 ================================ */
 .home-survey-page [hidden] { display: none !important; }
+.survey-modal[hidden] { display: none !important; }
+.participant-analysis-page #spotDetailModal [hidden] { display: none !important; }
 .home-utility-bar {
     min-height: 40px;
     border-bottom: 1px solid #e5e7eb;
@@ -7303,6 +7305,13 @@ input[type="time"].form-input {
 .participant-analysis-page .effect-bad { color: #b4534b; }
 .participant-analysis-page .effect-neutral { color: #86743f; }
 .participant-analysis-page .effect-missing { color: #9ca3af; font-weight: 500; }
+.participant-analysis-page .spot-information-item strong { overflow-wrap: anywhere; }
+.participant-analysis-page .spot-information-item .spot-metric-output {
+    display: flex; flex-direction: column; gap: 3px; margin: 0;
+}
+.participant-analysis-page .spot-information-item .spot-metric-count {
+    margin: 0; color: #66776c; font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums;
+}
 .participant-analysis-page .survey-summary-card { padding: 12px; border: 2px solid transparent; }
 .participant-analysis-page .survey-summary-card.is-maximum { border-color: #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22); }
 .participant-result-summary { margin: 16px 0 0; color: #526259; font-size: 13px; line-height: 1.75; overflow-wrap: anywhere; }

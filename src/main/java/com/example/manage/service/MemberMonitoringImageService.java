@@ -1,6 +1,8 @@
 package com.example.manage.service;
 
 import com.example.manage.dto.ImageResponse;
+import com.example.manage.dto.HealingSpotDetailResponse;
+import com.example.manage.domain.HealingSpot;
 import com.example.manage.repository.HealingEffectImportBatchRepository;
 import com.example.manage.repository.HealingSpotRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +29,7 @@ public class MemberMonitoringImageService {
     }
 
     public ImageContent spotThumbnail(Long spotId) {
-        Long siteId = datasetSiteId();
-        boolean allowed = spots.findByHealingCourseSiteSiteId(siteId).stream()
-                .anyMatch(spot -> spot.getSpotId().equals(spotId) && spot.getCode().matches("HS[1-6]"));
-        if (!allowed) throw new IllegalArgumentException("조회할 수 없는 HealingSpot입니다.");
+        allowedSpot(datasetSiteId(), spotId);
 
         ImageResponse image = spotImages.list(spotId).stream()
                 .filter(ImageResponse::representative)
@@ -38,6 +37,35 @@ public class MemberMonitoringImageService {
                 .orElseThrow(() -> new IllegalArgumentException("대표 이미지가 없습니다."));
         var content = spotImages.localThumbnail(spotId, image.imageId());
         return new ImageContent(content.bytes(), content.contentType());
+    }
+
+    public HealingSpotDetailResponse spotDetail(Long spotId) {
+        HealingSpot spot = allowedSpot(datasetSiteId(), spotId);
+        var images = spotImages.list(spotId).stream().map(image -> {
+            String readUrl = isAdminPath(image.readUrl())
+                    ? "/member/api/monitoring/spots/" + spotId + "/images/" + image.imageId() + "/content"
+                    : image.readUrl();
+            return new ImageResponse(image.imageId(), image.originalFileName(), image.contentType(),
+                    image.displayOrder(), image.representative(), readUrl, image.spatial());
+        }).toList();
+        return HealingSpotDetailResponse.from(spot, images);
+    }
+
+    public ImageContent spotImage(Long spotId, Long imageId) {
+        allowedSpot(datasetSiteId(), spotId);
+        var content = spotImages.localContent(spotId, imageId);
+        return new ImageContent(content.bytes(), content.contentType());
+    }
+
+    private HealingSpot allowedSpot(Long siteId, Long spotId) {
+        return spots.findByHealingCourseSiteSiteId(siteId).stream()
+                .filter(spot -> spot.getSpotId().equals(spotId) && spot.getCode().matches("HS[1-6]"))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("조회할 수 없는 HealingSpot입니다."));
+    }
+
+    private boolean isAdminPath(String readUrl) {
+        return readUrl != null && readUrl.startsWith("/admin/");
     }
 
     private Long datasetSiteId() {

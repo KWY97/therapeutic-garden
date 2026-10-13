@@ -154,8 +154,11 @@ class LocalImageHttpTests {
         siteImages.edit(dataset.getSiteId(), List.of(), siteEdit);
 
         byte[] spotPhoto = MonitoringThumbnailTests.photo(1200, 800);
-        spotImages.upload(spot.getSpotId(), List.of(new org.springframework.mock.web.MockMultipartFile(
-                "files", "spot.png", "image/png", spotPhoto)));
+        spotImages.upload(spot.getSpotId(), List.of(
+                new org.springframework.mock.web.MockMultipartFile("files", "spot.png", "image/png", spotPhoto),
+                new org.springframework.mock.web.MockMultipartFile("files", "spot-two.png", "image/png", spotPhoto)));
+        spotImages.upload(outsideSpot.getSpotId(), List.of(new org.springframework.mock.web.MockMultipartFile(
+                "files", "outside.png", "image/png", spotPhoto)));
         effectBatches.saveAndFlush(new HealingEffectImportBatch("a".repeat(64), "member-images.xlsx",
                 java.time.LocalDateTime.now(), 0, 0, dataset.getSiteId()));
 
@@ -175,17 +178,57 @@ class LocalImageHttpTests {
         assertThat(memberSpot.headers().firstValueAsLong("Content-Length"))
                 .hasValue(adminSpot.headers().firstValueAsLong("Content-Length").orElseThrow());
 
+        var gallery = spotImages.list(spot.getSpotId());
+        var detail = get("/member/api/monitoring/spots/" + spot.getSpotId());
+        assertThat(detail.statusCode()).isEqualTo(200);
+        assertThat(detail.headers().firstValue("Cache-Control")).hasValueSatisfying(value ->
+                assertThat(value).contains("no-store"));
+        assertThat(detail.body()).contains(
+                "\"spotId\":" + spot.getSpotId(),
+                "\"siteId\":" + dataset.getSiteId(),
+                "\"siteName\":\"" + dataset.getName() + "\"",
+                "/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
+                        + gallery.getFirst().imageId() + "/content",
+                "/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
+                        + gallery.getLast().imageId() + "/content")
+                .doesNotContain("/admin/");
+
+        var adminOriginal = getBytes(gallery.getFirst().readUrl());
+        String memberContentUrl = "/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
+                + gallery.getFirst().imageId() + "/content";
+        var memberOriginal = getBytes(memberContentUrl);
+        assertThat(memberOriginal.statusCode()).isEqualTo(200);
+        assertThat(memberOriginal.headers().firstValue("Content-Type")).contains("image/png");
+        assertThat(memberOriginal.headers().firstValue("Cache-Control")).hasValueSatisfying(value ->
+                assertThat(value).contains("private", "no-store"));
+        assertThat(memberOriginal.headers().firstValueAsLong("Content-Length"))
+                .hasValue(adminOriginal.headers().firstValueAsLong("Content-Length").orElseThrow());
+
         assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/thumbnail").statusCode())
                 .isEqualTo(404);
         assertThat(get("/member/api/monitoring/spots/" + disallowedCode.getSpotId() + "/thumbnail").statusCode())
                 .isEqualTo(404);
         assertThat(get("/member/api/monitoring/spots/9223372036854775807/thumbnail").statusCode())
                 .isEqualTo(404);
+        Long outsideImageId = spotImages.list(outsideSpot.getSpotId()).getFirst().imageId();
+        assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId()).statusCode()).isEqualTo(404);
+        assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/images/"
+                + outsideImageId + "/content").statusCode()).isEqualTo(404);
+        assertThat(get("/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
+                + outsideImageId + "/content").statusCode()).isEqualTo(404);
+        assertThat(get("/member/api/monitoring/spots/" + spot.getSpotId()
+                + "/images/9223372036854775807/content").statusCode()).isEqualTo(404);
         var anonymous = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/member/api/monitoring/site-image"))
                         .GET().build(), HttpResponse.BodyHandlers.ofString());
         assertThat(anonymous.statusCode()).isEqualTo(302);
         assertThat(anonymous.headers().firstValue("Location")).hasValueSatisfying(value ->
+                assertThat(value).endsWith("/member/login"));
+        var anonymousDetail = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build().send(
+                HttpRequest.newBuilder(URI.create("http://localhost:" + port + memberContentUrl)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+        assertThat(anonymousDetail.statusCode()).isEqualTo(302);
+        assertThat(anonymousDetail.headers().firstValue("Location")).hasValueSatisfying(value ->
                 assertThat(value).endsWith("/member/login"));
     }
 

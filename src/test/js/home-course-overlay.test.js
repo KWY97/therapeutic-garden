@@ -76,7 +76,8 @@ test('monitoring map matches the landing treatment while preserving hotspot prio
     assert.match(js, /--halo-color', color/);
     assert.doesNotMatch(js, /circle\.style\.borderColor/);
     assert.doesNotMatch(js, /monitoring-course-regions|region\.style\.stroke/);
-    const html = fs.readFileSync('src/main/resources/templates/home.html', 'utf8');
+    const html = fs.readFileSync('src/main/resources/templates/home.html', 'utf8')
+        + fs.readFileSync('src/main/resources/templates/fragments/spatial-monitoring.html', 'utf8');
     assert.doesNotMatch(html, /id="hcStress"|id="hcEmotional"|monitoring-effect-controls/);
     assert.match(html, /monitoring-effect-legend/);
     assert.doesNotMatch(html, /Demo 데이터|시연용 데이터/);

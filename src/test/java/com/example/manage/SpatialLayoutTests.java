@@ -504,6 +504,43 @@ class SpatialLayoutTests {
                 .andExpect(jsonPath("$.spots[0].readUrl").value("https://storage.example/signed?token=opaque"));
     }
 
+    @Test void memberSpotDetailUsesDatasetSiteAndRewritesOnlyLocalGalleryUrls() throws Exception {
+        effectBatches.saveAndFlush(new HealingEffectImportBatch("d".repeat(64), "member-detail.xlsx",
+                LocalDateTime.now(), 0, 0, site.getSiteId()));
+        spotImages.upload(first.getSpotId(), List.of(file("first.png"), file("second.png")));
+        var gallery = spotImages.list(first.getSpotId());
+        spotImages.setRepresentative(first.getSpotId(), gallery.getLast().imageId());
+        String endpoint = "/member/api/monitoring/spots/" + first.getSpotId();
+
+        mvc.perform(get(endpoint)).andExpect(redirectedUrl("/member/login"));
+        mvc.perform(get(endpoint).sessionAttr("loginMemberId", 1L))
+                .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
+                .andExpect(jsonPath("$.spotId").value(first.getSpotId()))
+                .andExpect(jsonPath("$.siteId").value(site.getSiteId()))
+                .andExpect(jsonPath("$.siteName").value(site.getName()))
+                .andExpect(jsonPath("$.siteAddress").value(site.getAddress()))
+                .andExpect(jsonPath("$.images.length()").value(2))
+                .andExpect(jsonPath("$.images[0].readUrl").value("/member/api/monitoring/spots/"
+                        + first.getSpotId() + "/images/" + gallery.getFirst().imageId() + "/content"))
+                .andExpect(jsonPath("$.representativeImageUrl").value("/member/api/monitoring/spots/"
+                        + first.getSpotId() + "/images/" + gallery.getLast().imageId() + "/content"));
+
+        var outside = sites.saveAndFlush(new Site("Outside detail", "다른 주소", 38.0, 128.0, 3));
+        var outsideCourse = courses.saveAndFlush(new HealingCourse(outside, "HC-Z", "외부", null, null, null));
+        var outsideSpot = spots.saveAndFlush(new HealingSpot(outsideCourse, "HS1", "외부", 38.0, 128.0));
+        mvc.perform(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId())
+                        .sessionAttr("loginMemberId", 1L))
+                .andExpect(status().isNotFound()).andExpect(content().string(""));
+        mvc.perform(get("/member/api/monitoring/spots/9223372036854775807").sessionAttr("loginMemberId", 1L))
+                .andExpect(status().isNotFound()).andExpect(content().string(""));
+
+        when(storage.createReadUrl(anyString(), anyString())).thenReturn("https://storage.example/signed?token=opaque");
+        mvc.perform(get(endpoint).sessionAttr("loginMemberId", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.representativeImageUrl").value("https://storage.example/signed?token=opaque"))
+                .andExpect(jsonPath("$.images[0].readUrl").value("https://storage.example/signed?token=opaque"));
+    }
+
     @Test void monitoringLayoutApiIsolatesSitesAndUsesStorageReadUrls() throws Exception {
         save(draft());
         Site other = sites.saveAndFlush(new Site("Other", "주소", 38.0, 128.0, 4));

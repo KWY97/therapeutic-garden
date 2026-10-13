@@ -134,13 +134,15 @@ window.HomeSurvey = (() => {
         row.append(element('span', label), output);
         return row;
     }
-    function renderSpot(container, {participant, participantLabel, effect}) {
+    function renderSpot(container, {participant, participantLabel, effect, measurementDates}) {
         container.replaceChildren();
         if (!effect || !effect.hasMeasurement) {
             container.append(element('p', '데이터 준비 중', 'survey-empty'));
             return;
         }
-        if (participant !== 'all' && participantLabel) {
+        if (Array.isArray(measurementDates)) {
+            container.append(valueRow('측정 일자', measurementDates.join(', ')));
+        } else if (participant !== 'all' && participantLabel) {
             container.append(element('p', participantLabel, 'spot-measurement-audience'));
         } else {
             const stressCount = effect.stressParticipantCount;
@@ -150,9 +152,10 @@ window.HomeSurvey = (() => {
                 : '스트레스 ' + stressCount + '명 · 정서 안정성 ' + emotionalCount + '명';
             container.append(valueRow('측정 인원', audience));
         }
+        const prefix = Array.isArray(measurementDates) ? '' : '평균 ';
         container.append(
-            metricValueRow('평균 스트레스 개선율', effect, 'stress'),
-            metricValueRow('평균 정서 안정성 개선율', effect, 'emotional')
+            metricValueRow(prefix + '스트레스 개선율', effect, 'stress'),
+            metricValueRow(prefix + '정서 안정성 개선율', effect, 'emotional')
         );
     }
     function renderMetricSection(metric, effects) {
