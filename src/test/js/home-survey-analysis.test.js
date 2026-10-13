@@ -133,6 +133,23 @@ test('Spot detail preserves participant counts and shows both improvement rates 
     assert.equal(equal.children[0].children[1].textContent, '11명');
 });
 
+test('Spot detail measurement dates replace only the audience row and use participant labels', () => {
+    const legacy = node('div');
+    api.renderSpot(legacy, {participant: 'member', participantLabel: '참가자', effect: measured});
+    assert.equal(legacy.children[0].textContent, '참가자');
+    assert.deepEqual(legacy.children.slice(1).map(row => row.children[0].textContent),
+        ['평균 스트레스 개선율', '평균 정서 안정성 개선율']);
+
+    const member = node('div');
+    api.renderSpot(member, {participant: 'member', participantLabel: '참가자', effect: measured,
+        measurementDates: ['2026-09-02', '2026-09-04']});
+    assert.deepEqual(member.children.map(row => row.children[0].textContent),
+        ['측정 일자', '스트레스 개선율', '정서 안정성 개선율']);
+    assert.equal(member.children[0].children[1].textContent, '2026-09-02, 2026-09-04');
+    assert.equal(member.children[1].children[1].children[0].textContent, '88.2% 개선');
+    assert.equal(member.children[1].children[1].children[1].textContent, '17회 중 15회 개선');
+});
+
 test('Spot detail omits misleading zero counts and distinguishes unavailable data', () => {
     const zero = node('div');
     api.renderSpot(zero, {participant: 'all', effect: zeroValid});

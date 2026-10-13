@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<body>
+<h1 th:fragment="title" id="spatialTitle">공간 모니터링</h1>
+<div th:fragment="legend" class="monitoring-effect-legend" aria-label="Healing Spot 개선율 색상 범례">
+    <span><i class="is-low" aria-hidden="true"></i>개선율 낮음</span>
+    <span><i class="is-high" aria-hidden="true"></i>개선율 높음</span>
+    <span><i class="is-maximum" aria-hidden="true"></i>최대 개선 스팟</span>
+    <span class="monitoring-legend-divider" aria-hidden="true">|</span>
+    <span>유효 측정 중 개선된 횟수의 비율</span>
+</div>
+<p th:fragment="status" id="monitoringStatus" role="status" data-loading="true">공간 정보를 불러오는 중입니다.</p>
+<div th:fragment="canvas" id="monitoringCanvas" class="monitoring-canvas" hidden></div>
+</body>
+</html>

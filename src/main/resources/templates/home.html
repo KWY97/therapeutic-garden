@@ -101,20 +101,14 @@
 
     <section class="monitoring-space" data-loading="true" aria-labelledby="spatialTitle">
         <div class="monitoring-heading">
-            <h1 id="spatialTitle">공간 모니터링</h1>
+            <h1 th:replace="~{fragments/spatial-monitoring :: title}">공간 모니터링</h1>
             <button type="button" id="openMapButton" aria-haspopup="dialog">지도 보기</button>
         </div>
-        <div class="monitoring-effect-legend" aria-label="Healing Spot 개선율 색상 범례">
-            <span><i class="is-low" aria-hidden="true"></i>개선율 낮음</span>
-            <span><i class="is-high" aria-hidden="true"></i>개선율 높음</span>
-            <span><i class="is-maximum" aria-hidden="true"></i>최대 개선 스팟</span>
-            <span class="monitoring-legend-divider" aria-hidden="true">|</span>
-            <span>유효 측정 중 개선된 횟수의 비율</span>
-        </div>
+        <div th:replace="~{fragments/spatial-monitoring :: legend}"></div>
         <div class="monitoring-content">
-            <p id="monitoringStatus" role="status" data-loading="true">공간 정보를 불러오는 중입니다.</p>
+            <p th:replace="~{fragments/spatial-monitoring :: status}"></p>
             <a id="monitoringSettings" hidden>공간 모니터링 설정</a>
-            <div id="monitoringCanvas" class="monitoring-canvas" hidden></div>
+            <div th:replace="~{fragments/spatial-monitoring :: canvas}"></div>
         </div>
     </section>
 </main>

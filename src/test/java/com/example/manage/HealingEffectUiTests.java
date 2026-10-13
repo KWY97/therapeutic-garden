@@ -6,6 +6,7 @@ import com.example.manage.dto.HealingSpotImprovementView;
 import com.example.manage.dto.ImprovementMaximumView;
 import com.example.manage.dto.ImprovementMetricView;
 import com.example.manage.dto.MonitoringSpotEffectView;
+import com.example.manage.dto.MemberMonitoringSpotEffectView;
 import com.example.manage.repository.*;
 import com.example.manage.service.HealingEffectQueryService;
 import com.example.manage.healingeffect.HealingEffectExcelParser;
@@ -336,7 +337,8 @@ class HealingEffectUiTests {
         var result = mvc.perform(get("/member").sessionAttr("loginMemberId", partial.getMemberId())
                         .sessionAttr("loginMemberName", partial.getName()))
                 .andExpect(status().isOk()).andExpect(view().name("member/home"))
-                .andExpect(model().attributeExists("spotEffects", "overallImprovement", "maximumImprovements", "memberDisplayName", "measurementHistory", "schedules"))
+                .andExpect(model().attributeExists("spotEffects", "overallImprovement", "maximumImprovements",
+                        "memberMonitoringSiteId", "memberMonitoringEffects", "memberDisplayName", "measurementHistory", "schedules"))
                 .andReturn();
         @SuppressWarnings("unchecked") var effects = (List<HealingSpotImprovementView>) result.getModelAndView().getModel().get("spotEffects");
         assertThat(result.getModelAndView().getModel().get("memberDisplayName")).isEqualTo(partial.getName());
@@ -346,19 +348,38 @@ class HealingEffectUiTests {
         assertThat(effects.getFirst().stress().improvementRateDisplay()).isEqualTo("0.0%");
         assertThat(effects.getFirst().stress().validCount()).isEqualTo(2);
         assertThat(effects.get(4).stress().improvementRateDisplay()).isEqualTo("측정 없음");
+        @SuppressWarnings("unchecked") var monitoringEffects = (List<MemberMonitoringSpotEffectView>)
+                result.getModelAndView().getModel().get("memberMonitoringEffects");
+        assertThat(monitoringEffects).extracting(MemberMonitoringSpotEffectView::spotCode)
+                .containsExactly("HS1", "HS2", "HS3", "HS4", "HS5", "HS6");
+        assertThat(monitoringEffects).extracting(MemberMonitoringSpotEffectView::hasMeasurement)
+                .containsExactly(true, true, true, true, false, false);
+        assertThat(monitoringEffects.getFirst().stress()).isSameAs(effects.getFirst().stress());
         String html = result.getResponse().getContentAsString();
         assertThat(html).contains("나의 치유 분석", "나의 공간별 치유 효과와 측정 변화를 확인합니다.",
                         "Spot별 변화 / 상세 분석", "측정 기록",
                         "memberAnalysisSummary", "memberAnalysisHistory", "memberHealingEffects",
-                        "memberOverallImprovement", "memberMaximumImprovements", "memberDisplayName", "memberMeasurementHistory", "member-healing-analysis.js", "나의 달력",
+                        "memberOverallImprovement", "memberMaximumImprovements", "memberMonitoringSiteId", "memberMonitoringEffects",
+                        "memberDisplayName", "memberMeasurementHistory", "member-healing-analysis.js", "member-spatial.js",
+                        "member-spot-detail.js", "id=\"spotDetailModal\" class=\"survey-modal\" hidden",
+                        "id=\"spotDetailTitle\"", "id=\"spotDetailCourse\"", "id=\"closeSpotDetailButton\"",
+                        "id=\"spotImage\"", "id=\"spotThumbnails\"", "id=\"spotGalleryStatus\"",
+                        "id=\"spotId\"", "id=\"spotName\"", "id=\"spotCourse\"", "id=\"spotSiteName\"",
+                        "id=\"spotSiteAddress\"", "id=\"spotAnalysis\"", "측정 데이터",
+                        "home-survey-analysis.js", "home-course-overlay.js", "home-spatial.js", "home-spatial.css",
+                        "공간 모니터링", "monitoringCanvas", "monitoring-effect-legend", "member-monitoring-space", "나의 달력",
                         "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
                 .doesNotContain("상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
-                        "aria-modal=", "\"prev,next today\"", "home-survey-analysis.js", "P002", "P004", "secret-login-two", "secret-login-four",
+                        "mapModal", "openMapButton", "monitoringSettings", "\"prev,next today\"",
+                        "P002", "P004", "secret-login-two", "secret-login-four",
                         "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
+        assertThat(html.indexOf("myHealingTitle")).isLessThan(html.indexOf("spatialTitle"));
+        assertThat(html.indexOf("spatialTitle")).isLessThan(html.indexOf("memberAnalysisHighlights"));
         assertThat(html.indexOf("나의 치유 분석")).isLessThan(html.indexOf("나의 달력"));
         assertThat(html.indexOf("memberAnalysisHighlights")).isLessThan(html.indexOf("memberAnalysisSummary"));
         assertThat(html.indexOf("memberAnalysisSummary")).isLessThan(html.indexOf("memberAnalysisHistory"));
+        assertThat(html.indexOf("member-spot-detail.js")).isLessThan(html.indexOf("member-spatial.js"));
     }
 
     @Test void emptyDatabaseRendersHonestEmptyStates() throws Exception {
