@@ -38,16 +38,6 @@
 
 
 <main class="dashboard-container">
-    <section class="monitoring-space" data-loading="true" aria-labelledby="spatialTitle">
-        <div class="monitoring-heading">
-            <h1 th:replace="~{fragments/spatial-monitoring :: title}">공간 모니터링</h1>
-        </div>
-        <div th:replace="~{fragments/spatial-monitoring :: legend}"></div>
-        <div class="monitoring-content">
-            <p th:replace="~{fragments/spatial-monitoring :: status}"></p>
-            <div th:replace="~{fragments/spatial-monitoring :: canvas}"></div>
-        </div>
-    </section>
     <section class="my-healing-section" aria-labelledby="myHealingTitle">
         <div class="section-heading my-healing-heading">
             <div>
@@ -57,6 +47,16 @@
             </div>
         </div>
         <div class="calendar-card my-healing-card">
+            <section class="monitoring-space member-monitoring-space" data-loading="true" aria-labelledby="spatialTitle">
+                <div class="monitoring-heading">
+                    <h1 th:replace="~{fragments/spatial-monitoring :: title}">공간 모니터링</h1>
+                </div>
+                <div th:replace="~{fragments/spatial-monitoring :: legend}"></div>
+                <div class="monitoring-content">
+                    <p th:replace="~{fragments/spatial-monitoring :: status}"></p>
+                    <div th:replace="~{fragments/spatial-monitoring :: canvas}"></div>
+                </div>
+            </section>
             <div id="memberAnalysisHighlights" aria-live="polite"></div>
             <section class="member-analysis-detail" aria-labelledby="memberAnalysisDetailTitle">
                 <h3 id="memberAnalysisDetailTitle">Spot별 변화 / 상세 분석</h3>

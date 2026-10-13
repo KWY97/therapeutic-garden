@@ -362,14 +362,15 @@ class HealingEffectUiTests {
                         "memberOverallImprovement", "memberMaximumImprovements", "memberMonitoringSiteId", "memberMonitoringEffects",
                         "memberDisplayName", "memberMeasurementHistory", "member-healing-analysis.js", "member-spatial.js",
                         "home-survey-analysis.js", "home-course-overlay.js", "home-spatial.js", "home-spatial.css",
-                        "공간 모니터링", "monitoringCanvas", "monitoring-effect-legend", "나의 달력",
+                        "공간 모니터링", "monitoringCanvas", "monitoring-effect-legend", "member-monitoring-space", "나의 달력",
                         "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
                 .doesNotContain("상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
                         "spotDetailModal", "mapModal", "openMapButton", "monitoringSettings", "aria-modal=", "\"prev,next today\"",
                         "P002", "P004", "secret-login-two", "secret-login-four",
                         "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
-        assertThat(html.indexOf("공간 모니터링")).isLessThan(html.indexOf("나의 치유 분석"));
+        assertThat(html.indexOf("myHealingTitle")).isLessThan(html.indexOf("spatialTitle"));
+        assertThat(html.indexOf("spatialTitle")).isLessThan(html.indexOf("memberAnalysisHighlights"));
         assertThat(html.indexOf("나의 치유 분석")).isLessThan(html.indexOf("나의 달력"));
         assertThat(html.indexOf("memberAnalysisHighlights")).isLessThan(html.indexOf("memberAnalysisSummary"));
         assertThat(html.indexOf("memberAnalysisSummary")).isLessThan(html.indexOf("memberAnalysisHistory"));

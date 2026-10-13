@@ -7316,6 +7316,23 @@ input[type="time"].form-input {
 .my-healing-description { margin: 8px 0 0; color: #64748b; font-size: 14px; line-height: 1.6; }
 .calendar-report-notice { max-width: 680px; margin: 8px 0 0; color: #64748b; font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
 .my-healing-card { padding: 4px 20px 22px; }
+.participant-analysis-page .member-monitoring-space {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+    overflow: visible;
+    background: transparent;
+    box-shadow: none;
+}
+.participant-analysis-page .member-monitoring-space .monitoring-heading { padding: 20px 0; }
+.participant-analysis-page .member-monitoring-space .monitoring-effect-legend { padding: 0 0 12px; }
+.participant-analysis-page .member-monitoring-space .monitoring-content { padding: 0 0 6px; }
+.participant-analysis-page .member-monitoring-space .monitoring-canvas {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
 .my-healing-card #memberAnalysisHighlights > .survey-analysis-section { border-top: 0; margin-top: 0; padding-top: 18px; }
 .member-analysis-detail { margin-top: 28px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
 .member-analysis-detail > h3 { margin: 0; font-size: 18px; }
