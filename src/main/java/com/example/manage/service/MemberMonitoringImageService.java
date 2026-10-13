@@ -24,7 +24,7 @@ public class MemberMonitoringImageService {
                 .filter(ImageResponse::spatial)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("공간 이미지가 없습니다."));
-        var content = siteImages.localContent(siteId, image.imageId());
+        var content = siteImages.authenticatedContent(siteId, image.imageId());
         return new ImageContent(content.bytes(), content.contentType());
     }
 
@@ -35,16 +35,19 @@ public class MemberMonitoringImageService {
                 .filter(ImageResponse::representative)
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("대표 이미지가 없습니다."));
-        var content = spotImages.localThumbnail(spotId, image.imageId());
+        var content = spotImages.authenticatedThumbnail(spotId, image.imageId());
         return new ImageContent(content.bytes(), content.contentType());
     }
 
     public HealingSpotDetailResponse spotDetail(Long spotId) {
+        return spotDetail(spotId, "/member/api/monitoring");
+    }
+
+    public HealingSpotDetailResponse spotDetail(Long spotId, String apiBase) {
         HealingSpot spot = allowedSpot(datasetSiteId(), spotId);
         var images = spotImages.list(spotId).stream().map(image -> {
-            String readUrl = isAdminPath(image.readUrl())
-                    ? "/member/api/monitoring/spots/" + spotId + "/images/" + image.imageId() + "/content"
-                    : image.readUrl();
+            String readUrl = apiBase.startsWith("/admin/") || isAdminPath(image.readUrl())
+                    ? apiBase + "/spots/" + spotId + "/images/" + image.imageId() + "/content" : image.readUrl();
             return new ImageResponse(image.imageId(), image.originalFileName(), image.contentType(),
                     image.displayOrder(), image.representative(), readUrl, image.spatial());
         }).toList();
@@ -53,7 +56,7 @@ public class MemberMonitoringImageService {
 
     public ImageContent spotImage(Long spotId, Long imageId) {
         allowedSpot(datasetSiteId(), spotId);
-        var content = spotImages.localContent(spotId, imageId);
+        var content = spotImages.authenticatedContent(spotId, imageId);
         return new ImageContent(content.bytes(), content.contentType());
     }
 

@@ -42,6 +42,7 @@ class SpatialLayoutTests {
     @Autowired HealingSpotRepository spots;
     @Autowired SiteImageSpotPositionRepository positions;
     @Autowired HealingEffectImportBatchRepository effectBatches;
+    @Autowired MemberRepository members;
     @Autowired SiteImageService siteImages;
     @Autowired HealingSpotImageService spotImages;
     @Autowired HealingSpotService spotService;
@@ -88,6 +89,54 @@ class SpatialLayoutTests {
     }
     void save(SpatialLayoutForm f) { layouts.save(site.getSiteId(), f); }
     String path() { return "/admin/sites/" + site.getSiteId() + "/spatial-layout"; }
+
+    @Test void adminMemberAnalysisApiRequiresAdminAndScopesImagesAndSite() throws Exception {
+        var member = members.saveAndFlush(new Member(804, 1, "spatial-admin-" + UUID.randomUUID(),
+                "unused", "테스트 참가자", "01012345678"));
+        effectBatches.saveAndFlush(new HealingEffectImportBatch("a".repeat(64), "spatial.xlsx",
+                LocalDateTime.now(), 1, 1, site.getSiteId()));
+        var photo = new MockMultipartFile("files", "spot.png", "image/png",
+                MonitoringThumbnailTests.photo(800, 600));
+        spotImages.upload(first.getSpotId(), List.of(photo));
+        Long imageId = spotImages.list(first.getSpotId()).getFirst().imageId();
+        String base = "/admin/members/" + member.getMemberId() + "/data/api";
+        mvc.perform(get(base + "/spatial-layout")).andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(base + "/spatial-layout").sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(base + "/spatial-layout").sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.image.readUrl").value(base + "/monitoring/site-image"))
+                .andExpect(jsonPath("$.spots[0].readUrl").value(base + "/monitoring/spots/"
+                        + first.getSpotId() + "/thumbnail"));
+        mvc.perform(get(base + "/monitoring/site-image").sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk());
+        mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId())
+                        .sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.spotId").value(first.getSpotId()))
+                .andExpect(jsonPath("$.images[0].readUrl").value(base + "/monitoring/spots/"
+                        + first.getSpotId() + "/images/" + imageId + "/content"));
+        mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId() + "/thumbnail")
+                        .sessionAttr("loginAdminId", 1L)).andExpect(status().isOk());
+        mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId() + "/images/" + imageId + "/content")
+                        .sessionAttr("loginAdminId", 1L)).andExpect(status().isOk());
+        mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId() + "/images/" + imageId + "/content")
+                        .sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId() + "/thumbnail")
+                        .sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get("/admin/members/9223372036854775807/data/api/spatial-layout")
+                        .sessionAttr("loginAdminId", 1L)).andExpect(status().isNotFound());
+        var outside = sites.saveAndFlush(new Site("outside-" + UUID.randomUUID(), "주소", 37.0, 127.0, 3));
+        var outsideCourse = courses.saveAndFlush(new HealingCourse(outside, "HC-Z", "다른 코스", null, null, null));
+        var outsideSpot = spots.saveAndFlush(new HealingSpot(outsideCourse, "HS1", "다른 HS", 37.0, 127.0));
+        mvc.perform(get(base + "/monitoring/spots/" + outsideSpot.getSpotId())
+                        .sessionAttr("loginAdminId", 1L)).andExpect(status().isNotFound());
+        mvc.perform(get(base + "/monitoring/spots/" + outsideSpot.getSpotId() + "/images/1/content")
+                        .sessionAttr("loginAdminId", 1L)).andExpect(status().isNotFound());
+        mvc.perform(get("/member/api/spatial-layout").sessionAttr("loginAdminId", 1L))
+                .andExpect(redirectedUrl("/member/login"));
+    }
 
     @Test void monitoringVariantsFollowRepresentativeWhileGalleryKeepsOriginalsAndDeletionCleansUp() throws Exception {
         when(storage.exists(anyString())).thenAnswer(i -> objects.containsKey(i.<String>getArgument(0)));

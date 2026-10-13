@@ -52,8 +52,7 @@ public class AdminController {
 
     private final AdminService adminService;
     private final MemberService memberService;
-    private final com.example.manage.service.HealingEffectQueryService healingEffects;
-    private final com.example.manage.service.MeasurementHistoryQueryService measurementHistory;
+    private final com.example.manage.service.MemberAnalysisModelService analysisModel;
     private final ScheduleService scheduleService;
     private final WeatherService weatherService;
     private final SiteService siteService;
@@ -621,8 +620,8 @@ public class AdminController {
         }
 
         model.addAttribute("member", member);
-        model.addAttribute("spotEffects", healingEffects.findImportedMember(memberId));
-        model.addAttribute("measurementHistory", measurementHistory.findImportedMember(memberId));
+        analysisModel.populate(memberId, member.getName(), model);
+        model.addAttribute("analysisApiBase", "/admin/members/" + memberId + "/data/api");
         return "admin/member-data";
     }
 
