@@ -8,6 +8,7 @@ public interface MemberHealingSpotEffectSummaryRepository extends JpaRepository<
     @Query("""
             select s.member.memberId from MemberHealingSpotEffectSummary s
             where s.healingSpot.healingCourse.site.siteId = :siteId
+              and s.member.testAccount = false
               and s.healingSpot.code in ('HS1','HS2','HS3','HS4','HS5','HS6')
             group by s.member.memberId, s.member.participantNo
             having count(s) = 6 and count(distinct s.healingSpot.code) = 6

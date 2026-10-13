@@ -13,11 +13,11 @@ class HealingImprovementDatabaseRebuilderTests {
                 "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
         var jdbc = new JdbcTemplate(dataSource);
         jdbc.execute("create table site(site_id bigint primary key)");
-        jdbc.execute("create table member(member_id bigint primary key, participant_no int)");
+        jdbc.execute("create table member(member_id bigint primary key, participant_no int, test_account boolean not null default false)");
         jdbc.execute("create table healing_course(course_id bigint primary key, site_id bigint, code varchar(10))");
         jdbc.execute("create table healing_spot(spot_id bigint primary key, course_id bigint, code varchar(10), name varchar(100))");
         jdbc.update("insert into site values(1)");
-        jdbc.update("insert into member values(4,4)");
+        jdbc.update("insert into member(member_id,participant_no) values(4,4)");
         jdbc.update("insert into healing_course values(10,1,'HC-A')");
         jdbc.update("insert into healing_spot values(1,10,'HS1','호스타 정원'),(2,10,'HS2','곶자왈원')");
         for (String sql : java.nio.file.Files.readString(java.nio.file.Path.of("docs/healing-measurement-schema.sql")).split(";"))
@@ -66,5 +66,19 @@ class HealingImprovementDatabaseRebuilderTests {
         assertThat(jdbc.queryForMap("select * from healing_spot_effect_summary where spot_id=2"))
                 .containsEntry("PARTICIPANT_COUNT", 1).containsEntry("TOTAL_EXPERIENCE_COUNT", 1)
                 .containsEntry("STRESS_IMPROVED_COUNT", 0).containsEntry("EMOTIONAL_IMPROVED_COUNT", 0);
+    }
+
+    @Test void testAccountRawRowsDoNotEnterOverallOrPersonalRebuild() throws Exception {
+        var dataSource = database();
+        var jdbc = new JdbcTemplate(dataSource);
+        jdbc.update("insert into member(member_id,participant_no,test_account) values(99,900004,true)");
+        jdbc.update("insert into healing_measurement_session values(2,1,3,99,10,'2026-08-15','HS1 호스타 정원',10,10)");
+        jdbc.update("insert into healing_spot_measurement values(2,2,1,1,20)");
+        try (Connection connection = dataSource.getConnection()) {
+            var result = new HealingImprovementDatabaseRebuilder().execute(connection, 1, true);
+            assertThat(result.overallRows()).isEqualTo(2);
+            assertThat(result.memberSpotRows()).isEqualTo(2);
+            assertThat(result.participantOverallRows()).isEqualTo(1);
+        }
     }
 }

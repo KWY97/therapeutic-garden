@@ -13,6 +13,7 @@
         <div class="card-header">
             <p class="card-eyebrow">MY PAGE</p>
             <h1 class="card-title">마이페이지</h1>
+            <p th:if="${testAccount}" class="calendar-report-notice">테스트 계정</p>
         </div>
 
         <dl th:replace="~{fragments/member-profile :: details(${member}, ${formattedPhone})}"></dl>

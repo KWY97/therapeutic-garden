@@ -63,10 +63,10 @@ class RawMeasurementTests {
         var ds=new DriverManagerDataSource("jdbc:h2:mem:"+UUID.randomUUID()+";MODE=MySQL;DB_CLOSE_DELAY=-1","sa","");
         var j=new JdbcTemplate(ds);
         j.execute("create table site(site_id bigint primary key)");
-        j.execute("create table member(member_id bigint primary key,participant_no int)");
+        j.execute("create table member(member_id bigint primary key,participant_no int,test_account boolean not null default false)");
         j.execute("create table healing_course(course_id bigint primary key,site_id bigint,code varchar(10))");
         j.execute("create table healing_spot(spot_id bigint primary key,course_id bigint,code varchar(10),name varchar(100))");
-        j.update("insert into site values(1)");j.update("insert into member values(1,1)");
+        j.update("insert into site values(1)");j.update("insert into member(member_id,participant_no) values(1,1)");
         j.update("insert into healing_course values(1,1,'HC-A')");
         j.update("insert into healing_spot values(1,1,'HS1','호스타 정원'),(2,1,'HS2','곶자왈원')");
         return ds;

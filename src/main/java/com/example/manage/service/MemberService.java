@@ -19,6 +19,8 @@ import java.util.List;
 @Transactional
 public class MemberService {
 
+    public static final class ReferencedMemberException extends RuntimeException {}
+
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
     private final ScheduleRepository scheduleRepository;
@@ -35,7 +37,7 @@ public class MemberService {
             return null;
         }
 
-        int participantNo = memberRepository.findTopByOrderByParticipantNoDesc()
+        int participantNo = memberRepository.findTopByTestAccountFalseOrderByParticipantNoDesc()
                 .map(member -> Math.addExact(member.getParticipantNo(), 1))
                 .orElse(1);
         String encodedPassword = passwordEncoder.encode(form.getPassword());
@@ -88,7 +90,7 @@ public class MemberService {
 
     @Transactional(readOnly = true)
     public List<Member> findAllMembers() {
-        return memberRepository.findAll();
+        return memberRepository.findByTestAccountFalse();
     }
 
     @Transactional(readOnly = true)
@@ -185,6 +187,10 @@ public class MemberService {
 
         if (member == null) {
             return;
+        }
+
+        if (memberRepository.existsByAnalysisReferenceMemberId(memberId)) {
+            throw new ReferencedMemberException();
         }
 
         List<Schedule> schedules = scheduleRepository.findByMemberMemberIdOrderByScheduleDateAsc(memberId);

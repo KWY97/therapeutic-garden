@@ -64,10 +64,11 @@ public class HealingMeasurementRepository {
                 select s.member_id, hs.spot_id, s.measurement_date, c.code,
                        s.baseline_stress, p.stress_post, s.baseline_emotional, p.emotional_post
                 from healing_measurement_session s
+                join member m on m.member_id=s.member_id
                 join healing_course c on c.course_id=s.course_id
                 join healing_spot hs on hs.course_id=s.course_id and hs.code in ('HS1','HS2','HS3','HS4','HS5','HS6')
                 left join healing_spot_measurement p on p.session_id=s.id and p.spot_id=hs.spot_id
-                where c.site_id=?
+                where c.site_id=? and m.test_account=false
                 order by s.member_id, hs.spot_id, s.measurement_date, s.source_row
                 """;
     }

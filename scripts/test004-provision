@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+set +x  # Do not echo arguments or environment-derived values in an inherited shell trace.
+
+SCRIPT_DIRECTORY="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIRECTORY="$(cd "${SCRIPT_DIRECTORY}/.." && pwd)"
+cd "${PROJECT_DIRECTORY}"
+RUNTIME_CLASSPATH="$(./gradlew -q participantPasswordResetClasspath)"
+JAVA_EXECUTABLE="$(./gradlew -q participantPasswordResetJavaExecutable)"
+exec "${JAVA_EXECUTABLE}" -Djdk.console=java.base -Dspring.jpa.hibernate.ddl-auto=none \
+  -Dspring.jpa.show-sql=false -cp "${RUNTIME_CLASSPATH}" \
+  com.example.manage.passwordreset.TestParticipantProvisionCli "$@"
