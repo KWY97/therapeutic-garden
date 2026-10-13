@@ -23,4 +23,8 @@ public class Admin {
         this.loginId = loginId;
         this.password = password;
     }
+
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+    }
 }

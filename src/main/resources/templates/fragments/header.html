@@ -14,9 +14,11 @@
                     <a role="menuitem" th:href="@{/admin/members}">참가자 관리</a>
                     <a role="menuitem" th:href="@{/admin/schedules}">일정 목록</a>
                     <a role="menuitem" th:href="@{/admin/schedules/calendar}">달력 보기</a>
+                    <a role="menuitem" th:href="@{/admin/password}">비밀번호 변경</a>
                 </div>
             </div>
             <a class="home-login-link" th:if="${session.loginAdminId != null}" th:href="@{/admin/logout}">로그아웃</a>
+            <a class="home-login-link" th:if="${session.loginAdminId == null and session.loginMemberId != null}" th:href="@{/member/mypage}">마이페이지</a>
             <a class="home-login-link" th:if="${session.loginAdminId == null and session.loginMemberId != null}" th:href="@{/member/logout}">로그아웃</a>
         </nav>
     </div>

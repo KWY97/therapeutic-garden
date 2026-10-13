@@ -21,8 +21,6 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-//        adminService.createAdmin("admin", "1234");
-//
 //        memberService.createMember(1, 1, "p001", "0001");
 //        memberService.createMember(2, 1, "p002", "0002");
 //        memberService.createMember(3, 1, "p003", "0003");

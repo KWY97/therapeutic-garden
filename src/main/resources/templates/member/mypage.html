@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>마이페이지</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="page-body service-page member-detail-page member-my-page">
+<header th:replace="~{fragments/header :: header}"></header>
+<main class="page-container member-detail-layout">
+    <section class="card member-detail-card">
+        <div class="card-header">
+            <p class="card-eyebrow">MY PAGE</p>
+            <h1 class="card-title">마이페이지</h1>
+        </div>
+
+        <dl th:replace="~{fragments/member-profile :: details(${member}, ${formattedPhone})}"></dl>
+
+        <div class="detail-action-list">
+            <a class="primary-link-button" th:href="@{/member/password}">비밀번호 변경</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>
