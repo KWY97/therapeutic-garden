@@ -1163,12 +1163,19 @@ public class AdminController {
 
     @PostMapping("/members/{memberId}/delete")
     public String deleteMember(
-            @PathVariable Long memberId
+            @PathVariable Long memberId,
+            RedirectAttributes redirectAttributes
     ) {
-
-        memberService.deleteMember(
-                memberId
-        );
+        try {
+            memberService.deleteMember(memberId);
+            redirectAttributes.addFlashAttribute("successMessage", "참가자를 삭제했습니다.");
+        } catch (MemberService.ReferencedMemberException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "테스트 계정의 분석 참조 대상인 참가자는 삭제할 수 없습니다. 참조 관계를 먼저 확인하세요.");
+        } catch (DataIntegrityViolationException | TransactionException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage",
+                    "연결된 데이터가 있어 참가자를 삭제할 수 없습니다. 참조 관계를 확인하세요.");
+        }
 
         return "redirect:/admin/members";
     }

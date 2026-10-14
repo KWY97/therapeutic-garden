@@ -18,9 +18,13 @@ enum DatabaseTarget {
     }
 
     DatabaseConfig config(Map<String, String> environment, boolean allowProductionTunnel) {
-        String jdbcUrl = required(environment, "_JDBC_URL");
-        String user = required(environment, "_DB_USER");
-        String expectedDatabase = required(environment, "_EXPECTED_DATABASE");
+        return config(environment, allowProductionTunnel, environmentPrefix);
+    }
+
+    DatabaseConfig config(Map<String, String> environment, boolean allowProductionTunnel, String prefix) {
+        String jdbcUrl = required(environment, prefix, "_JDBC_URL");
+        String user = required(environment, prefix, "_DB_USER");
+        String expectedDatabase = required(environment, prefix, "_EXPECTED_DATABASE");
         validateJdbcUrl(jdbcUrl, allowProductionTunnel);
         if (!expectedDatabase.matches("[A-Za-z0-9_]+")) {
             throw new IllegalArgumentException("EXPECTED_DATABASE 형식이 올바르지 않습니다.");
@@ -40,8 +44,8 @@ enum DatabaseTarget {
         }
     }
 
-    private String required(Map<String, String> environment, String suffix) {
-        String key = environmentPrefix + suffix;
+    private String required(Map<String, String> environment, String prefix, String suffix) {
+        String key = prefix + suffix;
         String value = environment.get(key);
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("필수 환경변수가 없습니다: " + key);

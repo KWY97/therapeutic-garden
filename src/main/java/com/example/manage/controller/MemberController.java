@@ -7,6 +7,7 @@ import com.example.manage.dto.MemberProfileView;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -53,7 +54,8 @@ public class MemberController {
     @GetMapping
     public String memberHome(
             HttpSession session,
-            Model model
+            Model model,
+            HttpServletResponse response
     ) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
 
@@ -65,7 +67,12 @@ public class MemberController {
         if (memberName == null || memberName.isBlank()) memberName = "참가자";
 
         model.addAttribute("schedules", schedules);
-        analysisModel.populate(memberId, memberName, model);
+        try {
+            analysisModel.populateForLoggedInMember(memberId, memberName, model);
+        } catch (IllegalArgumentException exception) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            return "member/analysis-unavailable";
+        }
         return "member/home";
     }
 
@@ -80,12 +87,14 @@ public class MemberController {
     @GetMapping("/mypage")
     public String myPage(HttpSession session, Model model) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
-        MemberProfileView profile = memberService.findProfile(memberId);
-        if (profile == null) {
+        Member member = memberService.findMember(memberId);
+        if (member == null) {
             session.invalidate();
             return "redirect:/member/login";
         }
+        MemberProfileView profile = new MemberProfileView(member);
         model.addAttribute("member", profile);
+        model.addAttribute("testAccount", member.isTestAccount());
         model.addAttribute("formattedPhone", profile.getFormattedPhone());
         return "member/mypage";
     }

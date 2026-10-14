@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>분석을 표시할 수 없습니다</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body class="page-body service-page">
+<header th:replace="~{fragments/header :: header}"></header>
+<main class="page-container">
+    <section class="card">
+        <h1>분석을 표시할 수 없습니다</h1>
+        <p>계정의 분석 참조 설정을 확인해 주세요.</p>
+        <a th:href="@{/member/mypage}">마이페이지</a>
+    </section>
+</main>
+</body>
+</html>

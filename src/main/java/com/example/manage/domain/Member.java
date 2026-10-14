@@ -28,6 +28,12 @@ public class Member {
     private String name;
     private String phone;
 
+    @Column(nullable = false)
+    private boolean testAccount;
+
+    // Only participant analysis reads this reference; account identity and schedules stay independent.
+    private Long analysisReferenceMemberId;
+
     public Member(Integer participantNo, Integer groupNo, String loginId, String password) {
         this.participantNo = participantNo;
         this.groupNo = groupNo;
@@ -57,5 +63,10 @@ public class Member {
 
     public void changePassword(String encodedPassword) {
         this.password = encodedPassword;
+    }
+
+    public void configureTestAnalysis(Long referenceMemberId) {
+        this.testAccount = true;
+        this.analysisReferenceMemberId = referenceMemberId;
     }
 }

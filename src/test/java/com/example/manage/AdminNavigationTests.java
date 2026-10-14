@@ -1,5 +1,7 @@
 package com.example.manage;
 
+import com.example.manage.domain.Member;
+import com.example.manage.repository.MemberRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +10,7 @@ import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -16,8 +19,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class AdminNavigationTests {
     @Autowired WebApplicationContext context;
+    @Autowired MemberRepository members;
     private MockMvc mvc;
 
     @BeforeEach
@@ -60,7 +65,9 @@ class AdminNavigationTests {
     @Test
     void participantSessionDoesNotGainAdminNavigationOrCalendarAccess() throws Exception {
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute("loginMemberId", 1L);
+        Member member = members.saveAndFlush(new Member(800_001, 1,
+                "navigation-" + java.util.UUID.randomUUID(), "unused", "참가자", null));
+        session.setAttribute("loginMemberId", member.getMemberId());
         assertThat(header(session)).contains("href=\"/member\"", "href=\"/member/logout\"")
                 .doesNotContain("href=\"/admin\"", "href=\"/admin/logout\"", "href=\"/admin/login\"", "href=\"/member/login\"");
         mvc.perform(get("/admin/schedules/calendar").session(session))

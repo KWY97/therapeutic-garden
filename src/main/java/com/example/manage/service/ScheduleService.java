@@ -56,6 +56,7 @@ public class ScheduleService {
         if (member == null) {
             return;
         }
+        if (member.isTestAccount()) throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
 
 
         /*
@@ -286,6 +287,7 @@ public class ScheduleService {
         if (member == null) {
             return;
         }
+        if (member.isTestAccount()) throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
 
 
         /*

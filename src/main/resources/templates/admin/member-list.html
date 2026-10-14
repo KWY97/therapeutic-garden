@@ -29,6 +29,7 @@
 
     <section class="card" aria-label="참가자 목록 콘텐츠">
         <p role="status" th:if="${successMessage}" th:text="${successMessage}"></p>
+        <p role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></p>
         <div class="schedule-list-toolbar">
             <a class="primary-link-button schedule-create-button" th:href="@{/admin/members/new}">참가자 등록</a>
         </div>
