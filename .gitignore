@@ -49,5 +49,12 @@ manage-backup.sql
 
 # Runtime uploads and rollback recovery files
 .local/
-
 .codex-reference/
+
+# Local AI design skills and tooling
+.agents/
+.claude/
+.codex/
+.impeccable/
+PRODUCT.md
+skills-lock.json
