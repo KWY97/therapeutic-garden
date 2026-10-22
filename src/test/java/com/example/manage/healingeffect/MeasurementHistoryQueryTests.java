@@ -22,7 +22,9 @@ class MeasurementHistoryQueryTests {
         when(repository.findMemberForSite(4L,1L)).thenReturn(List.of(
                 new HealingMeasurementRecord(4L,11L,LocalDate.of(2026,8,14),"HC-A",new BigDecimal("20"),new BigDecimal("15.25"),new BigDecimal("10"),new BigDecimal("12.5")),
                 new HealingMeasurementRecord(4L,11L,LocalDate.of(2026,8,19),"HC-A",null,new BigDecimal("12"),null,new BigDecimal("11"))));
-        var service=new MeasurementHistoryQueryService(repository,spots,batches);
+        var personal=mock(PersonalEegMeasurementRepository.class);
+        when(personal.findActiveMember(anyLong())).thenReturn(java.util.Optional.empty());
+        var service=new MeasurementHistoryQueryService(repository,spots,batches,personal);
         var data=service.findMemberForSite(4L,1L);
         assertEquals("HS1",data.get(0).spotCode());assertEquals(2,data.get(0).records().size());
         assertEquals("2026-08-14",data.get(0).records().get(0).measurementDate());
