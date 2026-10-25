@@ -5,8 +5,11 @@
 
 관리자와 참가자의 일정 관리 기능을 기반으로  
 실증 장소인 **Site**, Site 내부의 **Healing Course(HC)**, <strong>Healing Spot(HS)</strong>을을 관리하고  
-Kakao Map을 통해 공간 정보를 확인할 수 있는 서비스로 확장하고 있습니다.
+Kakao Map을 통해 주소 기반 위치를 확인 및 설정할 수 있습니다.
 
+참가자들의 데이터 열람 서비스를 현재 개발하고 있습니다.
+
+https://schedule-manager-production-73a1.up.railway.app/
 ---
 
 ## 기술 스택
