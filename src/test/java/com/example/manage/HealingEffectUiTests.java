@@ -143,14 +143,25 @@ class HealingEffectUiTests {
                         "평균 스트레스 증감률", "평균 정서 안정성 증감률", "정서적 안정성",
                         "Baseline", "BEFORE &amp; AFTER", "stress-baseline", "stress-followup", "66.7% 증가", "landing-chart-line");
 
-        assertMapCard(html, "HS1", "스트레스", "88.2%", "17회 중 15회 개선", "is-maximum", "aria-label=\"최대 개선 스팟\"");
-        assertMapCard(html, "HS2", "정서 안정성", "68.8%", "16회 중 11회 개선");
-        assertMapCard(html, "HS3", "스트레스", "72.7%", "22회 중 16회 개선");
-        assertMapCard(html, "HS4", "정서 안정성", "69.6%", "23회 중 16회 개선");
-        assertMapCard(html, "HS5", "스트레스", "64.7%", "17회 중 11회 개선");
-        assertMapCard(html, "HS6", "정서 안정성", "88.9%", "18회 중 16회 개선", "is-maximum", "aria-label=\"최대 개선 스팟\"");
+        assertMapCard(html, "HS1", "data-maximum-change-rate=\"27.69\"", "스트레스", "27.7%", "감소", "지수:", "2.75", "1.99", "88.2%", "17회 중 15회 개선", "호스타 정원", "is-maximum", "aria-label=\"최대 개선 스팟\"");
+        assertMapCard(html, "HS2", "data-maximum-change-rate=\"28.58\"", "정서 안정성", "28.6%", "증가", "지수:", "0.85", "1.09", "68.8%", "16회 중 11회 개선", "곶자왈원");
+        assertMapCard(html, "HS3", "data-maximum-change-rate=\"19.44\"", "스트레스", "19.4%", "감소", "지수:", "2.80", "2.26", "72.7%", "22회 중 16회 개선", "가든 위스퍼스");
+        assertMapCard(html, "HS4", "data-maximum-change-rate=\"59.29\"", "정서 안정성", "59.3%", "증가", "지수:", "0.80", "1.28", "69.6%", "23회 중 16회 개선", "콜로네이드 가든");
+        assertMapCard(html, "HS5", "data-maximum-change-rate=\"15.04\"", "스트레스", "15.0%", "감소", "지수:", "3.07", "2.61", "64.7%", "17회 중 11회 개선", "블로썸 가든");
+        assertMapCard(html, "HS6", "data-maximum-change-rate=\"34.37\"", "정서 안정성", "34.4%", "증가", "지수:", "0.70", "0.93", "88.9%", "18회 중 16회 개선", "극림원", "is-maximum", "aria-label=\"최대 개선 스팟\"");
+        assertMobileMapCard(html, "HS1", "27.7%", "감소", "지수:", "2.75", "1.99", "88.2%", "17회 중 15회 개선", "호스타 정원");
+        assertMobileMapCard(html, "HS2", "28.6%", "증가", "지수:", "0.85", "1.09", "68.8%", "16회 중 11회 개선", "곶자왈원");
+        assertMobileMapCard(html, "HS3", "19.4%", "감소", "지수:", "2.80", "2.26", "72.7%", "22회 중 16회 개선", "가든 위스퍼스");
+        assertMobileMapCard(html, "HS4", "59.3%", "증가", "지수:", "0.80", "1.28", "69.6%", "23회 중 16회 개선", "콜로네이드 가든");
+        assertMobileMapCard(html, "HS5", "15.0%", "감소", "지수:", "3.07", "2.61", "64.7%", "17회 중 11회 개선", "블로썸 가든");
+        assertMobileMapCard(html, "HS6", "34.4%", "증가", "지수:", "0.70", "0.93", "88.9%", "18회 중 16회 개선", "극림원");
         String mapSection = html.substring(html.indexOf("landing-monitoring-preview"), html.indexOf("landing-capabilities"));
-        assertThat(mapSection).doesNotContain("monitoring-hotspot-maximum", "스트레스 최대 개선", "정서 안정성 최대 개선");
+        assertThat(mapSection).contains("monitoring-hotspot-maximum-change", "monitoring-hotspot-maximum-prefix",
+                        "monitoring-hotspot-maximum-rate", "monitoring-hotspot-maximum-direction",
+                        "monitoring-hotspot-measurement-label", "monitoring-hotspot-divider", "개선 경험")
+                .doesNotContain("스트레스 최대 개선", "정서 안정성 최대 개선",
+                        "27.69% 최대 감소", "28.58% 최대 증가", "19.44% 최대 감소",
+                        "59.29% 최대 증가", "15.04% 최대 감소", "34.37% 최대 증가");
         String personalSection = html.substring(html.indexOf("landing-person-scene"), html.indexOf("landing-connection"));
         assertThat(personalSection).contains(">최대 개선</span>")
                 .doesNotContain("스트레스 최대 개선", "정서 안정성 최대 개선");
@@ -269,7 +280,8 @@ class HealingEffectUiTests {
                         "개선율 낮음", "개선율 높음", "유효 측정 중 개선된 횟수의 비율",
                         "monitoringMaximums", "상세 분석 보기", "측정 데이터")
                 .doesNotContain("정서적 안정성")
-                .doesNotContain("19.5% 감소", "54.3% 증가", "200.4% 증가", "stressReductionRate",
+                .doesNotContain("19.5% 감소", "54.3% 증가", "200.4% 증가", "27.7%", "지수:",
+                        "monitoring-hotspot-maximum-change", "stressReductionRate",
                         "emotionalIncreaseRate", "스트레스: 낮아질수록 개선", "정서 안정성: 높아질수록 개선")
                 .doesNotContain("Demo 데이터", "시연용 데이터", "id=\"metricSelect\"", "id=\"hcStress\"", "id=\"hcEmotional\"", ">ISI<", ">PSS<",
                         "P001", "P002", "P004", "participantSelect", "분석 대상", "monitoringHistory", "analysisHistorySection",
@@ -371,6 +383,7 @@ class HealingEffectUiTests {
                         "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
                 .doesNotContain("memberAnalysisHistory", "상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
+                        "27.7%", "지수:", "monitoring-hotspot-maximum-change",
                         "mapModal", "openMapButton", "monitoringSettings", "\"prev,next today\"",
                         "P002", "P004", "secret-login-two", "secret-login-four",
                         "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
@@ -487,5 +500,15 @@ class HealingEffectUiTests {
         int end = html.indexOf("landing-preview-spot landing-preview-spot-", start + marker.length());
         String card = html.substring(start, end < 0 ? html.indexOf("</figure>", start) : end);
         assertThat(card).contains(expected);
+    }
+
+    private static void assertMobileMapCard(String html, String spotCode, String... expected) {
+        int mobile = html.indexOf("landing-mobile-courses");
+        String marker = "data-maximum-change-spot=\"" + spotCode + "\"";
+        int start = html.indexOf(marker, mobile);
+        assertThat(start).isGreaterThanOrEqualTo(mobile);
+        int end = html.indexOf("</li>", start);
+        assertThat(end).isGreaterThan(start);
+        assertThat(html.substring(start, end)).contains(expected);
     }
 }

@@ -269,13 +269,21 @@ class RoleBasedHomeTests {
                         ".landing-page .landing-course-journey > li { position: relative; min-height: min(850px, 78vw); width: 100vw;",
                         ".landing-page .landing-journey-b .landing-journey-name { right: 7vw; left: auto; }",
                         "linear-gradient(270deg, #112c25d9",
-                        ".monitoring-hotspot-label {", "padding: 5px 10px 6px; border: 2px solid transparent",
+                        ".monitoring-hotspot-label {", "padding: 10px 11px 12px; border: 2px solid transparent",
                         ".monitoring-hotspot-label.is-maximum { border: 2px solid #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22)",
                         ".monitoring-hotspot-label.is-maximum .monitoring-hotspot-metric { background: #f5dea0; color: #755414",
+                        ".monitoring-hotspot-maximum-change", ".monitoring-hotspot-maximum-value",
+                        ".monitoring-hotspot-maximum-prefix", ".monitoring-hotspot-maximum-rate",
+                        ".monitoring-hotspot-maximum-direction", ".monitoring-hotspot-measurement",
+                        ".landing-page .landing-preview-spot { --spot-offset-x: 0%; --spot-offset-y: 0%; position: absolute; z-index: 4; left: calc(var(--spot-x) + var(--spot-offset-x)); top: calc(var(--spot-y) + var(--spot-offset-y)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px;",
+                        ".landing-page .landing-preview-spot-hs4 { --spot-offset-x: -14%; --spot-offset-y: -4%; gap: 8px }",
+                        ".landing-page .landing-preview-spot .monitoring-hotspot-label { display: flex; flex-direction: column; align-items: center;",
+                        ".monitoring-hotspot-divider",
                         ".landing-preview-legend")
                 .doesNotContain("landing-chart-line-stress", "landing-chart-line-emotional", "landing-rotation-toggle",
                         "landing-capability-flow", "animation-play-state", "landing-capability-track", "landing-keywords",
-                        "landing-preview-affordance", "landing-monitoring-preview:hover", "landing-monitoring-preview:focus-visible");
+                        "landing-preview-affordance", "landing-monitoring-preview:hover", "landing-monitoring-preview:focus-visible",
+                        ".landing-preview-spot-hs4 .monitoring-hotspot-label { transform:");
         assertThat(Files.readString(resources.resolve("static/css/style.css")))
                 .contains("@media (prefers-reduced-motion: reduce)", ".landing-reveal-enabled .landing-page",
                         ".participant-analysis-page .survey-summary-card { padding: 12px; border: 2px solid transparent; }",
