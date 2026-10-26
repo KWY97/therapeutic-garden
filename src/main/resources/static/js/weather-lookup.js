@@ -9,7 +9,7 @@
 }(typeof globalThis !== "undefined" ? globalThis : this, function () {
     "use strict";
 
-    const PAST_DAYS = 92;
+    const PAST_DAYS = 69;
     const FORECAST_DAYS = 16;
     const SEOUL_TIME_ZONE = "Asia/Seoul";
 

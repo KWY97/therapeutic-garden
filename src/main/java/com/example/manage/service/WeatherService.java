@@ -16,7 +16,7 @@ import java.util.List;
 @Service
 public class WeatherService {
 
-    public static final int PAST_DAYS = 92;
+    public static final int PAST_DAYS = 69;
     public static final int FORECAST_DAYS = 16;
 
     private static final double LATITUDE = 37.484849174599;
@@ -209,7 +209,10 @@ public class WeatherService {
     ) {
         return hasIndex(hourly.getTemperature(), index)
                 && hasIndex(hourly.getHumidity(), index)
-                && hasIndex(hourly.getWeatherCode(), index);
+                && hasIndex(hourly.getWeatherCode(), index)
+                && hourly.getTemperature().get(index) != null
+                && hourly.getHumidity().get(index) != null
+                && hourly.getWeatherCode().get(index) != null;
     }
 
     private boolean hasIndex(List<?> values, int index) {

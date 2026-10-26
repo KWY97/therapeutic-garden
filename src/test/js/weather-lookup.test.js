@@ -7,23 +7,23 @@ test('calculates the advertised range from the current date in Seoul', () => {
     const range = WeatherLookup.getAvailableRange(new Date('2026-10-25T15:00:00Z'));
 
     assert.deepEqual(range, {
-        start: '2026-07-26',
+        start: '2026-08-18',
         end: '2026-11-10',
-        label: '26.07.26 ~ 26.11.10'
+        label: '26.08.18 ~ 26.11.10'
     });
 });
 
 test('includes both boundaries and rejects dates immediately outside them', () => {
     const range = WeatherLookup.getAvailableRange(new Date('2026-10-26T03:00:00Z'));
 
-    assert.equal(WeatherLookup.isDateAvailable('2026-07-26', range), true);
+    assert.equal(WeatherLookup.isDateAvailable('2026-08-18', range), true);
     assert.equal(WeatherLookup.isDateAvailable('2026-11-10', range), true);
-    assert.equal(WeatherLookup.isDateAvailable('2026-07-25', range), false);
+    assert.equal(WeatherLookup.isDateAvailable('2026-08-17', range), false);
     assert.equal(WeatherLookup.isDateAvailable('2026-11-11', range), false);
 });
 
 test('blocks an out-of-range lookup without making a request', async () => {
-    const ui = elements('2026-07-25');
+    const ui = elements('2026-08-17');
     let requests = 0;
 
     WeatherLookup.bind({
@@ -37,8 +37,9 @@ test('blocks an out-of-range lookup without making a request', async () => {
     await ui.button.click();
 
     assert.equal(requests, 0);
+    assert.equal(ui.hint.textContent, '불러올 수 있는 날씨의 범위는 26.08.18 ~ 26.11.10 입니다.');
     assert.equal(ui.status.dataset.state, 'error');
-    assert.match(ui.status.textContent, /26\.07\.26 ~ 26\.11\.10/);
+    assert.match(ui.status.textContent, /26\.08\.18 ~ 26\.11\.10/);
 });
 
 test('shows the server message and does not replace existing weather values', async () => {

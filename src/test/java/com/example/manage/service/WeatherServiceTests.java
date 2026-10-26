@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,11 +30,11 @@ class WeatherServiceTests {
     void calculatesAvailableDatesFromTodayInSeoul() {
         WeatherService service = new WeatherService(RestClient.create(), FIXED_CLOCK);
 
-        assertThat(service.getAvailableStartDate()).isEqualTo(LocalDate.of(2026, 7, 26));
+        assertThat(service.getAvailableStartDate()).isEqualTo(LocalDate.of(2026, 8, 18));
         assertThat(service.getAvailableEndDate()).isEqualTo(LocalDate.of(2026, 11, 10));
-        assertThat(service.isDateAvailable(LocalDate.of(2026, 7, 26))).isTrue();
+        assertThat(service.isDateAvailable(LocalDate.of(2026, 8, 18))).isTrue();
         assertThat(service.isDateAvailable(LocalDate.of(2026, 11, 10))).isTrue();
-        assertThat(service.isDateAvailable(LocalDate.of(2026, 7, 25))).isFalse();
+        assertThat(service.isDateAvailable(LocalDate.of(2026, 8, 17))).isFalse();
         assertThat(service.isDateAvailable(LocalDate.of(2026, 11, 11))).isFalse();
     }
 
@@ -47,10 +48,10 @@ class WeatherServiceTests {
         ));
 
         assertThatThrownBy(() -> service.getWeather(
-                LocalDate.of(2026, 7, 25),
+                LocalDate.of(2026, 8, 17),
                 LocalTime.of(9, 0)
         )).isInstanceOf(WeatherService.WeatherDateOutOfRangeException.class)
-                .hasMessageContaining("2026-07-26")
+                .hasMessageContaining("2026-08-18")
                 .hasMessageContaining("2026-11-10");
 
         assertThat(service.calls).isZero();
@@ -95,13 +96,28 @@ class WeatherServiceTests {
     }
 
     @Test
-    void requestsNinetyTwoPastDaysAndSixteenForecastDays() {
+    void returnsNoWeatherWhenClosestTimeHasMissingValues() {
+        StubWeatherService service = new StubWeatherService(FIXED_CLOCK, response(
+                List.of("2026-10-26T09:00"),
+                Collections.singletonList(null),
+                List.of(55.0),
+                List.of(0)
+        ));
+
+        assertThat(service.getWeather(
+                LocalDate.of(2026, 10, 26),
+                LocalTime.of(9, 0)
+        )).isNull();
+    }
+
+    @Test
+    void requestsSixtyNinePastDaysAndSixteenForecastDays() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         WeatherService service = new WeatherService(builder.build(), FIXED_CLOCK);
 
         server.expect(request -> assertThat(request.getURI().getQuery())
-                        .contains("past_days=92")
+                        .contains("past_days=69")
                         .contains("forecast_days=16")
                         .contains("latitude=37.484849174599")
                         .contains("longitude=126.987829717918"))
