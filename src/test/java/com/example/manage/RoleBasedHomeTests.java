@@ -269,7 +269,7 @@ class RoleBasedHomeTests {
                         ".landing-page .landing-course-journey > li { position: relative; min-height: min(850px, 78vw); width: 100vw;",
                         ".landing-page .landing-journey-b .landing-journey-name { right: 7vw; left: auto; }",
                         "linear-gradient(270deg, #112c25d9",
-                        ".monitoring-hotspot-label {", "padding: 8px 10px 9px; border: 2px solid transparent",
+                        ".monitoring-hotspot-label {", "padding: 5px 10px 6px; border: 2px solid transparent",
                         ".monitoring-hotspot-label.is-maximum { border: 2px solid #d6a43a; background: #fff3d6; box-shadow: 0 4px 16px rgba(166, 115, 25, .22)",
                         ".monitoring-hotspot-label.is-maximum .monitoring-hotspot-metric { background: #f5dea0; color: #755414",
                         ".landing-preview-legend")
