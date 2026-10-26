@@ -23,6 +23,10 @@ import static org.mockito.Mockito.*;
 
 /** Each test uses an isolated in-memory DB. No local or Production MySQL connection is made. */
 class PersonalEegIntegrationTests {
+    private static final Path PREVIOUS_REPORT=Path.of(".local/egg-report/EEG_Personal_Report_All_Participants.xlsx");
+    private static final Path CURRENT_REPORT=Path.of("../private-data/EEG_Personal_Report_All_Participants_v.20261023_ver.2.xlsx");
+    private static final String PREVIOUS_SHA="25aa3eb3735cb57ec6b88da8985070f48da397bc2f0ba1168834c52520f5dfb7";
+    private static final String CURRENT_SHA="2dd867810d58525dc6d289a3b3d6c070e2a6a53eba23f1ed4b571b84da513819";
     @TempDir Path temporary;
     private String url;
     private JdbcTemplate jdbc;
@@ -57,9 +61,10 @@ class PersonalEegIntegrationTests {
     }
 
     @Test void actualPrivateReportDryRunAndIsolatedDraftImportPreserveLegacyTables() throws Exception {
-        Path file=Path.of(".local/egg-report/EEG_Personal_Report_All_Participants.xlsx");
+        Path file=PREVIOUS_REPORT;
         Assumptions.assumeTrue(Files.isRegularFile(file),"private workbook is not shipped with the repository");
         var source=new PersonalEegExcelParser().parse(file);
+        assertEquals(PREVIOUS_SHA,source.sha256());
         assertEquals(65,source.sessions().size()); assertEquals(130,source.resultCount());
         assertEquals(126,source.completeCount()); assertEquals(4,source.postMissingCount());
         assertEquals(1,source.correctedDateCount());
@@ -82,7 +87,7 @@ class PersonalEegIntegrationTests {
         assertEquals(4,jdbc.queryForObject("select count(*) from personal_eeg_spot_result where stress_post is null and emotional_post is null",Integer.class));
         assertEquals(1,jdbc.queryForObject("select count(*) from personal_eeg_analysis_session x join member m on m.member_id=x.member_id join healing_course c on c.course_id=x.course_id where m.participant_no=8 and c.code='HC-B' and x.source_date=DATE '2026-01-26' and x.confirmed_date=DATE '2026-09-04'",Integer.class));
         assertEquals(0,jdbc.queryForObject("select count(*) from information_schema.tables where lower(table_name)='personal_eeg_unmatched_slot'",Integer.class));
-        assertStoredMetricsEqualSource(source);
+        assertStoredMetricsEqualSource(source,1);
         try(var c=connect()) { assertEquals("ALREADY_IMPORTED",importer.execute(c,source,1,"eeg-2026-v1",false).status()); }
         try(var c=connect()) { assertThrows(IllegalArgumentException.class,
                 ()->importer.execute(c,new PersonalEegSource("d".repeat(64),"new.xlsx",source.sessions()),1,"eeg-2026-v1",false)); }
@@ -108,6 +113,113 @@ class PersonalEegIntegrationTests {
         assertEquals("계산 불가",missingView.emotional().rateDisplay());
         try(var c=connect()) { versions.returnToLegacy(c); }
         assertTrue(new PersonalEegMeasurementRepository(jdbc).findActiveMember(8L).isEmpty());
+    }
+
+    @Test void currentReportImportsAllResultsAndCanSwitchBackToPreviousBatch() throws Exception {
+        Assumptions.assumeTrue(Files.isRegularFile(CURRENT_REPORT) && Files.isRegularFile(PREVIOUS_REPORT),
+                "private workbooks are not shipped with the repository");
+        var parser=new PersonalEegExcelParser();
+        var previous=parser.parse(PREVIOUS_REPORT);
+        var current=parser.parse(CURRENT_REPORT);
+        assertEquals(PREVIOUS_SHA,previous.sha256());
+        assertEquals(CURRENT_SHA,current.sha256());
+        assertNotEquals(previous.sha256(),current.sha256());
+        assertEquals(67,current.sessions().size());
+        assertEquals(134,current.resultCount());
+        assertEquals(134,current.completeCount());
+        assertEquals(0,current.postMissingCount());
+        assertEquals(1,current.correctedDateCount());
+        assertEquals(11,current.sessions().stream().map(PersonalEegSource.Session::participantNo).distinct().count());
+        var previousSpots=spotsByKey(previous);
+        var currentSpots=spotsByKey(current);
+        assertEquals(Set.of("9:2026-08-21:HC-C:HS5","9:2026-08-21:HC-C:HS6",
+                "10:2026-08-21:HC-C:HS5","10:2026-08-21:HC-C:HS6"),
+                difference(currentSpots.keySet(),previousSpots.keySet()));
+        assertTrue(difference(previousSpots.keySet(),currentSpots.keySet()).isEmpty());
+        var filledKeys=Set.of("3:2026-08-19:HC-A:HS2","3:2026-08-24:HC-B:HS4",
+                "4:2026-08-26:HC-C:HS5","5:2026-08-14:HC-B:HS3");
+        var changed=new HashSet<String>();
+        for(var entry:previousSpots.entrySet()) {
+            var before=entry.getValue(); var after=currentSpots.get(entry.getKey());
+            assertNotNull(after);
+            assertSameNumber(before.baselineStress(),after.baselineStress());
+            assertSameNumber(before.baselineEmotional(),after.baselineEmotional());
+            if(!Objects.equals(before.stressPost(),after.stressPost())
+                    || !Objects.equals(before.emotionalPost(),after.emotionalPost())) changed.add(entry.getKey());
+        }
+        assertEquals(filledKeys,changed);
+        for(int participant:List.of(9,10))
+            assertTrue(current.sessions().stream().anyMatch(s->s.participantNo()==participant
+                    && s.sourceDate().equals(LocalDate.of(2026,8,21)) && s.courseCode().equals("HC-C")));
+        var p008=current.sessions().stream().filter(s->s.participantNo()==8
+                && s.sourceDate().equals(LocalDate.of(2026,1,26)) && s.courseCode().equals("HC-B"))
+                .findFirst().orElseThrow();
+        assertEquals(LocalDate.of(2026,9,4),p008.confirmedDate());
+        assertTrue(current.sessions().stream().filter(s->s!=p008)
+                .allMatch(s->s.sourceDate().equals(s.confirmedDate())));
+
+        var importer=new PersonalEegDatabaseImporter();
+        try(var c=connect()) { assertEquals("IMPORTED_DRAFT",importer.execute(c,previous,1,"eeg-2026-report-v1",false).status()); }
+        try(var c=connect()) { assertEquals("IMPORTED_DRAFT",importer.execute(c,current,1,"eeg-2026-report-v2",false).status()); }
+        assertEquals(2,count("personal_eeg_analysis_batch"));
+        assertEquals(132,count("personal_eeg_analysis_session"));
+        assertEquals(264,count("personal_eeg_spot_result"));
+        assertEquals(0,count("personal_eeg_active_version"));
+        assertStoredMetricsEqualSource(previous,1);
+        assertStoredMetricsEqualSource(current,2);
+        assertEquals(0,jdbc.queryForObject("select count(*) from personal_eeg_spot_result p join personal_eeg_analysis_session x on x.id=p.session_id where x.batch_id=2 and (p.stress_post is null or p.emotional_post is null)",Integer.class));
+        assertEquals(1,jdbc.queryForObject("select count(*) from personal_eeg_analysis_session x join member m on m.member_id=x.member_id join healing_course c on c.course_id=x.course_id where x.batch_id=2 and m.participant_no=8 and c.code='HC-B' and x.source_date=DATE '2026-01-26' and x.confirmed_date=DATE '2026-09-04'",Integer.class));
+        var versions=new PersonalEegVersionStore();
+        var repo=new PersonalEegMeasurementRepository(jdbc);
+        try(var c=connect()) { versions.activate(c,2); }
+        for(long participant:List.of(9L,10L))
+            assertEquals(2,repo.findActiveMember(participant).orElseThrow().rows().stream()
+                    .filter(r->r.measurementDate().equals(LocalDate.of(2026,8,21)) && r.courseCode().equals("HC-C"))
+                    .count());
+        var newPost=repo.findActiveMember(3L).orElseThrow().rows().stream()
+                .filter(r->r.measurementDate().equals(LocalDate.of(2026,8,19)) && r.spotId()==2L)
+                .findFirst().orElseThrow().stressPost();
+        assertNotNull(newPost);
+        var effects=mock(HealingEffectQueryService.class);
+        when(effects.findImportedMemberImprovements(3L)).thenReturn(List.of());
+        when(effects.findImportedMemberOverallImprovement(3L)).thenReturn(Optional.empty());
+        var spots=mock(HealingSpotRepository.class);
+        var entities=new ArrayList<HealingSpot>();
+        for(int n=1;n<=6;n++) {
+            var spot=mock(HealingSpot.class); when(spot.getSpotId()).thenReturn((long)n);
+            when(spot.getCode()).thenReturn("HS"+n); when(spot.getName()).thenReturn("Spot "+n); entities.add(spot);
+        }
+        when(spots.findByHealingCourseSiteSiteId(1L)).thenReturn(entities);
+        var batches=mock(HealingEffectImportBatchRepository.class);
+        var oldBatch=mock(HealingEffectImportBatch.class); when(oldBatch.getTargetSiteId()).thenReturn(1L);
+        when(batches.findFirstByOrderByIdAsc()).thenReturn(Optional.of(oldBatch));
+        var members=mock(MemberRepository.class);
+        var member=mock(Member.class); when(member.isTestAccount()).thenReturn(false);
+        when(members.findById(3L)).thenReturn(Optional.of(member));
+        var history=new MeasurementHistoryQueryService(new HealingMeasurementRepository(jdbc),spots,batches,repo);
+        var modelService=new MemberAnalysisModelService(effects,history,batches,members);
+        var participantModel=new ExtendedModelMap(); var adminModel=new ExtendedModelMap();
+        modelService.populateForLoggedInMember(3L,"P003",participantModel);
+        modelService.populate(3L,"P003",adminModel);
+        assertEquals(participantModel.get("measurementHistory"),adminModel.get("measurementHistory"));
+        @SuppressWarnings("unchecked")
+        var views=(List<MeasurementHistoryView>)participantModel.get("measurementHistory");
+        var filled=views.stream().filter(v->v.spotCode().equals("HS2")).flatMap(v->v.records().stream())
+                .filter(r->r.measurementDate().equals("2026-08-19")).findFirst().orElseThrow();
+        assertSameNumber(newPost,filled.stress().post());
+        assertNotNull(filled.stress().change());
+        assertNotNull(filled.stress().rate());
+        assertNotNull(filled.emotional().post());
+        assertEquals(17,jdbc.queryForObject("select stress_improved_count from healing_spot_effect_summary where spot_id=1",Integer.class));
+        assertEquals(5,jdbc.queryForObject("select stress_improved_count from member_healing_spot_effect_summary where member_id=1 and spot_id=1",Integer.class));
+        try(var c=connect()) { versions.activate(c,1); }
+        assertNull(repo.findActiveMember(3L).orElseThrow().rows().stream()
+                .filter(r->r.measurementDate().equals(LocalDate.of(2026,8,19)) && r.spotId()==2L)
+                .findFirst().orElseThrow().stressPost());
+        assertEquals(0,repo.findActiveMember(9L).orElseThrow().rows().stream()
+                .filter(r->r.measurementDate().equals(LocalDate.of(2026,8,21)) && r.courseCode().equals("HC-C"))
+                .count());
+        assertEquals(2,count("personal_eeg_analysis_batch"));
     }
 
     @Test void inactiveFallbackActivationSwitchRollbackAndSharedMemberAdminModel() throws Exception {
@@ -178,7 +290,7 @@ class PersonalEegIntegrationTests {
     }
 
     @Test void fourReportedValuesDoNotRequireTheEegBandSheet() throws Exception {
-        Path original=Path.of(".local/egg-report/EEG_Personal_Report_All_Participants.xlsx");
+        Path original=CURRENT_REPORT;
         Assumptions.assumeTrue(Files.isRegularFile(original),"private workbook is not shipped with the repository");
         Path withoutBands=temporary.resolve("dated-only.xlsx");
         try(var workbook=new XSSFWorkbook(Files.newInputStream(original))) {
@@ -188,14 +300,14 @@ class PersonalEegIntegrationTests {
             try(var output=Files.newOutputStream(withoutBands)) { workbook.write(output); }
         }
         var source=new PersonalEegExcelParser().parse(withoutBands);
-        assertEquals(65,source.sessions().size());
-        assertEquals(130,source.resultCount());
-        assertEquals(4,source.postMissingCount());
+        assertEquals(67,source.sessions().size());
+        assertEquals(134,source.resultCount());
+        assertEquals(0,source.postMissingCount());
         assertEquals(1,source.correctedDateCount());
     }
 
     @Test void correctedP008DateCannotCollideWithAnotherSession() throws Exception {
-        Path original=Path.of(".local/egg-report/EEG_Personal_Report_All_Participants.xlsx");
+        Path original=CURRENT_REPORT;
         Assumptions.assumeTrue(Files.isRegularFile(original),"private workbook is not shipped with the repository");
         Path duplicateFile=temporary.resolve("date-collision.xlsx");
         try(var workbook=new XSSFWorkbook(Files.newInputStream(original))) {
@@ -234,7 +346,16 @@ class PersonalEegIntegrationTests {
                 keys.add(session.participantNo()+":"+session.sourceDate()+":"+spot.code());
         return keys;
     }
-    private void assertStoredMetricsEqualSource(PersonalEegSource source) {
+    private static Map<String,PersonalEegSource.Spot> spotsByKey(PersonalEegSource source) {
+        var result=new HashMap<String,PersonalEegSource.Spot>();
+        for(var session:source.sessions()) for(var spot:session.spots())
+            assertNull(result.put(session.participantNo()+":"+session.sourceDate()+":"+session.courseCode()+":"+spot.code(),spot));
+        return result;
+    }
+    private static Set<String> difference(Set<String> left,Set<String> right) {
+        var result=new HashSet<>(left); result.removeAll(right); return result;
+    }
+    private void assertStoredMetricsEqualSource(PersonalEegSource source,long batchId) {
         record Stored(int participant,LocalDate sourceDate,LocalDate confirmedDate,String course,String spot,
                       BigDecimal baselineStress,BigDecimal stressPost,BigDecimal baselineEmotional,BigDecimal emotionalPost) {}
         var rows=jdbc.query("""
@@ -245,10 +366,11 @@ class PersonalEegIntegrationTests {
                 join member m on m.member_id=x.member_id
                 join healing_course c on c.course_id=x.course_id
                 join healing_spot h on h.spot_id=p.spot_id
+                where x.batch_id=?
                 """,(r,n)->new Stored(r.getInt(1),r.getDate(2).toLocalDate(),r.getDate(3).toLocalDate(),
                 r.getString(4),r.getString(5),r.getBigDecimal(6),r.getBigDecimal(7),
-                r.getBigDecimal(8),r.getBigDecimal(9)));
-        assertEquals(130,rows.size());
+                r.getBigDecimal(8),r.getBigDecimal(9)),batchId);
+        assertEquals(source.resultCount(),rows.size());
         var byKey=new HashMap<String,Stored>();
         for(var row:rows) assertNull(byKey.put(row.participant()+":"+row.sourceDate()+":"+row.course()+":"+row.spot(),row));
         for(var session:source.sessions()) for(var spot:session.spots()) {

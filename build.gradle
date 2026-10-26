@@ -73,6 +73,13 @@ tasks.register('personalEegImport', JavaExec) {
     mainClass = 'com.example.manage.personaleeg.PersonalEegImportCli'
 }
 
+tasks.register('productionPersonalEegVersion', JavaExec) {
+    group = 'application'
+    description = 'Guarded Production personal EEG batch listing/activation/legacy switch; never imports data'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.manage.personaleeg.ProductionPersonalEegVersionCli'
+}
+
 tasks.register('productionHealingMeasurementImport', JavaExec) {
     group = 'application'
     description = 'Explicit guarded Production raw measurement dry-run/import; never creates schema'

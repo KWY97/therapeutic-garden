@@ -17,26 +17,7 @@ public final class PersonalEegExcelParser {
     private static final String DATE_SHEET = "날짜별_결과";
     private record Columns(String code, String stressPre, String stressPost,
                            String emotionalPre, String emotionalPost) {}
-    private static final List<Columns> SPOTS = List.of(
-            new Columns("HS1", "E", "F", "N", "O"),
-            new Columns("HS2", "H", "I", "Q", "R"),
-            new Columns("HS3", "W", "X", "AC", "AD"),
-            new Columns("HS4", "Z", "AA", "AF", "AG"),
-            new Columns("HS5", "AI", "AJ", "AO", "AP"),
-            new Columns("HS6", "AL", "AM", "AR", "AS"));
-    private static final Map<String, String> METRIC_HEADERS = Map.ofEntries(
-            Map.entry("E", "HS1_스트레스_전"), Map.entry("F", "HS1_스트레스_후"),
-            Map.entry("H", "HS2_스트레스_전"), Map.entry("I", "HS2_스트레스_후"),
-            Map.entry("N", "HS1_정서안정성_전"), Map.entry("O", "HS1_정서안정성_후"),
-            Map.entry("Q", "HS2_정서안정성_전"), Map.entry("R", "HS2_정서안정성_후"),
-            Map.entry("W", "HS3_스트레스_전"), Map.entry("X", "HS3_스트레스_후"),
-            Map.entry("Z", "HS4_스트레스_전"), Map.entry("AA", "HS4_스트레스_후"),
-            Map.entry("AC", "HS3_정서안정성_전"), Map.entry("AD", "HS3_정서안정성_후"),
-            Map.entry("AF", "HS4_정서안정성_전"), Map.entry("AG", "HS4_정서안정성_후"),
-            Map.entry("AI", "HS5_스트레스_전"), Map.entry("AJ", "HS5_스트레스_후"),
-            Map.entry("AL", "HS6_스트레스_전"), Map.entry("AM", "HS6_스트레스_후"),
-            Map.entry("AO", "HS5_정서안정성_전"), Map.entry("AP", "HS5_정서안정성_후"),
-            Map.entry("AR", "HS6_정서안정성_전"), Map.entry("AS", "HS6_정서안정성_후"));
+    private static final List<String> SPOT_CODES = List.of("HS1", "HS2", "HS3", "HS4", "HS5", "HS6");
     private static final Set<String> ALLOWED_MISSING = Set.of(
             "P003:2026-08-19:HS2", "P003:2026-08-24:HS4",
             "P004:2026-08-26:HS5", "P005:2026-08-14:HS3");
@@ -48,7 +29,7 @@ public final class PersonalEegExcelParser {
         try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
             Sheet dated = workbook.getSheet(DATE_SHEET);
             if (dated == null) throw invalid("날짜별 결과 시트 누락");
-            requireHeaders(dated);
+            List<Columns> spotsByCourse = requireHeaders(dated);
             var sessions = new ArrayList<PersonalEegSource.Session>();
             var participants = new HashSet<Integer>();
             var sourceKeys = new HashSet<String>();
@@ -77,8 +58,8 @@ public final class PersonalEegExcelParser {
                 }
                 int first = (course.charAt(3) - 'A') * 2;
                 var spots = new ArrayList<PersonalEegSource.Spot>();
-                for (int s = 0; s < SPOTS.size(); s++) {
-                    Columns c = SPOTS.get(s);
+                for (int s = 0; s < spotsByCourse.size(); s++) {
+                    Columns c = spotsByCourse.get(s);
                     if (s < first || s >= first + 2) {
                         if (anyPresent(row, c)) throw invalid("다른 코스의 HS 값: row " + (i + 1));
                         continue;
@@ -110,8 +91,15 @@ public final class PersonalEegExcelParser {
                 participants.add(number);
             }
             int resultCount = sessions.stream().mapToInt(s -> s.spots().size()).sum();
-            if (sessions.size() != 65 || participants.size() != 11 || resultCount != 130
-                    || p008Sessions != 1 || !ALLOWED_MISSING.containsAll(missing)
+            boolean previous = sessions.size() == 65 && resultCount == 130
+                    && missing.equals(ALLOWED_MISSING);
+            boolean current = sessions.size() == 67 && resultCount == 134 && missing.isEmpty()
+                    && sessions.stream().filter(s -> s.sourceDate().equals(LocalDate.of(2026, 8, 21))
+                            && s.courseCode().equals("HC-C") && (s.participantNo() == 9 || s.participantNo() == 10))
+                            .map(PersonalEegSource.Session::participantNo).collect(java.util.stream.Collectors.toSet())
+                            .equals(Set.of(9, 10));
+            if ((!previous && !current) || !participants.equals(Set.of(1,2,3,4,5,6,7,8,9,10,11))
+                    || p008Sessions != 1
                     || resultCount - missing.size() != sessions.stream().flatMap(s -> s.spots().stream())
                             .filter(s -> s.stressPost() != null).count())
                 throw invalid("날짜별 보고서 건수/매핑 불일치");
@@ -119,15 +107,28 @@ public final class PersonalEegExcelParser {
         }
     }
 
-    private static void requireHeaders(Sheet sheet) {
+    private static List<Columns> requireHeaders(Sheet sheet) {
         Row row = sheet.getRow(0);
         if (row == null) throw invalid("날짜별 header 누락");
-        Map<String, String> headers = new HashMap<>(METRIC_HEADERS);
-        headers.put("A", "참여자"); headers.put("B", "날짜");
-        headers.put("C", "코스"); headers.put("D", "코스명");
-        for (var header : headers.entrySet())
+        for (var header : Map.of("A", "참여자", "B", "날짜", "C", "코스", "D", "코스명").entrySet())
             if (!header.getValue().equals(requiredText(row, header.getKey())))
                 throw invalid("날짜별 header 불일치: " + header.getKey());
+        var positions = new HashMap<String, String>();
+        for (Cell cell : row) {
+            if (cell.getCellType() != CellType.STRING) continue;
+            String name = cell.getStringCellValue();
+            if (positions.putIfAbsent(name, CellReference.convertNumToColString(cell.getColumnIndex())) != null)
+                throw invalid("중복 header: " + name);
+        }
+        var columns = new ArrayList<Columns>();
+        for (String spot : SPOT_CODES) {
+            var names = List.of(spot + "_스트레스_전", spot + "_스트레스_후",
+                    spot + "_정서안정성_전", spot + "_정서안정성_후");
+            if (!positions.keySet().containsAll(names)) throw invalid("HS 지표 header 누락: " + spot);
+            columns.add(new Columns(spot, positions.get(names.get(0)), positions.get(names.get(1)),
+                    positions.get(names.get(2)), positions.get(names.get(3))));
+        }
+        return columns;
     }
     private static boolean anyPresent(Row row, Columns c) {
         return Arrays.stream(new String[]{c.stressPre(), c.stressPost(), c.emotionalPre(), c.emotionalPost()})
