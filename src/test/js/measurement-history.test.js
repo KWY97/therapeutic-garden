@@ -107,7 +107,7 @@ test('administrator rendering keeps the existing line graph and generic Spot col
     assert.ok(nodes.some(n=>n.textContent==='Baseline · 회색 / Spot 측정값 · 녹색'));
 });
 
-test('participant change column uses two-decimal HALF_UP formatting without converting missing values',()=>{
+test('change column uses two-decimal HALF_UP formatting for participant and administrator',()=>{
     const container=node('div');
     const records=[
         record('2026-09-01',10,10),record('2026-09-02',10,9.86),record('2026-09-03',10,12.256),
@@ -131,7 +131,36 @@ test('participant change column uses two-decimal HALF_UP formatting without conv
     const admin=node('div');
     render(admin,[{spotCode:'HS1',spotName:'정원',records}],{defaultSpotCode:'HS1'});
     const adminTable=all(admin).filter(n=>n.tag==='table')[0];
-    assert.equal(adminTable.children.find(n=>n.tag==='tbody').children[0].children[3].textContent,'0');
+    assert.equal(adminTable.children.find(n=>n.tag==='tbody').children[0].children[3].textContent,'0.00');
+});
+
+test('both views round only table text and preserve original chart values, rates and missing states',()=>{
+    const first=record('2026-09-04',2.905446449403972,2.527501968050973);
+    first.stress.changeDisplay='-0.377944481352999';
+    first.stress.rateDisplay='13.0% 감소';
+    first.emotional.baseline=0.7449122959947237;
+    first.emotional.post=0.7349645589435442;
+    first.emotional.changeDisplay='-0.0099477370511795';
+    first.emotional.rateDisplay='1.3% 감소';
+    const second=record('2026-09-05',2,0);
+    second.stress.changeDisplay='-2';
+    const missing=record('2026-09-06',null,null);
+    missing.stress.changeDisplay='계산 불가';
+    missing.stress.rateDisplay='계산 불가';
+    const histories=[{spotCode:'HS1',spotName:'정원',records:[first,second,missing]}];
+    for (const participant of [true,false]) {
+        const container=node('div');
+        renderSpot(container,histories,'HS1',{participant});
+        const tables=all(container).filter(n=>n.tag==='table');
+        const cells=table=>table.children.find(n=>n.tag==='tbody').children.map(row=>row.children.map(cell=>cell.textContent));
+        assert.deepEqual(cells(tables[0])[0],['2026-09-04','2.91','2.53','-0.38','13.0% 감소']);
+        assert.deepEqual(cells(tables[0])[1].slice(1,4),['2.00','0.00','-2.00']);
+        assert.deepEqual(cells(tables[0])[2],['2026-09-06','측정 없음','측정 없음','계산 불가','계산 불가']);
+        assert.deepEqual(cells(tables[1])[0].slice(1,5),['0.74','0.73','-0.01','1.3% 감소']);
+        assert.ok(all(container).some(n=>n.tag==='title'&&n.textContent.includes('2.905446449403972')));
+        assert.equal(first.stress.baseline,2.905446449403972);
+        assert.equal(first.stress.post,2.527501968050973);
+    }
 });
 
 test('fixed Spot history reuses participant charts and tables without a selector or stale records',()=>{

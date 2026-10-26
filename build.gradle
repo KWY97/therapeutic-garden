@@ -65,6 +65,21 @@ tasks.register('healingImprovementRebuild', JavaExec) {
     mainClass = 'com.example.manage.healingeffect.HealingImprovementRebuildCli'
 }
 
+// Reads the private workbook without a DB in dry-run mode. Write is localhost-only and creates a draft.
+tasks.register('personalEegImport', JavaExec) {
+    group = 'application'
+    description = 'Explicit personal EEG report dry-run or local draft import; never activates a version'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.manage.personaleeg.PersonalEegImportCli'
+}
+
+tasks.register('productionPersonalEegVersion', JavaExec) {
+    group = 'application'
+    description = 'Guarded Production personal EEG batch listing/activation/legacy switch; never imports data'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.example.manage.personaleeg.ProductionPersonalEegVersionCli'
+}
+
 tasks.register('productionHealingMeasurementImport', JavaExec) {
     group = 'application'
     description = 'Explicit guarded Production raw measurement dry-run/import; never creates schema'

@@ -6,11 +6,11 @@ window.MeasurementHistory = (() => {
         if (className) el.className = className;
         return el;
     };
-    const number = value => value == null ? '측정 없음' : String(value);
-    const participantChange = value => {
-        const text = String(value == null ? '' : value).trim();
+    const displayNumber = (value, missing = '측정 없음') => {
+        if (value == null) return missing;
+        const text = String(value).trim();
         const match = /^([+-]?)(\d+)(?:\.(\d*))?$/.exec(text);
-        if (!match) return value;
+        if (!match) return text;
         const fraction = (match[3] || '').padEnd(3, '0');
         let hundredths = BigInt(match[2]) * 100n + BigInt(fraction.slice(0, 2));
         if (fraction[2] >= '5') hundredths += 1n;
@@ -135,8 +135,8 @@ window.MeasurementHistory = (() => {
         const body=element('tbody');
         records.forEach(r => {
             const m=r[metric], row=element('tr');
-            const changeDisplay = options.participant ? participantChange(m.changeDisplay) : m.changeDisplay;
-            [r.measurementDate,number(m.baseline),number(m.post),changeDisplay,m.rateDisplay].forEach(value => row.append(element('td',value)));
+            [r.measurementDate,displayNumber(m.baseline),displayNumber(m.post),
+                displayNumber(m.changeDisplay,'계산 불가'),m.rateDisplay].forEach(value => row.append(element('td',value)));
             body.append(row);
         });
         table.append(body); wrapper.append(table); section.append(wrapper);
