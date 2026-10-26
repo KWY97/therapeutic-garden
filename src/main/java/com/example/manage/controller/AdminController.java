@@ -38,6 +38,7 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -45,6 +46,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -1187,15 +1189,31 @@ public class AdminController {
 
     @GetMapping("/weather")
     @ResponseBody
-    public WeatherResult getWeather(
+    public ResponseEntity<?> getWeather(
             @RequestParam LocalDate date,
             @RequestParam LocalTime time
     ) {
 
-        return weatherService.getWeather(
-                date,
-                time
-        );
+        try {
+            WeatherResult result = weatherService.getWeather(
+                    date,
+                    time
+            );
+
+            if (result == null) {
+                return ResponseEntity.status(404).body(Map.of(
+                        "message",
+                        "선택한 날짜의 날씨 데이터가 제공되지 않습니다. 다른 날짜를 선택해 주세요."
+                ));
+            }
+
+            return ResponseEntity.ok(result);
+        } catch (WeatherService.WeatherDateOutOfRangeException exception) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "message",
+                    exception.getMessage()
+            ));
+        }
     }
 
 

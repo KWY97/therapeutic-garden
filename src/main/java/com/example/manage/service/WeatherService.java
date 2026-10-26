@@ -5,19 +5,41 @@ import com.example.manage.dto.WeatherResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 @Service
 public class WeatherService {
 
+    public static final int PAST_DAYS = 92;
+    public static final int FORECAST_DAYS = 16;
+
     private static final double LATITUDE = 37.484849174599;
     private static final double LONGITUDE = 126.987829717918;
+    private static final ZoneId SEOUL_ZONE = ZoneId.of("Asia/Seoul");
 
-    private final RestClient restClient =
-            RestClient.create();
+    private final RestClient restClient;
+    private final Clock clock;
+
+    public WeatherService() {
+        this(
+                RestClient.create(),
+                Clock.system(SEOUL_ZONE)
+        );
+    }
+
+    WeatherService(
+            RestClient restClient,
+            Clock clock
+    ) {
+        this.restClient = restClient;
+        this.clock = clock;
+    }
 
 
     public WeatherResponse getWeatherResponse() {
@@ -35,7 +57,8 @@ public class WeatherService {
                                         "temperature_2m,relative_humidity_2m,weather_code"
                                 )
                                 .queryParam("timezone", "auto")
-                                .queryParam("past_days", 14)
+                                .queryParam("past_days", PAST_DAYS)
+                                .queryParam("forecast_days", FORECAST_DAYS)
                                 .build()
                 )
                 .retrieve()
@@ -47,6 +70,8 @@ public class WeatherService {
             LocalDate scheduleDate,
             LocalTime startTime
     ) {
+
+        validateLookupDate(scheduleDate);
 
         WeatherResponse response =
                 getWeatherResponse();
@@ -88,6 +113,10 @@ public class WeatherService {
                                     .get(i)
                     );
 
+            if (!weatherDateTime.toLocalDate().equals(scheduleDate)) {
+                continue;
+            }
+
 
             long difference =
                     Math.abs(
@@ -110,6 +139,10 @@ public class WeatherService {
          * 적절한 시간을 찾지 못한 경우
          */
         if (closestIndex == -1) {
+            return null;
+        }
+
+        if (!hasWeatherValues(response.getHourly(), closestIndex)) {
             return null;
         }
 
@@ -139,6 +172,71 @@ public class WeatherService {
                 temperature,
                 humidity
         );
+    }
+
+    public LocalDate getAvailableStartDate() {
+        return getToday().minusDays(PAST_DAYS);
+    }
+
+    public LocalDate getAvailableEndDate() {
+        return getToday().plusDays(FORECAST_DAYS - 1L);
+    }
+
+    public boolean isDateAvailable(LocalDate date) {
+        return date != null
+                && !date.isBefore(getAvailableStartDate())
+                && !date.isAfter(getAvailableEndDate());
+    }
+
+    private LocalDate getToday() {
+        return LocalDate.now(clock.withZone(SEOUL_ZONE));
+    }
+
+    private void validateLookupDate(LocalDate scheduleDate) {
+        if (isDateAvailable(scheduleDate)) {
+            return;
+        }
+
+        throw new WeatherDateOutOfRangeException(
+                getAvailableStartDate(),
+                getAvailableEndDate()
+        );
+    }
+
+    private boolean hasWeatherValues(
+            WeatherResponse.Hourly hourly,
+            int index
+    ) {
+        return hasIndex(hourly.getTemperature(), index)
+                && hasIndex(hourly.getHumidity(), index)
+                && hasIndex(hourly.getWeatherCode(), index);
+    }
+
+    private boolean hasIndex(List<?> values, int index) {
+        return values != null && index >= 0 && index < values.size();
+    }
+
+    public static class WeatherDateOutOfRangeException extends IllegalArgumentException {
+
+        private final LocalDate startDate;
+        private final LocalDate endDate;
+
+        public WeatherDateOutOfRangeException(
+                LocalDate startDate,
+                LocalDate endDate
+        ) {
+            super("날씨는 " + startDate + "부터 " + endDate + "까지 불러올 수 있습니다.");
+            this.startDate = startDate;
+            this.endDate = endDate;
+        }
+
+        public LocalDate getStartDate() {
+            return startDate;
+        }
+
+        public LocalDate getEndDate() {
+            return endDate;
+        }
     }
 
 

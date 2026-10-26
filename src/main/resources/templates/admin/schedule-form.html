@@ -263,12 +263,27 @@
                     날씨 정보
                 </legend>
 
-                <button
-                        class="primary-button"
-                        type="button"
-                        id="weatherButton">
-                    날씨 불러오기
-                </button>
+                <div class="weather-lookup-actions">
+                    <button
+                            class="primary-button"
+                            type="button"
+                            id="weatherButton">
+                        날씨 불러오기
+                    </button>
+
+                    <p
+                            class="weather-range-hint"
+                            id="weatherRangeHint">
+                    </p>
+
+                    <p
+                            class="weather-lookup-status"
+                            id="weatherLookupStatus"
+                            role="status"
+                            aria-live="polite"
+                            aria-atomic="true">
+                    </p>
+                </div>
 
 
                 <!-- 날씨 -->
@@ -355,6 +370,7 @@
 
 </main>
 
+<script th:src="@{/js/weather-lookup.js}"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
 
@@ -495,82 +511,16 @@
         });
 
 
-        /*
-         * 날씨 불러오기
-         *
-         * 일정 날짜와 첫 번째 시작 시간을 기준으로
-         * 서버의 날씨 조회 API를 호출한다.
-         */
-        weatherButton.addEventListener("click", async function () {
-
-            const date =
-                    document.getElementById(
-                            "scheduleDate"
-                    ).value;
-
-            const time =
-                    firstStartTime.value;
-
-
-            if (!date || !time) {
-
-                alert(
-                        "일정 날짜와 첫 번째 시작 시간을 먼저 입력해 주세요."
-                );
-
-                return;
-            }
-
-
-            try {
-
-                const response =
-                        await fetch(
-                                `/admin/weather?date=${date}&time=${time}`
-                        );
-
-
-                if (!response.ok) {
-
-                    alert(
-                            "날씨 정보를 불러오지 못했습니다."
-                    );
-
-                    return;
-                }
-
-
-                const data =
-                        await response.json();
-
-
-                document.getElementById(
-                        "weather"
-                ).value =
-                        data.weather;
-
-
-                document.getElementById(
-                        "temperature"
-                ).value =
-                        data.temperature;
-
-
-                document.getElementById(
-                        "humidity"
-                ).value =
-                        data.humidity;
-
-
-            } catch (error) {
-
-                console.error(error);
-
-                alert(
-                        "날씨 정보를 불러오는 중 오류가 발생했습니다."
-                );
-            }
-
+        WeatherLookup.bind({
+            button: weatherButton,
+            hint: document.getElementById("weatherRangeHint"),
+            status: document.getElementById("weatherLookupStatus"),
+            dateInput: document.getElementById("scheduleDate"),
+            timeInput: firstStartTime,
+            weatherInput: document.getElementById("weather"),
+            temperatureInput: document.getElementById("temperature"),
+            humidityInput: document.getElementById("humidity"),
+            fetcher: window.fetch.bind(window)
         });
 
     });

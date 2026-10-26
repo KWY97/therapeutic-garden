@@ -8121,3 +8121,33 @@ input[type="time"].form-input {
     font-size: 14px;
     line-height: 1.5;
 }
+
+.weather-lookup-actions {
+    display: grid;
+    gap: 8px;
+}
+
+.weather-range-hint,
+.weather-lookup-status {
+    margin: 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.weather-lookup-status:empty {
+    display: none;
+}
+
+.weather-lookup-status[data-state="error"] {
+    color: #b91c1c;
+}
+
+.weather-lookup-status[data-state="success"] {
+    color: #166534;
+}
+
+.weather-lookup-actions .primary-button:disabled {
+    cursor: wait;
+    opacity: 0.65;
+}
