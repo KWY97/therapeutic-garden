@@ -16,6 +16,7 @@ import org.springframework.data.domain.Sort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Isolation;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -32,6 +33,7 @@ public class ScheduleService {
     private final ScheduleSpotRepository scheduleSpotRepository;
 
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createSchedule(
             Long memberId,
             LocalDate scheduleDate,
@@ -46,17 +48,19 @@ public class ScheduleService {
             Double humidity
     ) {
 
-        HealingSpot firstHealingSpot = findSelectedSpot(firstSpotId, siteId, courseId);
-        HealingSpot secondHealingSpot = findSelectedSpot(secondSpotId, siteId, courseId);
-
         Member member =
-                memberRepository.findById(memberId)
+                memberRepository.findLockedById(memberId)
                         .orElse(null);
 
         if (member == null) {
             return;
         }
         if (member.isTestAccount()) throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
+
+        HealingSpot firstHealingSpot = findSelectedSpot(firstSpotId, siteId, courseId);
+        HealingSpot secondHealingSpot = findSelectedSpot(secondSpotId, siteId, courseId);
+        rejectDuplicate(null, memberId, scheduleDate, firstSpotId, firstStartTime,
+                secondSpotId, secondStartTime);
 
 
         /*
@@ -181,38 +185,21 @@ public class ScheduleService {
             Long scheduleId,
             Long memberId
     ) {
-
-        Schedule schedule =
-                scheduleRepository.findById(scheduleId)
-                        .orElse(null);
-
-        if (schedule == null) {
-            return null;
-        }
-
-
-        if (!schedule.getMember()
-                .getMemberId()
-                .equals(memberId)) {
-
-            return null;
-        }
-
-
-        List<ScheduleSpot> scheduleSpots =
-                scheduleSpotRepository
-                        .findByScheduleScheduleIdOrderBySequenceAsc(
-                                scheduleId
-                        );
-
-
-        ScheduleResponse response = new ScheduleResponse(schedule, scheduleSpots);
+        ScheduleResponse response = findMemberScheduleResponse(scheduleId, memberId);
+        if (response == null) return null;
         return new MemberScheduleDetailResponse(
                 response.getScheduleId(), response.getScheduleDate(),
                 response.getSiteId(), response.getSiteName(), response.getCourseId(),
                 response.getCourseCode(), response.getCourseName(),
                 response.getMember().getGroupNo(), response.getWeather(), response.getSpots()
         );
+    }
+
+    @Transactional(readOnly = true)
+    public ScheduleResponse findMemberScheduleResponse(Long scheduleId, Long memberId) {
+        Schedule schedule = scheduleRepository.findByScheduleIdAndMemberMemberId(scheduleId, memberId)
+                .orElse(null);
+        return schedule == null ? null : new ScheduleResponse(schedule, findScheduleSpots(scheduleId));
     }
 
     @Transactional(readOnly = true)
@@ -246,7 +233,45 @@ public class ScheduleService {
         return spot;
     }
 
+    private void rejectDuplicate(Long editingScheduleId, Long memberId, LocalDate scheduleDate,
+                                 Long firstSpotId, LocalTime firstStartTime,
+                                 Long secondSpotId, LocalTime secondStartTime) {
+        List<Schedule> sameDay = scheduleRepository.findByMemberMemberIdAndScheduleDate(memberId, scheduleDate)
+                .stream().filter(schedule -> !schedule.getScheduleId().equals(editingScheduleId)).toList();
+        if (sameDay.isEmpty()) return;
 
+        Map<Long, List<ScheduleSpot>> spotsBySchedule = scheduleSpotRepository
+                .findByScheduleScheduleIdInOrderBySequenceAsc(
+                        sameDay.stream().map(Schedule::getScheduleId).toList())
+                .stream().collect(Collectors.groupingBy(spot -> spot.getSchedule().getScheduleId()));
+
+        for (Schedule schedule : sameDay) {
+            List<ScheduleSpot> spots = spotsBySchedule.getOrDefault(schedule.getScheduleId(), List.of());
+            if (spots.size() == 2
+                    && sameVisit(spots.get(0), 1, firstSpotId, firstStartTime)
+                    && sameVisit(spots.get(1), 2, secondSpotId, secondStartTime)) {
+                throw new DuplicateScheduleException();
+            }
+        }
+    }
+
+    private boolean sameVisit(ScheduleSpot spot, int sequence, Long spotId, LocalTime startTime) {
+        return spot.getSequence() == sequence
+                && spot.getHealingSpot().getSpotId().equals(spotId)
+                && spot.getStartTime().equals(startTime);
+    }
+
+    public static class DuplicateScheduleException extends IllegalArgumentException {
+        public DuplicateScheduleException() {
+            super("같은 참가자에게 동일한 날짜, 코스, 스팟 방문 순서와 시작 시간의 일정이 이미 등록되어 있습니다.");
+        }
+    }
+
+    public static class MemberScheduleNotFoundException extends RuntimeException {
+    }
+
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateSchedule(
             Long scheduleId,
             Long memberId,
@@ -262,11 +287,14 @@ public class ScheduleService {
             Double humidity
     ) {
 
+        Member member = memberRepository.findLockedById(memberId).orElse(null);
+        if (member == null) return;
+
         /*
          * 수정할 일정 조회
          */
         Schedule schedule =
-                scheduleRepository.findById(scheduleId)
+                scheduleRepository.findLockedById(scheduleId)
                         .orElse(null);
 
         if (schedule == null) {
@@ -274,19 +302,34 @@ public class ScheduleService {
         }
 
 
-        /*
-         * 수정 화면에서 선택한 참가자 조회
-         */
+        applyScheduleUpdate(schedule, member, scheduleDate, siteId, courseId,
+                firstSpotId, firstStartTime, secondSpotId, secondStartTime,
+                weather, temperature, humidity, true);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateMemberSchedule(Long scheduleId, Long memberId,
+                                     LocalDate scheduleDate, Long siteId, Long courseId,
+                                     Long firstSpotId, LocalTime firstStartTime,
+                                     Long secondSpotId, LocalTime secondStartTime,
+                                     String weather, Double temperature, Double humidity) {
+        Member member = memberRepository.findLockedById(memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        Schedule schedule = scheduleRepository.findLockedByIdAndMemberId(scheduleId, memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        applyScheduleUpdate(schedule, member, scheduleDate, siteId, courseId,
+                firstSpotId, firstStartTime, secondSpotId, secondStartTime,
+                weather, temperature, humidity, false);
+    }
+
+    private void applyScheduleUpdate(Schedule schedule, Member member, LocalDate scheduleDate,
+                                     Long siteId, Long courseId, Long firstSpotId,
+                                     LocalTime firstStartTime, Long secondSpotId,
+                                     LocalTime secondStartTime, String weather,
+                                     Double temperature, Double humidity, boolean reassignMember) {
         HealingSpot firstHealingSpot = findSelectedSpot(firstSpotId, siteId, courseId);
         HealingSpot secondHealingSpot = findSelectedSpot(secondSpotId, siteId, courseId);
 
-        Member member =
-                memberRepository.findById(memberId)
-                        .orElse(null);
-
-        if (member == null) {
-            return;
-        }
         if (member.isTestAccount()) throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
 
 
@@ -300,7 +343,7 @@ public class ScheduleService {
         List<ScheduleSpot> scheduleSpots =
                 scheduleSpotRepository
                         .findByScheduleScheduleIdOrderBySequenceAsc(
-                                scheduleId
+                        schedule.getScheduleId()
                         );
 
 
@@ -310,13 +353,14 @@ public class ScheduleService {
             throw new IllegalArgumentException("일정에는 순서가 지정된 두 개의 스팟이 필요합니다.");
         }
 
+        rejectDuplicate(schedule.getScheduleId(), member.getMemberId(), scheduleDate, firstSpotId, firstStartTime,
+                secondSpotId, secondStartTime);
+
         /*
          * 일정 기본 정보 수정
          */
-        schedule.update(
-                member,
-                scheduleDate
-        );
+        if (reassignMember) schedule.update(member, scheduleDate);
+        else schedule.updateDate(scheduleDate);
 
 
         /*
@@ -363,16 +407,27 @@ public class ScheduleService {
     public void deleteSchedule(Long scheduleId) {
 
         Schedule schedule =
-                scheduleRepository.findById(scheduleId)
+                scheduleRepository.findLockedById(scheduleId)
                         .orElse(null);
 
         if (schedule == null) {
             return;
         }
 
-        scheduleSpotRepository
-                .deleteByScheduleScheduleId(scheduleId);
+        deleteScheduleAndSpots(schedule);
+    }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void deleteMemberSchedule(Long scheduleId, Long memberId) {
+        memberRepository.findLockedById(memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        Schedule schedule = scheduleRepository.findLockedByIdAndMemberId(scheduleId, memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        deleteScheduleAndSpots(schedule);
+    }
+
+    private void deleteScheduleAndSpots(Schedule schedule) {
+        scheduleSpotRepository.deleteByScheduleScheduleId(schedule.getScheduleId());
         scheduleRepository.delete(schedule);
     }
 }

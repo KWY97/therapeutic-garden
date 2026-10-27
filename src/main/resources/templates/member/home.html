@@ -60,6 +60,8 @@
 
             </div>
 
+            <a class="primary-link-button schedule-create-button" th:href="@{/member/schedules}">일정 목록</a>
+
         </div>
 
 
@@ -288,7 +290,14 @@
                                 info.el.classList.add(
                                     "member-calendar-event"
                                 );
+                            },
+
+                        eventClick: function (info) {
+                            const scheduleId = info.event.id;
+                            if (/^[1-9]\d*$/.test(scheduleId)) {
+                                window.location.assign(`/member/schedules/${scheduleId}?from=calendar`);
                             }
+                        }
 
 
 

@@ -668,6 +668,10 @@ public class AdminController {
                     form.getTemperature(),
                     form.getHumidity()
             );
+        } catch (ScheduleService.DuplicateScheduleException exception) {
+            bindingResult.reject("duplicateSchedule", exception.getMessage());
+            model.addAttribute("members", memberService.findAllMembers());
+            return "admin/schedule-form";
         } catch (IllegalArgumentException exception) {
             bindingResult.rejectValue("firstSpotId", "invalid", exception.getMessage());
             model.addAttribute("members", memberService.findAllMembers());
@@ -942,6 +946,12 @@ public class AdminController {
                     form.getTemperature(),
                     form.getHumidity()
             );
+        } catch (ScheduleService.DuplicateScheduleException exception) {
+            bindingResult.reject("duplicateSchedule", exception.getMessage());
+            model.addAttribute("members", memberService.findAllMembers());
+            model.addAttribute("scheduleId", scheduleId);
+            model.addAttribute("from", from);
+            return "admin/schedule-edit";
         } catch (IllegalArgumentException exception) {
             bindingResult.rejectValue("firstSpotId", "invalid", exception.getMessage());
             model.addAttribute("members", memberService.findAllMembers());

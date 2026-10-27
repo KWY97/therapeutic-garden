@@ -13,9 +13,9 @@
     <section class="card member-detail-card">
 
         <div class="card-header">
-            <p class="card-eyebrow">Administrator</p>
+            <p class="card-eyebrow" th:text="${memberMode} ? 'PARTICIPANT' : 'Administrator'">Administrator</p>
             <h1 class="card-title">일정 상세 정보</h1>
-            <p class="card-description">
+            <p class="card-description" th:text="${memberMode} ? '나의 일정과 스팟 순서를 확인합니다.' : '선택한 참가자의 일정과 스팟 순서를 확인합니다.'">
                 선택한 참가자의 일정과 스팟 순서를 확인합니다.
             </p>
         </div>
@@ -97,10 +97,13 @@
             </p>
         </section>
 
+        <p class="error-message" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
         <div class="detail-action-list">
 
             <a
                     class="primary-button"
+                    th:unless="${memberMode}"
                     th:href="@{/admin/schedules/{scheduleId}/edit(
                         scheduleId=${schedule.scheduleId},
                         from=${from}
@@ -110,6 +113,7 @@
 
             <form
                     class="delete-form"
+                    th:unless="${memberMode}"
                     th:action="@{/admin/schedules/{scheduleId}/delete(scheduleId=${schedule.scheduleId})}"
                     method="post"
                     onsubmit="return confirm('정말 이 일정을 삭제하시겠습니까?');"
@@ -121,11 +125,20 @@
                 </button>
             </form>
 
+            <a class="primary-button" th:if="${memberMode}"
+               th:href="@{/member/schedules/{scheduleId}/edit(scheduleId=${schedule.scheduleId},from=${from})}">일정 수정</a>
+
+            <form class="delete-form" th:if="${memberMode}"
+                  th:action="@{/member/schedules/{scheduleId}/delete(scheduleId=${schedule.scheduleId},from=${from})}"
+                  method="post" onsubmit="return confirm('정말 이 일정을 삭제하시겠습니까?');">
+                <button class="delete-button" type="submit">일정 삭제</button>
+            </form>
+
 
             <!-- 일정 목록에서 상세로 들어온 경우 -->
             <a
                     class="secondary-link-button"
-                    th:if="${from != 'calendar'}"
+                    th:if="${memberMode != true and from != 'calendar'}"
                     th:href="@{/admin/schedules}">
                 일정 목록으로
             </a>
@@ -134,10 +147,15 @@
             <!-- 달력에서 상세로 들어온 경우 -->
             <a
                     class="secondary-link-button"
-                    th:if="${from == 'calendar'}"
+                    th:if="${memberMode != true and from == 'calendar'}"
                     th:href="@{/admin/schedules/calendar}">
                 달력으로
             </a>
+
+            <a class="secondary-link-button" th:if="${memberMode == true and from == 'calendar'}"
+               th:href="@{/member}">달력으로</a>
+            <a class="secondary-link-button" th:if="${memberMode == true and from != 'calendar'}"
+               th:href="@{/member/schedules}">일정 목록으로</a>
 
         </div>
     </section>

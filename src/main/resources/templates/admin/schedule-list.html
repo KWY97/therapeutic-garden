@@ -15,15 +15,15 @@
 <header th:replace="~{fragments/header :: header}"></header>
 
 <main class="dashboard-container admin-list-container">
-    <nav class="admin-page-navigation" aria-label="관리자 화면 이동">
+    <nav class="admin-page-navigation" aria-label="관리자 화면 이동" th:unless="${memberMode}">
         <a class="logout-link" th:href="@{/admin}">관리자 메인</a>
     </nav>
 
     <header class="section-heading">
         <div>
-            <p class="section-label">ADMINISTRATOR</p>
+            <p class="section-label" th:text="${memberMode} ? 'PARTICIPANT' : 'ADMINISTRATOR'">ADMINISTRATOR</p>
             <h1 class="section-title">일정 목록</h1>
-            <p class="card-description">현재 등록된 참가자별 일정을 확인합니다.</p>
+            <p class="card-description" th:text="${memberMode} ? '나의 일정을 확인합니다.' : '현재 등록된 참가자별 일정을 확인합니다.'">현재 등록된 참가자별 일정을 확인합니다.</p>
         </div>
     </header>
 
@@ -33,7 +33,7 @@
         <!-- ================================
              정렬 / 일정 등록
         ================================= -->
-        <div class="schedule-list-toolbar">
+        <div class="schedule-list-toolbar" th:unless="${memberMode}">
 
             <!-- 정렬 -->
             <form
@@ -86,6 +86,11 @@
 
         </div>
 
+        <div class="schedule-list-toolbar" th:if="${memberMode}">
+            <a class="primary-link-button schedule-create-button" th:href="@{/member/schedules/new}">새 일정 등록</a>
+            <a class="secondary-link-button schedule-create-button" th:href="@{/member}">달력으로 돌아가기</a>
+        </div>
+
 
         <!-- ================================
              일정 목록
@@ -98,9 +103,9 @@
 
                 <tr>
                     <th>일정 날짜</th>
-                    <th>이름</th>
-                    <th>그룹</th>
-                    <th>아이디</th>
+                    <th th:unless="${memberMode}">이름</th>
+                    <th th:unless="${memberMode}">그룹</th>
+                    <th th:unless="${memberMode}">아이디</th>
                     <th>코스</th>
                     <th>날씨</th>
                 </tr>
@@ -117,6 +122,13 @@
 
                         <a
                                 class="member-detail-link"
+                                th:if="${memberMode}"
+                                th:href="@{/member/schedules/{scheduleId}(scheduleId=${schedule.scheduleId},from='list')}"
+                                th:text="${schedule.scheduleDate}">
+                        </a>
+                        <a
+                                class="member-detail-link"
+                                th:unless="${memberMode}"
                                 th:href="@{/admin/schedules/{scheduleId}(
                                     scheduleId=${schedule.scheduleId}
                                 )}"
@@ -128,6 +140,7 @@
 
                     <!-- 이름 -->
                     <td
+                            th:unless="${memberMode}"
                             th:text="${schedule.member.name != null
                                 ? schedule.member.name
                                 : '-'}">
@@ -135,12 +148,12 @@
 
 
                     <!-- 그룹 -->
-                    <td th:text="|${schedule.member.groupNo}그룹|">
+                    <td th:unless="${memberMode}" th:text="|${schedule.member.groupNo}그룹|">
                     </td>
 
 
                     <!-- 로그인 아이디 -->
-                    <td th:text="${schedule.member.loginId}">
+                    <td th:unless="${memberMode}" th:text="${schedule.member.loginId}">
                     </td>
 
 

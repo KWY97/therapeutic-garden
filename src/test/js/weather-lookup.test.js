@@ -61,6 +61,45 @@ test('shows the server message and does not replace existing weather values', as
     assert.equal(ui.button.disabled, false);
 });
 
+test('uses the member URL and fills weather values for the chosen date and time', async () => {
+    const ui = elements('2026-10-28');
+    let requestedUrl;
+    WeatherLookup.bind({
+        ...ui,
+        now: new Date('2026-10-26T03:00:00Z'),
+        url: '/member/weather',
+        fetcher: async url => {
+            requestedUrl = url;
+            return {ok: true, json: async () => ({weather: '맑음', temperature: 24.5, humidity: 61})};
+        }
+    });
+    await ui.button.click();
+
+    assert.equal(requestedUrl, '/member/weather?date=2026-10-28&time=09%3A00');
+    assert.equal(ui.weatherInput.value, '맑음');
+    assert.equal(ui.temperatureInput.value, 24.5);
+    assert.equal(ui.humidityInput.value, 61);
+    assert.equal(ui.status.dataset.state, 'success');
+});
+
+test('keeps the admin URL as the default and explains a login redirect', async () => {
+    const ui = elements('2026-10-28');
+    let requestedUrl;
+    WeatherLookup.bind({
+        ...ui,
+        now: new Date('2026-10-26T03:00:00Z'),
+        fetcher: async url => {
+            requestedUrl = url;
+            return {ok: true, redirected: true, json: async () => { throw new Error('HTML is not JSON'); }};
+        }
+    });
+    await ui.button.click();
+
+    assert.equal(requestedUrl, '/admin/weather?date=2026-10-28&time=09%3A00');
+    assert.equal(ui.status.dataset.state, 'error');
+    assert.match(ui.status.textContent, /다시 로그인/);
+});
+
 test('both schedule screens use the shared accessible weather lookup UI', () => {
     for (const template of ['schedule-form.html', 'schedule-edit.html']) {
         const html = fs.readFileSync(`src/main/resources/templates/admin/${template}`, 'utf8');

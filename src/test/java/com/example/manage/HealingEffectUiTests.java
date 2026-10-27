@@ -404,7 +404,7 @@ class HealingEffectUiTests {
                         "mapModal", "openMapButton", "monitoringSettings", "\"prev,next today\"",
                         "P002", "P004", "secret-login-two", "secret-login-four",
                         "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
-                        "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
+                        "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/");
         assertThat(html.indexOf("myHealingTitle")).isLessThan(html.indexOf("spatialTitle"));
         assertThat(html.indexOf("spatialTitle")).isLessThan(html.indexOf("memberAnalysisHighlights"));
         assertThat(html.indexOf("나의 치유 분석")).isLessThan(html.indexOf("나의 달력"));

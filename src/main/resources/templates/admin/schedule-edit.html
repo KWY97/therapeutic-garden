@@ -17,7 +17,7 @@
     <section class="card form-card">
 
         <div class="card-header">
-            <p class="card-eyebrow">Administrator</p>
+            <p class="card-eyebrow" th:text="${memberMode} ? 'PARTICIPANT' : 'Administrator'">Administrator</p>
 
             <h1 class="card-title">
                 일정 수정
@@ -31,16 +31,13 @@
 
         <form
                 class="login-form"
-                th:action="@{/admin/schedules/{scheduleId}/edit(
-                    scheduleId=${scheduleId},
-                    from=${from}
-                )}"
+                th:action="${memberMode} ? @{/member/schedules/{scheduleId}/edit(scheduleId=${scheduleId},from=${from})} : @{/admin/schedules/{scheduleId}/edit(scheduleId=${scheduleId},from=${from})}"
                 th:object="${scheduleForm}"
                 method="post"
         >
 
             <!-- 참가자 -->
-            <div class="form-group">
+            <div class="form-group" th:unless="${memberMode}">
 
                 <label
                         class="form-label"
@@ -276,7 +273,8 @@
                     <button
                             class="primary-button"
                             type="button"
-                            id="weatherButton">
+                            id="weatherButton"
+                            th:attr="data-weather-url=${memberMode == true ? '/member/weather' : '/admin/weather'}">
                         날씨 불러오기
                     </button>
 
@@ -353,6 +351,8 @@
             </fieldset>
 
 
+            <p class="error-message" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+
             <button
                     class="primary-button"
                     type="submit">
@@ -362,11 +362,13 @@
         </form>
 
 
-        <a
+        <a th:unless="${memberMode}"
                 class="back-link"
                 th:href="@{/admin/schedules/{scheduleId}(scheduleId=${scheduleId})}">
             일정 상세로
         </a>
+        <a class="back-link" th:if="${memberMode}"
+           th:href="@{/member/schedules/{scheduleId}(scheduleId=${scheduleId},from=${from})}">일정 상세로</a>
 
     </section>
 
@@ -509,6 +511,7 @@
 
         WeatherLookup.bind({
             button: weatherButton,
+            url: weatherButton.dataset.weatherUrl,
             hint: document.getElementById("weatherRangeHint"),
             status: document.getElementById("weatherLookupStatus"),
             dateInput: document.getElementById("scheduleDate"),

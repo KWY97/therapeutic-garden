@@ -109,6 +109,123 @@ class ScheduleMigrationTests {
     }
 
     @Test
+    void duplicatePolicyPreservesDistinctVisitsAndDoesNotSaveExtraSpots() {
+        Long originalId = create();
+        long initialSpots = scheduleSpots.count();
+
+        assertThatThrownBy(() -> service.createSchedule(member.getMemberId(), date, site.getSiteId(),
+                course.getCourseId(), first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10),
+                "비", 12.0, 80.0))
+                .isInstanceOf(ScheduleService.DuplicateScheduleException.class);
+        assertThat(schedules.count()).isEqualTo(1);
+        assertThat(scheduleSpots.count()).isEqualTo(initialSpots);
+
+        HealingCourse otherCourse = courses.save(new HealingCourse(site, "OTHER", "다른 코스", 37.0, 127.0, 50.0));
+        HealingSpot otherFirst = spots.save(new HealingSpot(otherCourse, "OTHER-1", "다른 정원 1", 37.0, 127.0));
+        HealingSpot otherSecond = spots.save(new HealingSpot(otherCourse, "OTHER-2", "다른 정원 2", 37.0, 127.0));
+        service.createSchedule(member.getMemberId(), date, site.getSiteId(), otherCourse.getCourseId(),
+                otherFirst.getSpotId(), time, otherSecond.getSpotId(), time.plusMinutes(10), null, null, null);
+
+        HealingSpot third = spots.save(new HealingSpot(course, "SPOT-Z", "셋째 정원", 37.0, 127.0));
+        service.createSchedule(member.getMemberId(), date, site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, third.getSpotId(), time.plusMinutes(10), null, null, null);
+        service.createSchedule(member.getMemberId(), date, site.getSiteId(), course.getCourseId(),
+                second.getSpotId(), time.plusMinutes(10), first.getSpotId(), time, null, null, null);
+        service.createSchedule(member.getMemberId(), date, site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time.plusHours(1), second.getSpotId(), time.plusHours(1).plusMinutes(10),
+                null, null, null);
+
+        Member anotherMember = members.save(new Member(101, 2, "another-member", "password"));
+        service.createSchedule(anotherMember.getMemberId(), date, site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), null, null, null);
+        assertThat(schedules.count()).isEqualTo(6);
+        assertThat(scheduleSpots.count()).isEqualTo(12);
+        assertThat(service.findScheduleResponse(originalId)).isNotNull();
+    }
+
+    @Test
+    void updateExcludesItselfButCannotBecomeAnotherScheduleDuplicate() {
+        Long originalId = create();
+        service.updateSchedule(originalId, member.getMemberId(), date, site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), "흐림", 20.0, 70.0);
+        service.createSchedule(member.getMemberId(), date.plusDays(1), site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), null, null, null);
+        Long laterId = schedules.findByMemberMemberIdOrderByScheduleDateAsc(member.getMemberId()).get(1).getScheduleId();
+
+        assertThatThrownBy(() -> service.updateSchedule(laterId, member.getMemberId(), date,
+                site.getSiteId(), course.getCourseId(), first.getSpotId(), time,
+                second.getSpotId(), time.plusMinutes(10), null, null, null))
+                .isInstanceOf(ScheduleService.DuplicateScheduleException.class);
+        assertThat(service.findScheduleResponse(laterId).getScheduleDate()).isEqualTo(date.plusDays(1));
+        assertThat(scheduleSpots.count()).isEqualTo(4);
+    }
+
+    @Test
+    void duplicatePostReturnsReadableFormError() throws Exception {
+        create();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        var duplicate = post("/admin/schedules/new").sessionAttr("loginAdminId", 1L)
+                .param("memberId", member.getMemberId().toString())
+                .param("scheduleDate", date.toString())
+                .param("siteId", site.getSiteId().toString())
+                .param("courseId", course.getCourseId().toString())
+                .param("firstSpotId", first.getSpotId().toString())
+                .param("secondSpotId", second.getSpotId().toString())
+                .param("firstStartTime", "09:00").param("secondStartTime", "09:10")
+                .param("weather", "비");
+        String html = mvc.perform(duplicate).andExpect(status().isOk())
+                .andExpect(view().name("admin/schedule-form"))
+                .andExpect(model().attributeHasErrors("scheduleForm"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(html).contains("이미 등록되어 있습니다.", "role=\"alert\"", "저장 중...",
+                "scheduleForm.dataset.submitting");
+        assertThat(schedules.count()).isEqualTo(1);
+        assertThat(scheduleSpots.count()).isEqualTo(2);
+
+        service.createSchedule(member.getMemberId(), date.plusDays(1), site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), null, null, null);
+        Long laterId = schedules.findByMemberMemberIdOrderByScheduleDateAsc(member.getMemberId()).get(1).getScheduleId();
+        String editHtml = mvc.perform(post("/admin/schedules/" + laterId + "/edit")
+                        .sessionAttr("loginAdminId", 1L)
+                        .param("memberId", member.getMemberId().toString())
+                        .param("scheduleDate", date.toString())
+                        .param("siteId", site.getSiteId().toString())
+                        .param("courseId", course.getCourseId().toString())
+                        .param("firstSpotId", first.getSpotId().toString())
+                        .param("secondSpotId", second.getSpotId().toString())
+                        .param("firstStartTime", "09:00").param("secondStartTime", "09:10"))
+                .andExpect(status().isOk()).andExpect(view().name("admin/schedule-edit"))
+                .andExpect(model().attributeHasErrors("scheduleForm"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(editHtml).contains("이미 등록되어 있습니다.", "role=\"alert\"");
+        assertThat(service.findScheduleResponse(laterId).getScheduleDate()).isEqualTo(date.plusDays(1));
+    }
+
+    @Test
+    void firstAdminPostCreatesScheduleAndExistingDeleteStillWorks() throws Exception {
+        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc.perform(post("/admin/schedules/new").sessionAttr("loginAdminId", 1L)
+                        .param("memberId", member.getMemberId().toString())
+                        .param("scheduleDate", date.toString())
+                        .param("siteId", site.getSiteId().toString())
+                        .param("courseId", course.getCourseId().toString())
+                        .param("firstSpotId", first.getSpotId().toString())
+                        .param("secondSpotId", second.getSpotId().toString())
+                        .param("firstStartTime", "09:00").param("secondStartTime", "09:10"))
+                .andExpect(redirectedUrl("/admin"));
+        assertThat(schedules.count()).isEqualTo(1);
+        assertThat(scheduleSpots.count()).isEqualTo(2);
+
+        Long scheduleId = schedules.findByMemberMemberIdAndScheduleDate(member.getMemberId(), date)
+                .getFirst().getScheduleId();
+        mvc.perform(post("/admin/schedules/" + scheduleId + "/delete")
+                        .sessionAttr("loginAdminId", 1L))
+                .andExpect(redirectedUrl("/admin/schedules"));
+        assertThat(schedules.count()).isZero();
+        assertThat(scheduleSpots.count()).isZero();
+    }
+
+    @Test
     void memberDeletionKeepsMasterData() {
         create();
         memberService.deleteMember(member.getMemberId());
@@ -150,6 +267,89 @@ class ScheduleMigrationTests {
                     .andExpect(model().attributeHasFieldErrors("scheduleForm", "firstSpotId"))
                     .andExpect(model().attributeExists("sites", "members"));
         }
+    }
+
+    @Test
+    void memberPagesShowOnlyOwnSchedulesAndKeepAdminPages() throws Exception {
+        Long ownId = create();
+        Member other = members.save(new Member(101, 2, "other-member", "password"));
+        service.createSchedule(other.getMemberId(), date.plusDays(1), site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), "흐림", 20.0, 60.0);
+        entityManager.flush();
+        Long otherId = schedules.findByMemberMemberIdOrderByScheduleDateAsc(other.getMemberId())
+                .getFirst().getScheduleId();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+
+        String calendar = mvc.perform(get("/member").sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(calendar).contains("eventClick", "window.location.assign(`/member/schedules/${scheduleId}?from=calendar`)",
+                        "data-id=\"" + ownId + "\"", "href=\"/member/schedules\"")
+                .doesNotContain("data-id=\"" + otherId + "\"");
+
+        String list = mvc.perform(get("/member/schedules").sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isOk()).andExpect(view().name("admin/schedule-list"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(list).contains("href=\"/member/schedules/" + ownId + "?from=list\"", "달력으로 돌아가기",
+                        "href=\"/member/schedules/new\"")
+                .doesNotContain("/member/schedules/" + otherId, "other-member", "/admin/schedules");
+
+        String detail = mvc.perform(get("/member/schedules/" + ownId)
+                        .sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isOk()).andExpect(view().name("admin/schedule-detail"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(detail).contains("일정 상세 정보", "기온(℃)", "습도(%)", "스팟 일정",
+                        "SPOT-X 첫 정원", "SPOT-Y 둘째 정원", "href=\"/member/schedules\"", "일정 목록으로",
+                        "/member/schedules/" + ownId + "/edit", "/member/schedules/" + ownId + "/delete",
+                        "일정 수정", "일정 삭제")
+                .doesNotContain("/admin/schedules");
+
+        mvc.perform(get("/member/schedules/" + otherId).sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/member/schedules/-1").sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/member/api/schedules/" + otherId).sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isNotFound());
+
+        mvc.perform(get("/member/schedules")).andExpect(redirectedUrl("/member/login"));
+        mvc.perform(get("/member/schedules/" + ownId)).andExpect(redirectedUrl("/member/login"));
+        mvc.perform(get("/member/schedules").sessionAttr("loginAdminId", 1L))
+                .andExpect(redirectedUrl("/member/login"));
+        mvc.perform(get("/admin/schedules").sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get("/admin/schedules/" + ownId).sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(redirectedUrl("/admin/login"));
+        String adminList = mvc.perform(get("/admin/schedules").sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk()).andExpect(view().name("admin/schedule-list"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(adminList).contains("/admin/schedules/" + ownId, "/admin/schedules/" + otherId,
+                "새 일정 등록", "other-member");
+        String adminDetail = mvc.perform(get("/admin/schedules/" + otherId).sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk()).andExpect(view().name("admin/schedule-detail"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(adminDetail).contains("/admin/schedules/" + otherId + "/edit",
+                "/admin/schedules/" + otherId + "/delete", "일정 목록으로")
+                .containsOnlyOnce("class=\"secondary-link-button\"")
+                .doesNotContain("/member/schedules/");
+        String adminCalendarDetail = mvc.perform(get("/admin/schedules/" + otherId)
+                        .param("from", "calendar").sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(adminCalendarDetail).contains("일정 수정", "일정 삭제", "달력으로",
+                        "href=\"/admin/schedules/calendar\"")
+                .containsOnlyOnce("class=\"secondary-link-button\"")
+                .doesNotContain("/member/schedules/");
+    }
+
+    @Test
+    void memberWithNoSchedulesSeesEmptyList() throws Exception {
+        Member other = members.save(new Member(101, 2, "other-member", "password"));
+        service.createSchedule(other.getMemberId(), date, site.getSiteId(), course.getCourseId(),
+                first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), null, null, null);
+        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        String list = mvc.perform(get("/member/schedules").sessionAttr("loginMemberId", member.getMemberId()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(list).contains("등록된 일정이 없습니다.", "달력으로 돌아가기",
+                        "href=\"/member/schedules/new\"")
+                .doesNotContain("/admin/schedules", "other-member");
     }
 
 }
