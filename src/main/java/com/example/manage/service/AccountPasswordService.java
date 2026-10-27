@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 @RequiredArgsConstructor
 public class AccountPasswordService {
     public enum Result {
-        SUCCESS, ACCOUNT_NOT_FOUND, INCORRECT_CURRENT, TOO_SHORT, TOO_LONG, CONFIRMATION_MISMATCH, REUSED
+        SUCCESS, ACCOUNT_NOT_FOUND, ADMIN_NOT_FOUND, INCORRECT_CURRENT, TOO_SHORT, TOO_LONG, CONFIRMATION_MISMATCH, REUSED
     }
 
     private final MemberRepository members;
@@ -26,7 +26,24 @@ public class AccountPasswordService {
     public Result changeMember(Long memberId, String current, String next, String confirmation) {
         Member member = memberId == null ? null : members.findLockedById(memberId).orElse(null);
         if (member == null) return Result.ACCOUNT_NOT_FOUND;
-        Result validation = validate(member.getPassword(), current, next, confirmation, 8);
+        if (current == null || !encoder.matches(current, member.getPassword())) return Result.INCORRECT_CURRENT;
+        Result validation = validateNewPassword(member.getPassword(), next, confirmation, 8);
+        if (validation != Result.SUCCESS) return validation;
+        member.changePassword(encoder.encode(next));
+        return Result.SUCCESS;
+    }
+
+    @Transactional(readOnly = true)
+    public boolean adminExists(Long adminId) {
+        return adminId != null && admins.existsById(adminId);
+    }
+
+    @Transactional
+    public Result resetMemberByAdmin(Long adminId, Long memberId, String next, String confirmation) {
+        if (adminId == null || admins.findLockedById(adminId).isEmpty()) return Result.ADMIN_NOT_FOUND;
+        Member member = memberId == null ? null : members.findLockedById(memberId).orElse(null);
+        if (member == null) return Result.ACCOUNT_NOT_FOUND;
+        Result validation = validateNewPassword(member.getPassword(), next, confirmation, 8);
         if (validation != Result.SUCCESS) return validation;
         member.changePassword(encoder.encode(next));
         return Result.SUCCESS;
@@ -36,14 +53,14 @@ public class AccountPasswordService {
     public Result changeAdmin(Long adminId, String current, String next, String confirmation) {
         Admin admin = adminId == null ? null : admins.findLockedById(adminId).orElse(null);
         if (admin == null) return Result.ACCOUNT_NOT_FOUND;
-        Result validation = validate(admin.getPassword(), current, next, confirmation, 12);
+        if (current == null || !encoder.matches(current, admin.getPassword())) return Result.INCORRECT_CURRENT;
+        Result validation = validateNewPassword(admin.getPassword(), next, confirmation, 12);
         if (validation != Result.SUCCESS) return validation;
         admin.changePassword(encoder.encode(next));
         return Result.SUCCESS;
     }
 
-    private Result validate(String stored, String current, String next, String confirmation, int minimumLength) {
-        if (current == null || !encoder.matches(current, stored)) return Result.INCORRECT_CURRENT;
+    private Result validateNewPassword(String stored, String next, String confirmation, int minimumLength) {
         if (next == null || next.codePointCount(0, next.length()) < minimumLength) return Result.TOO_SHORT;
         if (next.getBytes(StandardCharsets.UTF_8).length > 72) return Result.TOO_LONG;
         if (!next.equals(confirmation)) return Result.CONFIRMATION_MISMATCH;

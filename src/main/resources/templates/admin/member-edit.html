@@ -28,6 +28,8 @@
             </p>
         </div>
 
+        <p class="password-success-message" role="status" th:if="${successMessage}" th:text="${successMessage}"></p>
+
         <!-- 중복 검사 등의 비즈니스 오류 메시지 -->
         <div
                 class="error-message"
@@ -172,6 +174,12 @@
 
         </form>
 
+        <div class="detail-action-list">
+            <a class="secondary-link-button"
+               th:href="@{/admin/members/{memberId}/password(memberId=${memberId})}">
+                비밀번호 변경
+            </a>
+        </div>
 
         <a
                 class="back-link"
