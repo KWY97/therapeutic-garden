@@ -82,10 +82,10 @@ class RoleBasedHomeTests {
         String html = mvc.perform(get("/member").session(session)).andExpect(status().isOk())
                 .andExpect(view().name("member/home")).andReturn().getResponse().getContentAsString();
         assertThat(html).contains("id=\"calendar\"", "id=\"schedule-data\"",
-                "MY HEALING ANALYSIS", "나의 치유 분석", "MY CALENDAR", "나의 달력", "역할 참가자",
-                "calendar-report-notice", "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.")
+                "MY HEALING ANALYSIS", "나의 치유 분석", "MY CALENDAR", "나의 달력", "역할 참가자")
                 .doesNotContain("id=\"schedule-detail\"", "SELECTED SCHEDULE", "일정을 선택해 주세요.",
                         "selected-date-title", "selected-course", "selected-group", "selected-weather", "selected-spots",
+                        "calendar-report-notice", "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "/member/api/schedules/", "eventClick", "PARTICIPANT", "나의 일정",
                         "참가자님의 일정을 확인해 주세요.", "landing.js");
         String header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));

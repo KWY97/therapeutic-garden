@@ -502,9 +502,6 @@ function updateAnalysis() {
     var effects = currentEffects();
     spatial.setAnalysis(effects, currentMaximums());
     courseCircles.forEach(circle => circle.setOptions({fillColor: courseAnalysisColor(circle.surveyCourse)}));
-    document.getElementById('surveyLegendTitle').textContent = 'Healing Spot 개선';
-    document.getElementById('surveyLegendRange').textContent = '전체 참가자 평균';
-    document.getElementById('surveyLegendContext').textContent = 'Course 단위 수치는 계산하지 않으며 Spot별 Summary만 표시합니다.';
     if (selectedSpot) {
         var effect = survey.indexByCode(effects).get(selectedSpot.code);
         survey.renderSpot(document.getElementById('spotAnalysis'), {

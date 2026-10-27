@@ -207,12 +207,13 @@ test('spatial request failure does not prevent existing HC / HS map rendering', 
     assert.match(ui.elements.monitoringStatus.textContent, /불러오지 못했습니다/);
     ui.open(); assert.equal(ui.circles.length, 1); assert.equal(ui.markers.length, 1);
 });
-test('map is lazy, relayout preserves center on resize, and Course color stays neutral', async () => {
+test('map is lazy, relayout preserves center on resize, and Course color stays neutral without the removed notice', async () => {
     const ui = setup(); await flush(); image(ui).load();
     const photo = image(ui);
     assert.equal(ui.maps.length, 0);
     ui.open(); assert.equal(ui.maps.length, 1); assert.equal(ui.elements.mapModal.hidden, false);
-    assert.equal(ui.circles[0].fillColor, '#749d80'); assert.equal(ui.elements.surveyLegendTitle.textContent, 'Healing Spot 개선');
+    assert.equal(ui.circles[0].fillColor, '#749d80');
+    assert.doesNotMatch(script, /surveyLegend|Course 단위 수치는/);
     ui.maps[0].setCenter({lat: 39, lng: 128}); ui.windowEvents.resize();
     assert.equal(ui.maps[0].center.lat, 39); assert.equal(ui.maps[0].relayouts, 1);
     ui.elements.closeMapButton.click(); assert.equal(ui.elements.mapModal.hidden, true);
