@@ -76,7 +76,7 @@ class AdminPlaceImageUxTests {
         HealingSpotForm form = new HealingSpotForm(); form.setName(name); form.setCode("HS1");
         form.setCourseId(courseId); form.setLatitude(37.0); form.setLongitude(127.0); return form;
     }
-    MockMultipartFile file(String name) { return new MockMultipartFile("files", name, "image/png", new byte[]{1, 2, 3}); }
+    MockMultipartFile file(String name) { return new MockMultipartFile("files", name, "image/png", ImageTestFiles.png()); }
     Long create(boolean site, int count) {
         var files = java.util.stream.IntStream.range(0, count)
                 .mapToObj(i -> (org.springframework.web.multipart.MultipartFile) file("photo" + i + ".png")).toList();
@@ -158,10 +158,11 @@ class AdminPlaceImageUxTests {
         name = "새 " + UUID.randomUUID();
         long before = parentCount(site);
         var request = formRequest(site, base(site) + "/new").file(file("good.png"))
-                .file(new MockMultipartFile("files", "bad.gif", "image/gif", new byte[]{1}));
+                .file(new MockMultipartFile("files", "fake.png", "image/png",
+                        "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         if (!site) request.with(r -> { r.setParameter("code", "HS2"); return r; });
         mvc.perform(request).andExpect(status().isOk()).andExpect(model().hasErrors())
-                .andExpect(content().string(containsString("JPEG, PNG, WebP")));
+                .andExpect(content().string(containsString("이미지 파일 내용")));
         assertThat(parentCount(site)).isEqualTo(before);
         assertThat(site ? sites.existsById(existing) : spots.existsById(existing)).isTrue();
         assertThat(objects).isEmpty(); verify(storage, never()).upload(anyString(), any(byte[].class), anyString());

@@ -3,6 +3,7 @@ package com.example.manage;
 import com.example.manage.domain.*;
 import com.example.manage.repository.*;
 import com.example.manage.service.*;
+import com.example.manage.storage.ImageFilePolicy;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -80,14 +81,18 @@ class LocalImageHttpTests {
         fields.forEach((name, value) -> parameters.append("--").append(boundary)
                 .append("\r\nContent-Disposition: form-data; name=\"").append(name).append("\"\r\n\r\n")
                 .append(value).append("\r\n"));
-        String body = parameters + "--" + boundary + "\r\nContent-Disposition: form-data; name=\"_csrf\"\r\n\r\n" + csrf
+        String prefix = parameters + "--" + boundary + "\r\nContent-Disposition: form-data; name=\"_csrf\"\r\n\r\n" + csrf
                 + "\r\n--" + boundary + "\r\nContent-Disposition: form-data; name=\"files\"; filename=\"test.png\"\r\n"
-                + "Content-Type: image/png\r\n\r\n" + "a".repeat(bytes) + "\r\n--" + boundary + "--\r\n";
+                + "Content-Type: image/png\r\n\r\n";
+        var body = new java.io.ByteArrayOutputStream();
+        body.writeBytes(prefix.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        body.writeBytes(bytes > ImageFilePolicy.MAX_FILE_SIZE ? new byte[bytes] : ImageTestFiles.png());
+        body.writeBytes(("\r\n--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
         var builder = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
                 .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                 .header("Accept", "text/html");
         if (headerToken) builder.header("X-CSRF-TOKEN", csrf);
-        return client.send(builder.POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());
+        return client.send(builder.POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())).build(), HttpResponse.BodyHandlers.ofString());
     }
     @ParameterizedTest @ValueSource(booleans = {true, false})
     void localMultipartAndAuthenticatedContentWork(boolean site) throws Exception {
@@ -95,9 +100,9 @@ class LocalImageHttpTests {
         assertThat(upload(path, 30, false).statusCode()).isEqualTo(302);
         var images = site ? siteImages.list(id) : spotImages.list(id);
         assertThat(images).hasSize(1);
-        var content = get(images.getFirst().readUrl());
+        var content = getBytes(images.getFirst().readUrl());
         assertThat(content.statusCode()).isEqualTo(200);
-        assertThat(content.body()).isEqualTo("a".repeat(30));
+        assertThat(content.body()).isEqualTo(ImageTestFiles.png());
         assertThat(content.headers().firstValue("Content-Type")).contains("image/png");
         assertThat(content.headers().firstValue("Cache-Control")).contains("no-store");
         assertThat(content.headers().firstValue("X-Content-Type-Options")).contains("nosniff");
@@ -108,6 +113,19 @@ class LocalImageHttpTests {
                 URI.create("http://localhost:" + port + images.getFirst().readUrl())).GET().build(), HttpResponse.BodyHandlers.ofString());
         assertThat(anonymous.statusCode()).isEqualTo(302);
         assertThat(get(path.replace("/images", "/edit")).body()).contains("새 이미지 추가", "test.png", "대표 이미지");
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {true, false})
+    void disguisedImageNeverReachesLocalStorage(boolean site) {
+        Long id = parent(site);
+        var fake = new org.springframework.mock.web.MockMultipartFile("files", "fake.png", "image/png",
+                "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assertThatThrownBy(() -> {
+            if (site) siteImages.upload(id, List.of(fake)); else spotImages.upload(id, List.of(fake));
+        }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("이미지 파일 내용");
+        assertThat(site ? siteImages.list(id) : spotImages.list(id)).isEmpty();
+        assertThat(ROOT.resolve("uploads").resolve(site ? "sites" : "healing-spots")
+                .resolve(id.toString())).doesNotExist();
     }
     @Test void thumbnailRouteChecksOwnershipAndAuthenticationAndKeepsOriginalRoute() throws Exception {
         Long id = parent(false);

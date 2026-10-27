@@ -74,7 +74,7 @@ class SpatialLayoutTests {
         select(a);
         mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
     }
-    MockMultipartFile file(String name) { return new MockMultipartFile("files", name, "image/png", new byte[]{1,2,3}); }
+    MockMultipartFile file(String name) { return new MockMultipartFile("files", name, "image/png", ImageTestFiles.png()); }
     ImageEditForm editForm(String spatial) {
         var f = new ImageEditForm(); f.setImageOrder("e:" + a + ",e:" + b); f.setImageSpatial(spatial); f.setImageRepresentative("e:" + a); return f;
     }
@@ -546,7 +546,7 @@ class SpatialLayoutTests {
                 .andExpect(jsonPath("$.spots[0].courseName").value(course.getName()))
                 .andExpect(jsonPath("$.spots[0].xPercent").value(76))
                 .andExpect(jsonPath("$.spots[0].yPercent").value(12))
-                .andExpect(jsonPath("$.spots[0].readUrl").value(representative.readUrl()))
+                .andExpect(jsonPath("$.spots[0].readUrl").value(spotImages.monitoringReadUrl(first.getSpotId())))
                 .andExpect(jsonPath("$.spots[1].xPercent").isEmpty())
                 .andExpect(jsonPath("$.spots[1].readUrl").isEmpty());
         select(a);
