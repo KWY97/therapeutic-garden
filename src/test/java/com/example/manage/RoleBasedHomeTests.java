@@ -82,10 +82,10 @@ class RoleBasedHomeTests {
         String html = mvc.perform(get("/member").session(session)).andExpect(status().isOk())
                 .andExpect(view().name("member/home")).andReturn().getResponse().getContentAsString();
         assertThat(html).contains("id=\"calendar\"", "id=\"schedule-data\"",
-                "MY HEALING ANALYSIS", "나의 치유 분석", "MY CALENDAR", "나의 달력", "역할 참가자",
-                "calendar-report-notice", "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.")
+                "MY HEALING ANALYSIS", "나의 치유 분석", "MY CALENDAR", "나의 달력", "역할 참가자")
                 .doesNotContain("id=\"schedule-detail\"", "SELECTED SCHEDULE", "일정을 선택해 주세요.",
                         "selected-date-title", "selected-course", "selected-group", "selected-weather", "selected-spots",
+                        "calendar-report-notice", "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "/member/api/schedules/", "eventClick", "PARTICIPANT", "나의 일정",
                         "참가자님의 일정을 확인해 주세요.", "landing.js");
         String header = html.substring(html.indexOf("<header"), html.indexOf("</header>"));
@@ -192,7 +192,10 @@ class RoleBasedHomeTests {
                 "/images/landing/optimized/site-plan.webp", "/images/landing/optimized/effect-hs1.webp",
                 "/images/landing/optimized/effect-hs2.webp", "/images/landing/optimized/effect-hs3-cta.webp",
                 "/images/landing/optimized/effect-hs4.webp", "/images/landing/optimized/effect-hs5.webp",
-                "/images/landing/optimized/effect-hs6.webp",
+                "/images/landing/optimized/effect-hs6.webp", "/images/landing/report-previews/stress-chart.png",
+                "/images/landing/report-previews/emotional-chart.png", "/images/landing/report-previews/stress-graph.png",
+                "/images/landing/report-previews/emotional-graph.png", "/images/landing/report-previews/eeg-report-summary.png",
+                "/images/landing/report-previews/eeg-report-detail.png",
                 "data-course-id=\"HC-A\"", "data-course-id=\"HC-B\"", "data-course-id=\"HC-C\"",
                 "data-field=\"stress-reduction\"", "data-field=\"emotional-increase\"",
                 "데이터 변화", "데이터 준비 중");
@@ -239,7 +242,7 @@ class RoleBasedHomeTests {
             assertThat(Files.isRegularFile(Path.of("src/main/resources/static" + source))).isTrue();
             if (source.startsWith("/images/landing/")) spacePhotos++;
         }
-        assertThat(spacePhotos).isEqualTo(27);
+        assertThat(spacePhotos).isEqualTo(31);
         assertThat(html).contains("landing-image-scene", "landing-person-scene", "landing-course-journey",
                         "landing-course-route", "aria-live=\"off\"")
                 .doesNotContain("data-rotation-toggle", "Sample Monitoring", "landing-waveform", "--level:",
@@ -259,12 +262,13 @@ class RoleBasedHomeTests {
         String js = Files.readString(resources.resolve("static/js/landing.js"));
         assertThat(js).contains("'IntersectionObserver' in window", "motion.matches", "showAll",
                 "observer.disconnect()", "prefers-reduced-motion: reduce", "focusin",
-                "initializeHealingSpotSelectors", "changeHealingSpot", "initializePersonalChangeSelectors",
-                "data-personal-spot", "activeMetric")
-                .doesNotContain("scheduleNext", "setTimeout", "clearTimeout", "data-rotation-toggle");
+                "initializeHealingSpotSelectors", "changeHealingSpot", "initializeReportPreviews",
+                "data-report-tab", "data-report-preview", "Escape", "previousFocus", "previousOverflow")
+                .doesNotContain("scheduleNext", "setTimeout", "clearTimeout", "data-rotation-toggle",
+                        "initializePersonalChangeSelectors", "data-personal-spot", "activeMetric");
         assertThat(Files.readString(resources.resolve("static/css/landing.css")))
-                .contains("@media (prefers-reduced-motion: reduce)", "data-active-metric=\"stress\"",
-                        "data-active-metric=\"emotional\"", "landing-section-hero",
+                .contains("@media (prefers-reduced-motion: reduce)", "landing-report-tabs",
+                        "landing-vital-card", "landing-vital-table", "landing-report-preview-grid", "landing-report-modal", "data-preview-kind=\"report\"", "landing-section-hero",
                         "landing-section-content", "landing-capability-list",
                         ".landing-page .landing-course-journey > li { position: relative; min-height: min(850px, 78vw); width: 100vw;",
                         ".landing-page .landing-journey-b .landing-journey-name { right: 7vw; left: auto; }",
@@ -276,12 +280,13 @@ class RoleBasedHomeTests {
                         ".monitoring-hotspot-maximum-prefix", ".monitoring-hotspot-maximum-rate",
                         ".monitoring-hotspot-maximum-direction", ".monitoring-hotspot-measurement",
                         ".landing-page .landing-preview-spot { --spot-offset-x: 0%; --spot-offset-y: 0%; position: absolute; z-index: 4; left: calc(var(--spot-x) + var(--spot-offset-x)); top: calc(var(--spot-y) + var(--spot-offset-y)); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 8px;",
-                        ".landing-page .landing-preview-spot-hs4 { --spot-offset-x: -14%; --spot-offset-y: -4%; gap: 8px }",
+                        ".landing-page .landing-preview-spot-hs4 { --spot-offset-x: -14%; --spot-offset-y: -5%; gap: 8px }",
                         ".landing-page .landing-preview-spot .monitoring-hotspot-label { display: flex; flex-direction: column; align-items: center;",
                         ".monitoring-hotspot-divider",
                         ".landing-preview-legend")
                 .doesNotContain("landing-chart-line-stress", "landing-chart-line-emotional", "landing-rotation-toggle",
                         "landing-capability-flow", "animation-play-state", "landing-capability-track", "landing-keywords",
+                        "data-active-metric=\"stress\"", "data-active-metric=\"emotional\"", "landing-spot-comparison",
                         "landing-preview-affordance", "landing-monitoring-preview:hover", "landing-monitoring-preview:focus-visible",
                         ".landing-preview-spot-hs4 .monitoring-hotspot-label { transform:");
         assertThat(Files.readString(resources.resolve("static/css/style.css")))

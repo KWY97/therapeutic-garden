@@ -146,7 +146,7 @@
 
     <section class="landing-section landing-person-scene" aria-labelledby="person-effect-title">
         <article class="landing-person-effect" data-summary-type="participant-change">
-            <div class="landing-person-heading" data-reveal>
+            <div class="landing-person-heading landing-visually-hidden">
                 <p class="landing-effect-kicker">PERSON / HEALING SPOT</p><h2 id="person-effect-title">개인의 변화</h2>
             </div>
             <figure class="landing-person-effect-photo" data-reveal>
@@ -154,30 +154,93 @@
             </figure>
             <div class="landing-person-data" data-reveal>
                 <div class="landing-person-identity"><strong>데이터 변화</strong></div>
-                <p class="landing-effect-empty" th:if="${#lists.isEmpty(personalEffects)}">데이터 준비 중</p>
-                <div class="landing-person-chart" data-personal-change-chart data-active-metric="stress" th:unless="${#lists.isEmpty(personalEffects)}" th:with="first=${personalEffects[0]}">
-                    <div class="landing-chart-metric-selector" role="group" aria-label="효과 지표 선택">
-                        <button class="is-active" type="button" aria-pressed="true" data-personal-metric="stress">스트레스</button>
-                        <button type="button" aria-pressed="false" data-personal-metric="emotional">정서 안정성</button>
-                    </div>
-                    <div class="landing-person-current" aria-live="off">
-                        <h3 data-current-spot th:text="${first.spotCode + ' · ' + first.spotName}"></h3>
-                        <p data-current-metric>스트레스 개선율</p>
-                        <strong data-current-rate th:text="${first.stress.improvementRateDisplay}"></strong>
-                        <small class="landing-person-count" data-current-count th:text="${first.stress.validCount > 0 ? first.stress.improvementCountDisplay : ''}"></small>
-                    </div>
-                    <div class="landing-spot-comparison" role="group" aria-label="Healing Spot별 개선율 선택">
-                        <button type="button" th:each="effect, iter : ${personalEffects}" th:classappend="${iter.first} ? 'is-active'" th:attr="aria-pressed=${iter.first},data-personal-spot=${effect.spotCode},data-name=${effect.spotName},data-stress=${effect.stress.improvementRate},data-emotional=${effect.emotional.improvementRate},data-stress-display=${effect.stress.validCount > 0 ? effect.stress.improvementRateDisplay + ' 개선' : effect.stress.improvementRateDisplay},data-emotional-display=${effect.emotional.validCount > 0 ? effect.emotional.improvementRateDisplay + ' 개선' : effect.emotional.improvementRateDisplay},data-stress-rate-display=${effect.stress.improvementRateDisplay},data-emotional-rate-display=${effect.emotional.improvementRateDisplay},data-stress-count=${effect.stress.validCount > 0 ? effect.stress.improvementCountDisplay : ''},data-emotional-count=${effect.emotional.validCount > 0 ? effect.emotional.improvementCountDisplay : ''},data-stress-maximum=${personalMaximums.stressSpotCodes.contains(effect.spotCode)},data-emotional-maximum=${personalMaximums.emotionalSpotCodes.contains(effect.spotCode)}">
-                            <span th:text="${effect.spotCode}">HS</span><span class="landing-comparison-track" aria-hidden="true"><i></i></span>
-                            <small data-comparison-value th:text="${effect.stress.validCount > 0 ? effect.stress.improvementRateDisplay + ' 개선' : effect.stress.improvementRateDisplay}"></small>
-                            <small data-comparison-count th:text="${effect.stress.validCount > 0 ? effect.stress.validCount + '회 중 ' + effect.stress.improvedCount + '회' : ''}"></small>
-                            <span class="landing-maximum-badge landing-maximum-badge-stress" th:if="${personalMaximums.stressSpotCodes.contains(effect.spotCode)}">최대 개선</span>
-                            <span class="landing-maximum-badge landing-maximum-badge-emotional" th:if="${personalMaximums.emotionalSpotCodes.contains(effect.spotCode)}">최대 개선</span>
-                        </button>
-                    </div>
-                    <p class="landing-data-note landing-chart-note">실참여자 데이터 샘플입니다.</p>
-                    <p class="landing-selection-status" data-selection-status role="status"></p>
+                <div class="landing-report-tabs" role="tablist" aria-label="분석 결과 종류" data-report-tabs>
+                    <button id="landing-report-tab-wellbeing" class="is-active" type="button" role="tab" aria-selected="true" aria-controls="landing-report-panel-wellbeing" data-report-tab="wellbeing">스트레스 / 정서 안정성</button>
+                    <button id="landing-report-tab-eeg" type="button" role="tab" aria-selected="false" aria-controls="landing-report-panel-eeg" tabindex="-1" data-report-tab="eeg">뇌파 분석 레포트</button>
                 </div>
+                <div id="landing-report-panel-wellbeing" class="landing-report-panel" role="tabpanel" aria-labelledby="landing-report-tab-wellbeing" data-report-panel="wellbeing">
+                    <div class="landing-vital-cards">
+                        <article class="landing-vital-card">
+                            <header class="landing-vital-card-header">
+                                <h3>스트레스</h3>
+                                <button class="landing-report-expand" type="button" aria-label="스트레스 분석 결과 원본 크게 보기" aria-haspopup="dialog" data-report-preview data-report-preview-title="스트레스" data-report-preview-kind="chart" th:attr="data-report-preview-src=@{/images/landing/report-previews/stress-chart.png}" data-report-preview-alt="세 번의 측정일별 스트레스 기준값과 측정값 및 표를 비교한 분석 결과 예시">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                                    <span>크게 보기</span>
+                                </button>
+                            </header>
+                            <div class="landing-vital-card-body">
+                                <figure class="landing-vital-graph">
+                                    <figcaption>스트레스 측정 기록</figcaption>
+                                    <img th:src="@{/images/landing/report-previews/stress-graph.png}" width="1670" height="560" loading="lazy" decoding="async" alt="8월 14일, 19일, 21일의 스트레스 Baseline과 측정값 비교 그래프">
+                                </figure>
+                                <div class="landing-vital-table-wrap">
+                                    <table class="landing-vital-table">
+                                        <caption class="landing-visually-hidden">스트레스 측정 기록</caption>
+                                        <thead><tr><th scope="col">측정일</th><th scope="col">Baseline</th><th scope="col">스트레스 값</th><th scope="col">변화량 (Post - Baseline)</th><th scope="col">증감률</th></tr></thead>
+                                        <tbody>
+                                            <tr><td>2026-08-14</td><td>2.82</td><td>2.59</td><td>-0.23</td><td>8.3% 감소</td></tr>
+                                            <tr><td>2026-08-19</td><td>2.56</td><td>2.33</td><td>-0.22</td><td>8.8% 감소</td></tr>
+                                            <tr><td>2026-08-21</td><td>2.71</td><td>2.31</td><td>-0.40</td><td>14.7% 감소</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </article>
+                        <article class="landing-vital-card">
+                            <header class="landing-vital-card-header">
+                                <h3>정서 안정성</h3>
+                                <button class="landing-report-expand" type="button" aria-label="정서 안정성 분석 결과 원본 크게 보기" aria-haspopup="dialog" data-report-preview data-report-preview-title="정서 안정성" data-report-preview-kind="chart" th:attr="data-report-preview-src=@{/images/landing/report-previews/emotional-chart.png}" data-report-preview-alt="세 번의 측정일별 정서 안정성 기준값과 측정값 및 표를 비교한 분석 결과 예시">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+                                    <span>크게 보기</span>
+                                </button>
+                            </header>
+                            <div class="landing-vital-card-body">
+                                <figure class="landing-vital-graph">
+                                    <figcaption>정서 안정성 측정 기록</figcaption>
+                                    <img th:src="@{/images/landing/report-previews/emotional-graph.png}" width="1670" height="550" loading="lazy" decoding="async" alt="8월 14일, 19일, 21일의 정서 안정성 Baseline과 측정값 비교 그래프">
+                                </figure>
+                                <div class="landing-vital-table-wrap">
+                                    <table class="landing-vital-table">
+                                        <caption class="landing-visually-hidden">정서 안정성 측정 기록</caption>
+                                        <thead><tr><th scope="col">측정일</th><th scope="col">Baseline</th><th scope="col">정서 안정성 값</th><th scope="col">변화량 (Post - Baseline)</th><th scope="col">증감률</th></tr></thead>
+                                        <tbody>
+                                            <tr><td>2026-08-14</td><td>0.77</td><td>0.86</td><td>0.09</td><td>11.1% 증가</td></tr>
+                                            <tr><td>2026-08-19</td><td>0.88</td><td>0.99</td><td>0.11</td><td>12.6% 증가</td></tr>
+                                            <tr><td>2026-08-21</td><td>0.82</td><td>1.01</td><td>0.19</td><td>23.8% 증가</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+                <div id="landing-report-panel-eeg" class="landing-report-panel is-report" role="tabpanel" aria-labelledby="landing-report-tab-eeg" data-report-panel="eeg" hidden>
+                    <div class="landing-report-preview-grid">
+                        <figure class="landing-report-preview">
+                            <figcaption>
+                                <strong>분석 요약</strong>
+                                <button class="landing-report-expand" type="button" aria-label="뇌파 분석 요약 이미지 크게 보기" aria-haspopup="dialog" data-report-preview data-report-preview-title="뇌파 분석 요약" data-report-preview-kind="report" th:attr="data-report-preview-src=@{/images/landing/report-previews/eeg-report-summary.png}" data-report-preview-alt="스트레스와 정서 안정성의 공간별 변화를 정리한 익명화 뇌파 분석 요약 예시">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg><span>크게 보기</span>
+                                </button>
+                            </figcaption>
+                            <div class="landing-report-preview-image">
+                                <img th:src="@{/images/landing/report-previews/eeg-report-summary.png}" width="722" height="1102" loading="lazy" decoding="async" alt="스트레스와 정서 안정성의 공간별 변화를 정리한 익명화 뇌파 분석 요약 예시">
+                            </div>
+                        </figure>
+                        <figure class="landing-report-preview">
+                            <figcaption>
+                                <strong>상세 분석</strong>
+                                <button class="landing-report-expand" type="button" aria-label="뇌파 상세 분석 이미지 크게 보기" aria-haspopup="dialog" data-report-preview data-report-preview-title="뇌파 상세 분석" data-report-preview-kind="report" th:attr="data-report-preview-src=@{/images/landing/report-previews/eeg-report-detail.png}" data-report-preview-alt="뇌파 대역별 구성과 좌우 균형도를 보여주는 익명화 상세 분석 예시">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg><span>크게 보기</span>
+                                </button>
+                            </figcaption>
+                            <div class="landing-report-preview-image">
+                                <img th:src="@{/images/landing/report-previews/eeg-report-detail.png}" width="734" height="1084" loading="lazy" decoding="async" alt="뇌파 대역별 구성과 좌우 균형도를 보여주는 익명화 상세 분석 예시">
+                            </div>
+                        </figure>
+                    </div>
+                </div>
+                <p class="landing-report-note">실참여자 데이터 샘플입니다.</p>
             </div>
         </article>
     </section>
@@ -222,5 +285,14 @@
         </div>
     </section>
 </main>
+<div class="landing-report-modal" data-report-modal hidden>
+    <div class="landing-report-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="landing-report-modal-title" tabindex="-1" data-report-modal-dialog>
+        <header class="landing-report-modal-header">
+            <h2 id="landing-report-modal-title" data-report-modal-title>분석 결과</h2>
+            <button type="button" data-report-modal-close>닫기</button>
+        </header>
+        <div class="landing-report-modal-body" data-report-modal-body></div>
+    </div>
+</div>
 </body>
 </html>

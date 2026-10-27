@@ -601,7 +601,7 @@ class SpatialLayoutTests {
                 .andExpect(jsonPath("$.image.readUrl").value("https://storage.example/signed?token=opaque"));
     }
 
-    @Test void monitoringTemplatePlacesMapAndLegendInsideSecondaryDialog() throws Exception {
+    @Test void monitoringTemplatePlacesMapInsideSecondaryDialogWithoutSurveyNotice() throws Exception {
         String html = monitoringHtml();
         assertThat(html).contains("공간 모니터링", "지도 보기", "id=\"monitoringCanvas\"", "/js/home-spatial.js", "/css/home-spatial.css",
                         "monitoring-effect-legend", "개선율 낮음", "개선율 높음", "유효 측정 중 개선된 횟수의 비율", "/js/home-course-overlay.js")
@@ -609,9 +609,9 @@ class SpatialLayoutTests {
                 .doesNotContain("Demo 데이터", "스트레스 수준", "이완감 수준", "id=\"metricSelect\"");
         int dialogStart = html.indexOf("id=\"mapModal\"");
         assertThat(html.indexOf("id=\"map\"")).isGreaterThan(dialogStart);
-        assertThat(html.indexOf("id=\"surveyLegendTitle\"")).isGreaterThan(dialogStart);
         assertThat(html.indexOf("id=\"monitoringCanvas\"")).isLessThan(dialogStart);
-        assertThat(html).contains("id=\"closeMapButton\"", "aria-labelledby=\"mapModalTitle\"");
+        assertThat(html).contains("id=\"closeMapButton\"", "aria-labelledby=\"mapModalTitle\"")
+                .doesNotContain("survey-legend", "id=\"surveyLegendTitle\"", "id=\"surveyLegendRange\"", "id=\"surveyLegendContext\"");
     }
 
     private String monitoringHtml() throws Exception {

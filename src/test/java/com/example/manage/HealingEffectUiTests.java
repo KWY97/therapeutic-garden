@@ -132,16 +132,27 @@ class HealingEffectUiTests {
         assertThat(personalMaximums.emotionalSpotCodes()).containsExactlyInAnyOrder("HS5", "HS6");
         String html = result.getResponse().getContentAsString();
         assertThat(html).contains("데이터 변화", "data-stress=\"88.2%\"", "data-emotional=\"88.9%\"",
-                        "data-stress-display=\"100.0% 개선\"", "data-emotional-display=\"100.0% 개선\"",
-                        "data-stress-count=\"3회 중 3회 개선\"", "data-emotional-count=\"3회 중 2회 개선\"",
-                        "스트레스 개선율", "정서 안정성 개선율", "PERSON / HEALING SPOT",
+                        "스트레스 / 정서 안정성", "뇌파 분석 레포트", "분석 요약", "상세 분석",
+                        "/images/landing/report-previews/stress-chart.png",
+                        "/images/landing/report-previews/emotional-chart.png",
+                        "/images/landing/report-previews/stress-graph.png",
+                        "/images/landing/report-previews/emotional-graph.png",
+                        "/images/landing/report-previews/eeg-report-summary.png",
+                        "/images/landing/report-previews/eeg-report-detail.png",
+                        "실참여자 데이터 샘플입니다.", "data-report-modal", "PERSON / HEALING SPOT",
+                        "2026-08-14", "2.82", "2.59", "-0.23", "8.3% 감소",
+                        "2026-08-19", "2.56", "2.33", "-0.22", "8.8% 감소",
+                        "2026-08-21", "2.71", "2.31", "-0.40", "14.7% 감소",
+                        "0.77", "0.86", "0.09", "11.1% 증가", "0.88", "0.99", "0.11", "12.6% 증가",
+                        "0.82", "1.01", "0.19", "23.8% 증가",
                         "최대 개선 스팟", "landing-preview-legend")
                 .doesNotContain("P001", "P002", "P004", "participantNo", "memberId", "participantCode", "loginId",
                         "secret-login-one", "secret-login-two", "secret-login-four", "secret-login-six", "비공개이름하나", "비공개이름둘", "비공개이름넷", "비공개이름육",
                         "01012345678", "01022223333", "01044445555", "01066667777", "010-1234-5678", "010-2222-3333", "010-4444-5555", "010-6666-7777",
                         "참가자 예시", "익명 참가자의 측정 결과", "19.5% 감소", "54.3% 증가",
-                        "평균 스트레스 증감률", "평균 정서 안정성 증감률", "정서적 안정성",
-                        "Baseline", "BEFORE &amp; AFTER", "stress-baseline", "stress-followup", "66.7% 증가", "landing-chart-line");
+                        "평균 스트레스 증감률", "평균 정서 안정성 증감률", "정서적 안정성", "data-personal-spot=",
+                        "data-stress-display=", "data-emotional-display=", "data-personal-metric=",
+                        "BEFORE &amp; AFTER", "stress-baseline", "stress-followup", "66.7% 증가", "landing-chart-line");
 
         assertMapCard(html, "HS1", "data-maximum-change-rate=\"27.69\"", "스트레스", "27.7%", "감소", "지수:", "2.75", "1.99", "88.2%", "17회 중 15회 개선", "호스타 정원", "is-maximum", "aria-label=\"최대 개선 스팟\"");
         assertMapCard(html, "HS2", "data-maximum-change-rate=\"28.58\"", "정서 안정성", "28.6%", "증가", "지수:", "0.85", "1.09", "68.8%", "16회 중 11회 개선", "곶자왈원");
@@ -163,8 +174,13 @@ class HealingEffectUiTests {
                         "27.69% 최대 감소", "28.58% 최대 증가", "19.44% 최대 감소",
                         "59.29% 최대 증가", "15.04% 최대 감소", "34.37% 최대 증가");
         String personalSection = html.substring(html.indexOf("landing-person-scene"), html.indexOf("landing-connection"));
-        assertThat(personalSection).contains(">최대 개선</span>")
-                .doesNotContain("스트레스 최대 개선", "정서 안정성 최대 개선");
+        assertThat(personalSection).contains("data-report-tabs", "data-report-panel=\"wellbeing\"",
+                        "data-report-panel=\"eeg\"", "data-report-preview",
+                        "class=\"landing-report-preview-image\"",
+                        "data-report-preview-title=\"뇌파 분석 요약\"",
+                        "data-report-preview-title=\"뇌파 상세 분석\"")
+                .doesNotContain("landing-report-preview-image\" data-report-preview")
+                .doesNotContain("스트레스 최대 개선", "정서 안정성 최대 개선", "landing-spot-comparison");
     }
 
     @Test void publishedPersonalChangeUsesP006EvenWhenSmallerCompleteParticipantsExist() {
@@ -178,7 +194,7 @@ class HealingEffectUiTests {
         assertThat(service.findPublishedMemberImprovementsByParticipantNo(999)).isEmpty();
     }
 
-    @Test void incompleteP006RendersPersonalDataPreparingState() throws Exception {
+    @Test void incompleteP006StillRendersFixedReportExamples() throws Exception {
         fixture();
         var summaries = personal.findByMemberMemberIdOrderByHealingSpotCodeAsc(landingParticipant.getMemberId());
         personal.delete(summaries.getFirst());
@@ -188,18 +204,20 @@ class HealingEffectUiTests {
         @SuppressWarnings("unchecked") var personalData = (List<HealingSpotImprovementView>)
                 result.getModelAndView().getModel().get("personalEffects");
         assertThat(personalData).isEmpty();
-        assertThat(result.getResponse().getContentAsString()).contains("데이터 준비 중")
+        assertThat(result.getResponse().getContentAsString())
+                .contains("/images/landing/report-previews/stress-chart.png",
+                        "/images/landing/report-previews/stress-graph.png", "실참여자 데이터 샘플입니다.")
                 .doesNotContain("data-personal-spot=");
     }
 
-    @Test void zeroValidP006MetricShowsMeasurementMissingWithoutZeroCounts() throws Exception {
+    @Test void zeroValidP006MetricDoesNotAlterFixedReportExamples() throws Exception {
         fixture();
         var summary = personal.findByMemberMemberIdOrderByHealingSpotCodeAsc(landingParticipant.getMemberId()).getFirst();
         summary.updateImprovementCounts(summary.getTotalExperienceCount(), 0, 0, 0, 0);
         personal.flush();
         String html = mvc.perform(get("/")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(html).contains("data-stress-display=\"측정 없음\"", "data-emotional-display=\"측정 없음\"")
-                .doesNotContain("0회 중 0회 개선");
+        assertThat(html).contains("/images/landing/report-previews/eeg-report-summary.png", "실참여자 데이터 샘플입니다.")
+                .doesNotContain("data-stress-display=", "data-emotional-display=", "0회 중 0회 개선");
     }
 
     @Test void anonymousSelectionIsCompleteStableAndOrderedByParticipantNumber() {
@@ -380,12 +398,12 @@ class HealingEffectUiTests {
                         "id=\"spotSiteAddress\"", "id=\"spotAnalysis\"", "측정 데이터",
                         "home-survey-analysis.js", "home-course-overlay.js", "home-spatial.js", "home-spatial.css",
                         "공간 모니터링", "monitoringCanvas", "monitoring-effect-legend", "member-monitoring-space", "나의 달력",
-                        "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "\"prev,next\"", "\"title\"", "\"today\"", "calendar-toolbar-grid")
                 .doesNotContain("memberAnalysisHistory", "상세 분석 보기", "openMemberAnalysisButton", "memberAnalysisModal",
                         "27.7%", "지수:", "monitoring-hotspot-maximum-change",
                         "mapModal", "openMapButton", "monitoringSettings", "\"prev,next today\"",
                         "P002", "P004", "secret-login-two", "secret-login-four",
+                        "측정 일정에 따른 개인별 분석 리포트를 준비하고 있습니다. 추후 업데이트될 예정입니다.",
                         "SELECTED SCHEDULE", "일정을 선택해 주세요.", "schedule-detail", "/member/api/schedules/", "eventClick");
         assertThat(html.indexOf("myHealingTitle")).isLessThan(html.indexOf("spatialTitle"));
         assertThat(html.indexOf("spatialTitle")).isLessThan(html.indexOf("memberAnalysisHighlights"));
