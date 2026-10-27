@@ -289,8 +289,9 @@ class ScheduleMigrationTests {
         String list = mvc.perform(get("/member/schedules").sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-list"))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(list).contains("href=\"/member/schedules/" + ownId + "\"", "달력으로 돌아가기")
-                .doesNotContain("/member/schedules/" + otherId, "other-member", "/admin/schedules", "새 일정 등록");
+        assertThat(list).contains("href=\"/member/schedules/" + ownId + "\"", "달력으로 돌아가기",
+                        "href=\"/member/schedules/new\"")
+                .doesNotContain("/member/schedules/" + otherId, "other-member", "/admin/schedules");
 
         String detail = mvc.perform(get("/member/schedules/" + ownId)
                         .sessionAttr("loginMemberId", member.getMemberId()))
@@ -335,8 +336,9 @@ class ScheduleMigrationTests {
         var mvc = MockMvcBuilders.webAppContextSetup(context).build();
         String list = mvc.perform(get("/member/schedules").sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(list).contains("등록된 일정이 없습니다.", "달력으로 돌아가기")
-                .doesNotContain("/admin/schedules", "새 일정 등록", "other-member");
+        assertThat(list).contains("등록된 일정이 없습니다.", "달력으로 돌아가기",
+                        "href=\"/member/schedules/new\"")
+                .doesNotContain("/admin/schedules", "other-member");
     }
 
 }

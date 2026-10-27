@@ -4,19 +4,29 @@ import com.example.manage.domain.Member;
 import com.example.manage.dto.ScheduleResponse;
 import com.example.manage.dto.MemberScheduleDetailResponse;
 import com.example.manage.dto.MemberProfileView;
+import com.example.manage.dto.MemberScheduleForm;
+import com.example.manage.dto.SiteResponse;
+import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
+import com.example.manage.service.SiteService;
+import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Controller
 @RequiredArgsConstructor
@@ -25,6 +35,8 @@ public class MemberController {
 
     private final MemberService memberService;
     private final ScheduleService scheduleService;
+    private final SiteService siteService;
+    private final WeatherService weatherService;
     private final com.example.manage.service.MemberAnalysisModelService analysisModel;
 
     @GetMapping("/login")
@@ -107,6 +119,65 @@ public class MemberController {
         model.addAttribute("schedules", scheduleService.findScheduleByMemberId(memberId));
         model.addAttribute("memberMode", true);
         return "admin/schedule-list";
+    }
+
+    private String renderScheduleForm(Model model) {
+        model.addAttribute("memberMode", true);
+        model.addAttribute("sites", siteService.findAllSites().stream().map(SiteResponse::new).toList());
+        return "admin/schedule-form";
+    }
+
+    @GetMapping("/schedules/new")
+    public String newSchedule(HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        if (memberService.findMember(memberId) == null) {
+            session.invalidate();
+            return "redirect:/member/login";
+        }
+        model.addAttribute("scheduleForm", new MemberScheduleForm());
+        return renderScheduleForm(model);
+    }
+
+    @PostMapping("/schedules/new")
+    public String createSchedule(@Valid @ModelAttribute("scheduleForm") MemberScheduleForm form,
+                                 BindingResult bindingResult, HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        if (memberService.findMember(memberId) == null) {
+            session.invalidate();
+            return "redirect:/member/login";
+        }
+        if (bindingResult.hasErrors()) return renderScheduleForm(model);
+
+        try {
+            scheduleService.createSchedule(memberId, form.getScheduleDate(), form.getSiteId(),
+                    form.getCourseId(), form.getFirstSpotId(), form.getFirstStartTime(),
+                    form.getSecondSpotId(), form.getSecondStartTime(), form.getWeather(),
+                    form.getTemperature(), form.getHumidity());
+        } catch (ScheduleService.DuplicateScheduleException exception) {
+            bindingResult.reject("duplicateSchedule", exception.getMessage());
+            return renderScheduleForm(model);
+        } catch (IllegalArgumentException exception) {
+            bindingResult.reject("invalidSchedule", exception.getMessage());
+            return renderScheduleForm(model);
+        }
+
+        return "redirect:/member/schedules";
+    }
+
+    @GetMapping("/weather")
+    @ResponseBody
+    public ResponseEntity<?> getWeather(@RequestParam LocalDate date, @RequestParam LocalTime time) {
+        try {
+            WeatherResult result = weatherService.getWeather(date, time);
+            if (result == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                        "message", "선택한 날짜의 날씨 데이터가 제공되지 않습니다. 다른 날짜를 선택해 주세요."
+                ));
+            }
+            return ResponseEntity.ok(result);
+        } catch (WeatherService.WeatherDateOutOfRangeException exception) {
+            return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
+        }
     }
 
     @GetMapping("/schedules/{scheduleId}")

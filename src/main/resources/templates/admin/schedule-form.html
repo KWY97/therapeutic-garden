@@ -15,13 +15,13 @@
     <section class="card form-card">
 
         <div class="card-header">
-            <p class="card-eyebrow">Administrator</p>
+            <p class="card-eyebrow" th:text="${memberMode} ? 'PARTICIPANT' : 'Administrator'">Administrator</p>
 
             <h1 class="card-title">
                 일정 등록
             </h1>
 
-            <p class="card-description">
+            <p class="card-description" th:text="${memberMode} ? '나의 날짜별 코스와 스팟 일정을 등록합니다.' : '참가자에게 날짜별 코스와 스팟 일정을 등록합니다.'">
                 참가자에게 날짜별 코스와 스팟 일정을 등록합니다.
             </p>
         </div>
@@ -29,13 +29,13 @@
 
         <form
                 class="login-form"
-                th:action="@{/admin/schedules/new}"
+                th:action="${memberMode} ? @{/member/schedules/new} : @{/admin/schedules/new}"
                 th:object="${scheduleForm}"
                 method="post"
         >
 
             <!-- 참가자 -->
-            <div class="form-group">
+            <div class="form-group" th:unless="${memberMode}">
 
                 <label
                         class="form-label"
@@ -267,7 +267,8 @@
                     <button
                             class="primary-button"
                             type="button"
-                            id="weatherButton">
+                            id="weatherButton"
+                            th:attr="data-weather-url=${memberMode == true ? '/member/weather' : '/admin/weather'}">
                         날씨 불러오기
                     </button>
 
@@ -365,9 +366,11 @@
 
         <a
                 class="back-link"
+                th:unless="${memberMode}"
                 th:href="@{/admin}">
             관리자 메인으로
         </a>
+        <a class="back-link" th:if="${memberMode}" th:href="@{/member/schedules}">일정 목록으로</a>
 
     </section>
 
@@ -533,6 +536,7 @@
 
         WeatherLookup.bind({
             button: weatherButton,
+            url: weatherButton.dataset.weatherUrl,
             hint: document.getElementById("weatherRangeHint"),
             status: document.getElementById("weatherLookupStatus"),
             dateInput: document.getElementById("scheduleDate"),

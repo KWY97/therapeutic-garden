@@ -105,8 +105,13 @@
 
             try {
                 const response = await options.fetcher(
-                    `/admin/weather?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`
+                    `${options.url || "/admin/weather"}?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`
                 );
+
+                if (response.redirected) {
+                    setStatus("로그인이 만료되었습니다. 다시 로그인한 뒤 날씨를 불러와 주세요.", "error");
+                    return;
+                }
 
                 if (!response.ok) {
                     setStatus(await readErrorMessage(response), "error");

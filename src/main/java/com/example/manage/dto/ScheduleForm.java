@@ -1,6 +1,7 @@
 package com.example.manage.dto;
 
 import jakarta.validation.constraints.NotNull;
+import org.springframework.format.annotation.DateTimeFormat;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,7 @@ public class ScheduleForm {
 
 
     @NotNull(message = "일정 날짜를 선택해 주세요.")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate scheduleDate;
 
 
@@ -29,6 +31,7 @@ public class ScheduleForm {
     private Long firstSpotId;
 
     @NotNull(message = "첫 번째 시작 시간을 입력해 주세요.")
+    @DateTimeFormat(pattern = "HH:mm")
     private LocalTime firstStartTime;
 
 
@@ -36,6 +39,7 @@ public class ScheduleForm {
     private Long secondSpotId;
 
     @NotNull(message = "두 번째 시작 시간을 입력해 주세요.")
+    @DateTimeFormat(pattern = "HH:mm")
     private LocalTime secondStartTime;
 
     // 날씨 정보
