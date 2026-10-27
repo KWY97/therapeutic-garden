@@ -286,85 +286,103 @@
         });
     }
 
-    function initializePersonalChangeSelectors() {
-        const chart = page.querySelector('[data-personal-change-chart]');
-        if (!chart) return;
-        const spots = Array.from(chart.querySelectorAll('[data-personal-spot]'));
-        if (!spots.length) return;
-        const metrics = Array.from(chart.querySelectorAll('[data-personal-metric]'));
-        const labels = {
-            stress: { title: '스트레스 개선율' },
-            emotional: { title: '정서 안정성 개선율' }
+    function initializeReportPreviews() {
+        const tabList = page.querySelector('[data-report-tabs]');
+        const tabs = tabList ? Array.from(tabList.querySelectorAll('[data-report-tab]')) : [];
+        const panels = Array.from(page.querySelectorAll('[data-report-panel]'));
+        const activateTab = (tab, focus = false) => {
+            const selected = tab.dataset.reportTab;
+            tabs.forEach(item => {
+                const active = item === tab;
+                item.classList.toggle('is-active', active);
+                item.setAttribute('aria-selected', String(active));
+                item.tabIndex = active ? 0 : -1;
+            });
+            panels.forEach(panel => { panel.hidden = panel.dataset.reportPanel !== selected; });
+            if (focus) tab.focus();
         };
-        let activeMetric = 'stress';
-        let activeIndex = 0;
 
-        const render = () => {
-            chart.dataset.activeMetric = activeMetric;
-            const values = spots.map(spot => {
-                const value = Number(spot.dataset[activeMetric]);
-                return Number.isFinite(value) ? value : null;
+        tabs.forEach(tab => tab.addEventListener('click', () => activateTab(tab)));
+        if (tabList && tabs.length) {
+            tabList.addEventListener('keydown', event => {
+                const current = tabs.indexOf(event.target);
+                if (current < 0) return;
+                let next = current;
+                if (event.key === 'ArrowRight') next = (current + 1) % tabs.length;
+                else if (event.key === 'ArrowLeft') next = (current - 1 + tabs.length) % tabs.length;
+                else if (event.key === 'Home') next = 0;
+                else if (event.key === 'End') next = tabs.length - 1;
+                else return;
+                event.preventDefault();
+                activateTab(tabs[next], true);
             });
-            const max = Math.max(...values.filter(value => value != null), 1);
-            metrics.forEach(button => {
-                const active = button.dataset.personalMetric === activeMetric;
-                button.classList.toggle('is-active', active);
-                button.setAttribute('aria-pressed', String(active));
-            });
-            spots.forEach((spot, index) => {
-                const active = index === activeIndex;
-                spot.classList.toggle('is-active', active);
-                spot.setAttribute('aria-pressed', String(active));
-                const display = spot.dataset[`${activeMetric}Display`];
-                const count = spot.dataset[`${activeMetric}Count`] || '';
-                const maximum = spot.dataset[`${activeMetric}Maximum`] === 'true' ? '최대 개선' : '';
-                spot.querySelector('[data-comparison-value]').textContent = display;
-                spot.querySelector('[data-comparison-count]').textContent = count.replace(/ 개선$/, '');
-                spot.setAttribute('aria-label', [
-                    `${spot.dataset.personalSpot} · ${spot.dataset.name}`,
-                    `${labels[activeMetric].title} ${display}`,
-                    count,
-                    maximum
-                ].filter(Boolean).join(', '));
-                const bar = spot.querySelector('.landing-comparison-track i');
-                bar.style.height = `${values[index] == null ? 0 : values[index] / max * 100}%`;
-                bar.style.top = 'auto';
-                bar.style.bottom = '0';
-                bar.dataset.effectStatus = values[index] == null ? 'neutral' : 'improved';
-            });
-            const spot = spots[activeIndex];
-            chart.querySelector('[data-current-spot]').textContent = `${spot.dataset.personalSpot} · ${spot.dataset.name}`;
-            chart.querySelector('[data-current-metric]').textContent = labels[activeMetric].title;
-            renderImprovementValue(chart.querySelector('[data-current-rate]'), spot.dataset[`${activeMetric}RateDisplay`]);
-            chart.querySelector('[data-current-count]').textContent = spot.dataset[`${activeMetric}Count`] || '';
+        }
+
+        const modal = page.querySelector('[data-report-modal]');
+        const modalDialog = modal && modal.querySelector('[data-report-modal-dialog]');
+        const modalBody = modal && modal.querySelector('[data-report-modal-body]');
+        const modalTitle = modal && modal.querySelector('[data-report-modal-title]');
+        const closeButton = modal && modal.querySelector('[data-report-modal-close]');
+        if (!modal || !modalDialog || !modalBody || !modalTitle || !closeButton) return;
+
+        const modalImage = document.createElement('img');
+        modalImage.className = 'landing-report-modal-image';
+        modalBody.append(modalImage);
+        let previousFocus = null;
+        let previousOverflow = '';
+
+        const closeModal = () => {
+            if (modal.hidden) return;
+            modal.hidden = true;
+            document.body.style.overflow = previousOverflow;
+            if (previousFocus && previousFocus.focus) previousFocus.focus();
         };
-        const announce = () => {
-            const spot = spots[activeIndex];
-            const maximum = spot.dataset[`${activeMetric}Maximum`] === 'true' ? '최대 개선' : '';
-            announceSelection(chart, [
-                `${spot.dataset.personalSpot} · ${spot.dataset.name}`,
-                `${labels[activeMetric].title} ${spot.dataset[`${activeMetric}Display`]}`,
-                spot.dataset[`${activeMetric}Count`],
-                maximum
-            ].filter(Boolean).join(', '));
-        };
-        spots.forEach((spot, index) => spot.addEventListener('click', () => {
-            activeIndex = index;
-            render();
-            announce();
-        }));
-        metrics.forEach(button => button.addEventListener('click', () => {
-            activeMetric = button.dataset.personalMetric;
-            render();
-            announce();
-        }));
-        render();
+        page.querySelectorAll('[data-report-preview]').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const preview = trigger.querySelector('img');
+                const source = trigger.dataset.reportPreviewSrc || (preview && (preview.currentSrc || preview.src));
+                if (!source) return;
+                previousFocus = document.activeElement || trigger;
+                previousOverflow = document.body.style.overflow;
+                modalTitle.textContent = trigger.dataset.reportPreviewTitle;
+                modalImage.src = source;
+                modalImage.alt = trigger.dataset.reportPreviewAlt || (preview && preview.alt) || '';
+                modal.dataset.previewKind = trigger.dataset.reportPreviewKind;
+                modal.hidden = false;
+                document.body.style.overflow = 'hidden';
+                modalBody.scrollTop = 0;
+                closeButton.focus();
+            });
+        });
+        closeButton.addEventListener('click', closeModal);
+        modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
+        document.addEventListener('keydown', event => {
+            if (modal.hidden) return;
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                closeModal();
+                return;
+            }
+            if (event.key !== 'Tab') return;
+            const controls = Array.from(modalDialog.querySelectorAll('button, [href], [tabindex]'))
+                .filter(control => control.tabIndex >= 0 && !control.hidden);
+            if (!controls.length) return;
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
     }
 
     initializeCourseConnectors();
     initializeRevealAnimations();
     initializeHealingSpotSelectors();
-    initializePersonalChangeSelectors();
+    initializeReportPreviews();
     page.querySelectorAll('[data-effect-metric]').forEach(element => {
         renderImprovementValue(element, element.textContent);
     });
