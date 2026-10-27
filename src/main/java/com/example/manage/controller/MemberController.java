@@ -10,9 +10,11 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -97,6 +99,26 @@ public class MemberController {
         model.addAttribute("testAccount", member.isTestAccount());
         model.addAttribute("formattedPhone", profile.getFormattedPhone());
         return "member/mypage";
+    }
+
+    @GetMapping("/schedules")
+    public String scheduleList(HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        model.addAttribute("schedules", scheduleService.findScheduleByMemberId(memberId));
+        model.addAttribute("memberMode", true);
+        return "admin/schedule-list";
+    }
+
+    @GetMapping("/schedules/{scheduleId}")
+    public String scheduleDetail(@PathVariable Long scheduleId, HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        ScheduleResponse schedule = scheduleService.findMemberScheduleResponse(scheduleId, memberId);
+        if (schedule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+
+        model.addAttribute("schedule", schedule);
+        model.addAttribute("scheduleSpots", schedule.getSpots());
+        model.addAttribute("memberMode", true);
+        return "admin/schedule-detail";
     }
 
     @GetMapping("/api/schedules/{scheduleId}")

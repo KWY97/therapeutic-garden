@@ -350,9 +350,12 @@
             </fieldset>
 
 
+            <p class="error-message" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+
             <!-- 일정 등록 -->
             <button
                     class="primary-button"
+                    id="scheduleSubmitButton"
                     type="submit">
                 일정 등록
             </button>
@@ -373,6 +376,23 @@
 <script th:src="@{/js/weather-lookup.js}"></script>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
+        const scheduleForm = document.querySelector("form.login-form");
+        const submitButton = document.getElementById("scheduleSubmitButton");
+        scheduleForm.addEventListener("submit", function (event) {
+            if (scheduleForm.dataset.submitting === "true") {
+                event.preventDefault();
+                return;
+            }
+            scheduleForm.dataset.submitting = "true";
+            submitButton.disabled = true;
+            submitButton.textContent = "저장 중...";
+        });
+        window.addEventListener("pageshow", function () {
+            delete scheduleForm.dataset.submitting;
+            submitButton.disabled = false;
+            submitButton.textContent = "일정 등록";
+        });
 
         const course =
                 document.getElementById("courseId");

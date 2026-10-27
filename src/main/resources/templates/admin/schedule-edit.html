@@ -353,6 +353,8 @@
             </fieldset>
 
 
+            <p class="error-message" role="alert" th:each="error : ${#fields.globalErrors()}" th:text="${error}"></p>
+
             <button
                     class="primary-button"
                     type="submit">
