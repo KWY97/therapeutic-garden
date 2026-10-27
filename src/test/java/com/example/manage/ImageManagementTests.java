@@ -70,7 +70,7 @@ class ImageManagementTests {
             return bytes;
         });
         when(storage.createReadUrl(anyString(), anyString())).thenReturn("https://example.invalid/temporary-image");
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).addFilters(security).build();
     }
 
     private Long parent(boolean site) {
@@ -288,7 +288,7 @@ class ImageManagementTests {
             mvc.perform(post(path + "/1/" + action).sessionAttr("loginAdminId", 1L).param("direction", "up"))
                     .andExpect(status().isForbidden());
         }
-        mvc.perform(get(path + "/1/content")).andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(path + "/1/content")).andExpect(status().isUnauthorized());
         verify(storage, never()).upload(anyString(), any(byte[].class), anyString());
     }
 

@@ -41,7 +41,7 @@ class HealingEffectUiTests {
     MockMvc mvc;
     Member partial, firstComplete, laterComplete, landingParticipant;
 
-    @BeforeEach void setup() { mvc = MockMvcBuilders.webAppContextSetup(context).build(); }
+    @BeforeEach void setup() { mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build(); }
 
     void fixture() {
         var site = sites.save(new Site("effect-ui-site", "synthetic", 37.0, 127.0, 3));

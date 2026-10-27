@@ -5,6 +5,7 @@ import com.example.manage.domain.Member;
 import com.example.manage.dto.MemberProfileView;
 import com.example.manage.repository.AdminRepository;
 import com.example.manage.repository.MemberRepository;
+import com.example.manage.service.SessionAuthentication;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ class MemberMyPageTests {
     @Autowired MemberRepository members;
     @Autowired AdminRepository admins;
     @Autowired PasswordEncoder encoder;
+    @Autowired SessionAuthentication authentication;
     MockMvc mvc;
 
     @BeforeEach
@@ -103,7 +105,7 @@ class MemberMyPageTests {
                 .doesNotContain("href=\"/member/mypage\"", "MY PAGE");
 
         MockHttpSession memberSession = new MockHttpSession();
-        memberSession.setAttribute("loginMemberId", member.getMemberId());
+        authentication.authenticateMember(memberSession, member);
         mvc.perform(get("/admin/members/" + member.getMemberId() + "/edit").session(memberSession))
                 .andExpect(redirectedUrl("/admin/login"));
         mvc.perform(post("/admin/members/" + member.getMemberId() + "/delete")

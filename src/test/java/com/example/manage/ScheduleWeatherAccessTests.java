@@ -33,15 +33,14 @@ class ScheduleWeatherAccessTests {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).addFilters(security).build();
     }
 
     @Test
-    void memberRequestToExistingAdminWeatherEndpointRedirectsToLoginHtml() throws Exception {
+    void memberRequestToExistingAdminWeatherEndpointReturnsUnauthorized() throws Exception {
         mvc.perform(get("/admin/weather").sessionAttr("loginMemberId", 1L)
                         .param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
 
         var login = mvc.perform(get("/admin/login").sessionAttr("loginMemberId", 1L))
                 .andExpect(status().isOk()).andReturn().getResponse();
@@ -83,12 +82,12 @@ class ScheduleWeatherAccessTests {
     @Test
     void weatherEndpointsRequireTheirOwnRolesAndReturnJsonErrors() throws Exception {
         mvc.perform(get("/member/weather").param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/member/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/member/weather").sessionAttr("loginAdminId", 1L)
                         .param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/member/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/admin/weather").param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/admin/schedules").sessionAttr("loginMemberId", 1L))
                 .andExpect(status().isFound()).andExpect(redirectedUrl("/admin/login"));
 

@@ -39,7 +39,7 @@ class HealingCourseManagementTests {
         site = siteService.createSite("HC 기준 사이트", "주소", 37.0, 127.0, 3);
         other = siteService.createSite("HC 다른 사이트", "주소", 38.0, 128.0, 5);
         course = create(site, "HC-A");
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
     }
 
     HealingCourse create(Site owner, String code) {

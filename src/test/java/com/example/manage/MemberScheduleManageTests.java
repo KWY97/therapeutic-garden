@@ -2,6 +2,7 @@ package com.example.manage;
 
 import com.example.manage.domain.*;
 import com.example.manage.repository.*;
+import com.example.manage.service.SessionAuthentication;
 import jakarta.persistence.EntityManager;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,7 @@ class MemberScheduleManageTests {
     @Autowired ScheduleRepository schedules;
     @Autowired ScheduleSpotRepository scheduleSpots;
     @Autowired EntityManager entityManager;
+    @Autowired SessionAuthentication authentication;
 
     MockMvc mvc;
     Member own;
@@ -57,7 +59,9 @@ class MemberScheduleManageTests {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context)
+                .defaultRequest(get("/").with(LegacyAuthenticatedSession.hydrate(context)))
+                .addFilters(security).build();
         own = member();
         other = member();
         site = sites.save(new Site("수정 사이트 " + UUID.randomUUID(), "주소", 37.0, 127.0, 3));
@@ -83,7 +87,7 @@ class MemberScheduleManageTests {
 
     private MockHttpSession session(Member member) {
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute("loginMemberId", member.getMemberId());
+        authentication.authenticateMember(session, member);
         return session;
     }
 

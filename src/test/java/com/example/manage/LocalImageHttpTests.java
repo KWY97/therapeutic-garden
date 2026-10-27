@@ -31,6 +31,8 @@ import static org.assertj.core.api.Assertions.*;
 @Import(LocalImageHttpTests.TestEndpoints.class)
 class LocalImageHttpTests {
     private static final Path ROOT;
+    private static final java.util.concurrent.atomic.AtomicInteger PARTICIPANT_NO =
+            new java.util.concurrent.atomic.AtomicInteger(1_850_000_000);
     static { try { ROOT = Files.createTempDirectory("manage-local-image-http-"); }
         catch (java.io.IOException e) { throw new java.io.UncheckedIOException(e); } }
     @DynamicPropertySource static void properties(DynamicPropertyRegistry registry) {
@@ -45,25 +47,52 @@ class LocalImageHttpTests {
     @Autowired SiteImageService siteImages;
     @Autowired HealingSpotImageService spotImages;
     HttpClient client;
+    HttpClient memberClient;
     String csrf;
 
     // Test-only endpoint: the production application never imports this configuration.
     @TestConfiguration static class TestEndpoints {
-        @Bean TestLogin testLogin() { return new TestLogin(); }
+        @Bean TestLogin testLogin(AdminRepository admins, MemberRepository members, SessionAuthentication authentication) {
+            return new TestLogin(admins, members, authentication);
+        }
     }
     @RestController static class TestLogin {
-        @GetMapping("/test-image-session") String login(HttpServletRequest request) {
-            request.getSession().setAttribute("loginAdminId", 1L);
-            request.getSession().setAttribute("loginMemberId", 1L);
+        private final AdminRepository admins;
+        private final MemberRepository members;
+        private final SessionAuthentication authentication;
+
+        TestLogin(AdminRepository admins, MemberRepository members, SessionAuthentication authentication) {
+            this.admins = admins;
+            this.members = members;
+            this.authentication = authentication;
+        }
+
+        @GetMapping("/test-image-session") String login(HttpServletRequest request,
+                @RequestParam(defaultValue = "admin") String role) {
+            if (role.equals("member")) {
+                Member member = members.saveAndFlush(new Member(PARTICIPANT_NO.incrementAndGet(),
+                        1, "image-http-member-" + UUID.randomUUID(), "test-only-hash"));
+                authentication.authenticateMember(request.getSession(), member);
+            } else {
+                Admin admin = admins.saveAndFlush(new Admin("image-http-" + UUID.randomUUID(), "test-only-hash"));
+                authentication.authenticateAdmin(request.getSession(), admin);
+            }
             return ((CsrfToken) request.getAttribute(CsrfToken.class.getName())).getToken();
         }
     }
     @BeforeEach void setup() throws Exception {
         client = HttpClient.newBuilder().cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL)).build();
+        memberClient = HttpClient.newBuilder().cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL)).build();
         csrf = get("/test-image-session").body();
+        memberClient.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/test-image-session?role=member"))
+                .GET().build(), HttpResponse.BodyHandlers.discarding());
     }
     HttpResponse<String> get(String path) throws Exception {
         return client.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
+                HttpResponse.BodyHandlers.ofString());
+    }
+    HttpResponse<String> getMember(String path) throws Exception {
+        return memberClient.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
     }
     Long parent(boolean site) {
@@ -111,7 +140,7 @@ class LocalImageHttpTests {
                 + images.getFirst().imageId() + "/content").statusCode()).isEqualTo(404);
         var anonymous = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
                 URI.create("http://localhost:" + port + images.getFirst().readUrl())).GET().build(), HttpResponse.BodyHandlers.ofString());
-        assertThat(anonymous.statusCode()).isEqualTo(302);
+        assertThat(anonymous.statusCode()).isEqualTo(401);
         assertThat(get(path.replace("/images", "/edit")).body()).contains("새 이미지 추가", "test.png", "대표 이미지");
     }
 
@@ -146,7 +175,7 @@ class LocalImageHttpTests {
         assertThat(get("/admin/spots/" + parent(false) + "/images/" + photo.imageId() + "/thumbnail").statusCode()).isEqualTo(404);
         var anonymous = HttpClient.newHttpClient().send(HttpRequest.newBuilder(
                 URI.create("http://localhost:" + port + url)).GET().build(), HttpResponse.BodyHandlers.ofString());
-        assertThat(anonymous.statusCode()).isEqualTo(302);
+        assertThat(anonymous.statusCode()).isEqualTo(401);
         spotImages.delete(id, photo.imageId());
         assertThat(get(url).statusCode()).isEqualTo(404);
     }
@@ -181,7 +210,7 @@ class LocalImageHttpTests {
                 java.time.LocalDateTime.now(), 0, 0, dataset.getSiteId()));
 
         var adminSite = getBytes(siteImages.list(dataset.getSiteId()).getFirst().readUrl());
-        var memberSite = getBytes("/member/api/monitoring/site-image");
+        var memberSite = getMemberBytes("/member/api/monitoring/site-image");
         assertThat(memberSite.statusCode()).isEqualTo(200);
         assertThat(memberSite.headers().firstValue("Content-Type")).contains("image/png");
         assertThat(memberSite.headers().firstValue("Cache-Control")).hasValueSatisfying(value ->
@@ -190,14 +219,14 @@ class LocalImageHttpTests {
                 .hasValue(adminSite.headers().firstValueAsLong("Content-Length").orElseThrow());
 
         var adminSpot = getBytes(spotImages.monitoringReadUrl(spot.getSpotId()));
-        var memberSpot = getBytes("/member/api/monitoring/spots/" + spot.getSpotId() + "/thumbnail");
+        var memberSpot = getMemberBytes("/member/api/monitoring/spots/" + spot.getSpotId() + "/thumbnail");
         assertThat(memberSpot.statusCode()).isEqualTo(200);
         assertThat(memberSpot.headers().firstValue("Content-Type")).contains("image/jpeg");
         assertThat(memberSpot.headers().firstValueAsLong("Content-Length"))
                 .hasValue(adminSpot.headers().firstValueAsLong("Content-Length").orElseThrow());
 
         var gallery = spotImages.list(spot.getSpotId());
-        var detail = get("/member/api/monitoring/spots/" + spot.getSpotId());
+        var detail = getMember("/member/api/monitoring/spots/" + spot.getSpotId());
         assertThat(detail.statusCode()).isEqualTo(200);
         assertThat(detail.headers().firstValue("Cache-Control")).hasValueSatisfying(value ->
                 assertThat(value).contains("no-store"));
@@ -214,7 +243,7 @@ class LocalImageHttpTests {
         var adminOriginal = getBytes(gallery.getFirst().readUrl());
         String memberContentUrl = "/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
                 + gallery.getFirst().imageId() + "/content";
-        var memberOriginal = getBytes(memberContentUrl);
+        var memberOriginal = getMemberBytes(memberContentUrl);
         assertThat(memberOriginal.statusCode()).isEqualTo(200);
         assertThat(memberOriginal.headers().firstValue("Content-Type")).contains("image/png");
         assertThat(memberOriginal.headers().firstValue("Cache-Control")).hasValueSatisfying(value ->
@@ -222,36 +251,36 @@ class LocalImageHttpTests {
         assertThat(memberOriginal.headers().firstValueAsLong("Content-Length"))
                 .hasValue(adminOriginal.headers().firstValueAsLong("Content-Length").orElseThrow());
 
-        assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/thumbnail").statusCode())
+        assertThat(getMember("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/thumbnail").statusCode())
                 .isEqualTo(404);
-        assertThat(get("/member/api/monitoring/spots/" + disallowedCode.getSpotId() + "/thumbnail").statusCode())
+        assertThat(getMember("/member/api/monitoring/spots/" + disallowedCode.getSpotId() + "/thumbnail").statusCode())
                 .isEqualTo(404);
-        assertThat(get("/member/api/monitoring/spots/9223372036854775807/thumbnail").statusCode())
+        assertThat(getMember("/member/api/monitoring/spots/9223372036854775807/thumbnail").statusCode())
                 .isEqualTo(404);
         Long outsideImageId = spotImages.list(outsideSpot.getSpotId()).getFirst().imageId();
-        assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId()).statusCode()).isEqualTo(404);
-        assertThat(get("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/images/"
+        assertThat(getMember("/member/api/monitoring/spots/" + outsideSpot.getSpotId()).statusCode()).isEqualTo(404);
+        assertThat(getMember("/member/api/monitoring/spots/" + outsideSpot.getSpotId() + "/images/"
                 + outsideImageId + "/content").statusCode()).isEqualTo(404);
-        assertThat(get("/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
+        assertThat(getMember("/member/api/monitoring/spots/" + spot.getSpotId() + "/images/"
                 + outsideImageId + "/content").statusCode()).isEqualTo(404);
-        assertThat(get("/member/api/monitoring/spots/" + spot.getSpotId()
+        assertThat(getMember("/member/api/monitoring/spots/" + spot.getSpotId()
                 + "/images/9223372036854775807/content").statusCode()).isEqualTo(404);
         var anonymous = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/member/api/monitoring/site-image"))
                         .GET().build(), HttpResponse.BodyHandlers.ofString());
-        assertThat(anonymous.statusCode()).isEqualTo(302);
-        assertThat(anonymous.headers().firstValue("Location")).hasValueSatisfying(value ->
-                assertThat(value).endsWith("/member/login"));
+        assertThat(anonymous.statusCode()).isEqualTo(401);
         var anonymousDetail = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER).build().send(
                 HttpRequest.newBuilder(URI.create("http://localhost:" + port + memberContentUrl)).GET().build(),
                 HttpResponse.BodyHandlers.ofString());
-        assertThat(anonymousDetail.statusCode()).isEqualTo(302);
-        assertThat(anonymousDetail.headers().firstValue("Location")).hasValueSatisfying(value ->
-                assertThat(value).endsWith("/member/login"));
+        assertThat(anonymousDetail.statusCode()).isEqualTo(401);
     }
 
     HttpResponse<byte[]> getBytes(String path) throws Exception {
         return client.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
+                HttpResponse.BodyHandlers.ofByteArray());
+    }
+    HttpResponse<byte[]> getMemberBytes(String path) throws Exception {
+        return memberClient.send(HttpRequest.newBuilder(URI.create("http://localhost:" + port + path)).GET().build(),
                 HttpResponse.BodyHandlers.ofByteArray());
     }
 

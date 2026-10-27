@@ -33,6 +33,7 @@ import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.AdminService;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
+import com.example.manage.service.SessionAuthentication;
 import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,6 +56,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final SessionAuthentication sessionAuthentication;
     private final MemberService memberService;
     private final com.example.manage.service.MemberAnalysisModelService analysisModel;
     private final ScheduleService scheduleService;
@@ -483,12 +485,7 @@ public class AdminController {
         } else {
             request.changeSessionId();
         }
-        session.removeAttribute("loginMemberId");
-        session.removeAttribute("loginMemberName");
-        session.setAttribute(
-                "loginAdminId",
-                admin.getAdminId()
-        );
+        sessionAuthentication.authenticateAdmin(session, admin);
 
         return "redirect:/admin/monitoring";
     }

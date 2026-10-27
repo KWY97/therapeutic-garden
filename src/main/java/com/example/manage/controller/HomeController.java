@@ -3,6 +3,7 @@ package com.example.manage.controller;
 import jakarta.servlet.http.HttpSession;
 import com.example.manage.domain.Site;
 import com.example.manage.service.SiteService;
+import com.example.manage.service.SessionAuthentication;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -16,6 +17,7 @@ import java.util.List;
 public class HomeController {
 
     private final SiteService siteService;
+    private final SessionAuthentication sessionAuthentication;
     private final com.example.manage.service.SiteImageService siteImages;
     private final com.example.manage.service.HealingEffectQueryService healingEffects;
 
@@ -27,10 +29,11 @@ public class HomeController {
 
     @GetMapping("/")
     public String landing(HttpSession session, Model model) {
-        if (session.getAttribute("loginAdminId") != null) {
+        var role = sessionAuthentication.role(session);
+        if (role == SessionAuthentication.Role.ADMIN) {
             return "redirect:/admin/monitoring";
         }
-        if (session.getAttribute("loginMemberId") != null) {
+        if (role == SessionAuthentication.Role.MEMBER) {
             return "redirect:/member";
         }
         var overall = healingEffects.findPublishedOverallImprovements();

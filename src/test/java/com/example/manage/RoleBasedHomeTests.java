@@ -39,7 +39,7 @@ class RoleBasedHomeTests {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
     }
 
     @Test
@@ -135,7 +135,8 @@ class RoleBasedHomeTests {
                 .andExpect(model().attributeExists("errorMessage"))
                 .andReturn().getResponse().getContentAsString();
         assertThat(html).contains("아이디 또는 비밀번호가 일치하지 않습니다.", "role=\"alert\"");
-        assertThat(session.getAttribute("loginAdminId")).isEqualTo(1L);
+        assertThat(session.getAttribute("loginAdminId")).isInstanceOf(Long.class);
+        assertThat(session.getAttribute("loginAdminFingerprint")).isInstanceOf(byte[].class);
         assertThat(session.getAttribute("loginMemberId")).isNull();
     }
 

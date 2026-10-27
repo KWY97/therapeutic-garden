@@ -2,6 +2,7 @@ package com.example.manage.personaleeg;
 
 import com.example.manage.domain.*;
 import com.example.manage.repository.*;
+import com.example.manage.service.SessionAuthentication;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.*;
@@ -39,6 +40,7 @@ class PersonalEegPageTests {
     @Autowired HealingCourseRepository courses;
     @Autowired HealingSpotRepository spots;
     @Autowired PasswordEncoder encoder;
+    @Autowired SessionAuthentication authentication;
     private MockMvc mvc;
     private final Map<Integer,Long> memberIds=new HashMap<>();
     private long adminId;
@@ -74,10 +76,9 @@ class PersonalEegPageTests {
 
     @Test void participantAndAdministratorPagesRenderTheSameNewMeasurements() throws Exception {
         var participant=new MockHttpSession();
-        participant.setAttribute("loginMemberId",memberIds.get(3));
-        participant.setAttribute("loginMemberName","P003");
+        authentication.authenticateMember(participant,members.findById(memberIds.get(3)).orElseThrow());
         var memberPage=mvc.perform(get("/member").session(participant)).andExpect(status().isOk()).andReturn();
-        var admin=new MockHttpSession(); admin.setAttribute("loginAdminId",adminId);
+        var admin=new MockHttpSession(); authentication.authenticateAdmin(admin,admins.findById(adminId).orElseThrow());
         var adminPage=mvc.perform(get("/admin/members/"+memberIds.get(3)+"/data").session(admin))
                 .andExpect(status().isOk()).andReturn();
         assertThat(memberPage.getModelAndView().getModel().get("measurementHistory"))
@@ -86,8 +87,7 @@ class PersonalEegPageTests {
             assertThat(page.getResponse().getContentAsString())
                     .contains("memberMeasurementHistory", "2026-08-19", "2.4653292639234912",
                             "measurement-history.js", "member-healing-analysis.js");
-        var p009=new MockHttpSession(); p009.setAttribute("loginMemberId",memberIds.get(9));
-        p009.setAttribute("loginMemberName","P009");
+        var p009=new MockHttpSession(); authentication.authenticateMember(p009,members.findById(memberIds.get(9)).orElseThrow());
         assertThat(mvc.perform(get("/member").session(p009)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString())
                 .contains("memberMeasurementHistory", "2026-08-21", "HC-C");

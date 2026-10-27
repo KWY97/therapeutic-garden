@@ -8,6 +8,7 @@ import com.example.manage.repository.*;
 import com.example.manage.service.AccountPasswordService;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
+import com.example.manage.service.SessionAuthentication;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,6 +63,7 @@ class TestParticipantAnalysisTests {
     @Autowired AccountPasswordService passwords;
     @Autowired MemberService memberService;
     @Autowired ScheduleService scheduleService;
+    @Autowired SessionAuthentication authentication;
     MockMvc mvc;
 
     @BeforeAll void createIsolatedMeasurementSchema() throws Exception {
@@ -118,8 +120,7 @@ class TestParticipantAnalysisTests {
 
     private MockHttpSession session(Member member) {
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute("loginMemberId", member.getMemberId());
-        session.setAttribute("loginMemberName", member.getName());
+        authentication.authenticateMember(session, member);
         return session;
     }
 
@@ -175,8 +176,8 @@ class TestParticipantAnalysisTests {
     @Test void adminAnalysisKeepsSelectedMemberAndOperationalSelectionsExcludeTestAccount() throws Exception {
         Fixture f = fixture();
         MockHttpSession admin = new MockHttpSession();
-        admin.setAttribute("loginAdminId", admins.saveAndFlush(new Admin("test-admin-" + UUID.randomUUID(),
-                encoder.encode(UUID.randomUUID().toString()))).getAdminId());
+        authentication.authenticateAdmin(admin, admins.saveAndFlush(new Admin("test-admin-" + UUID.randomUUID(),
+                encoder.encode(UUID.randomUUID().toString()))));
         var adminData = mvc.perform(get("/admin/members/" + f.test().getMemberId() + "/data").session(admin))
                 .andExpect(status().isOk()).andReturn().getModelAndView().getModel();
         assertThat((List<?>) adminData.get("spotEffects")).hasSize(6);
@@ -221,8 +222,8 @@ class TestParticipantAnalysisTests {
     @Test void referencedP004DeletionIsRejectedWithoutRemovingItsData() throws Exception {
         Fixture f = fixture();
         MockHttpSession admin = new MockHttpSession();
-        admin.setAttribute("loginAdminId", admins.saveAndFlush(new Admin("delete-admin-" + UUID.randomUUID(),
-                encoder.encode(UUID.randomUUID().toString()))).getAdminId());
+        authentication.authenticateAdmin(admin, admins.saveAndFlush(new Admin("delete-admin-" + UUID.randomUUID(),
+                encoder.encode(UUID.randomUUID().toString()))));
         var result = mvc.perform(post("/admin/members/" + f.p004().getMemberId() + "/delete")
                         .with(csrf()).session(admin))
                 .andExpect(redirectedUrl("/admin/members")).andReturn();

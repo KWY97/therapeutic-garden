@@ -65,7 +65,7 @@ class AdminPlaceImageUxTests {
         doAnswer(inv -> { objects.remove(inv.<String>getArgument(0)); return null; }).when(storage).delete(anyString());
         when(storage.read(anyString())).thenAnswer(inv -> objects.get(inv.<String>getArgument(0)));
         when(storage.createReadUrl(anyString(), anyString())).thenAnswer(inv -> "https://example.invalid/" + inv.getArgument(0));
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).addFilters(security).build();
     }
 
     SiteForm siteForm() {

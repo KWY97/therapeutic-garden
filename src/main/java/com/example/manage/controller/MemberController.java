@@ -9,6 +9,7 @@ import com.example.manage.dto.SiteResponse;
 import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
+import com.example.manage.service.SessionAuthentication;
 import com.example.manage.service.SiteService;
 import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
@@ -38,6 +39,7 @@ import java.time.LocalTime;
 public class MemberController {
 
     private final MemberService memberService;
+    private final SessionAuthentication sessionAuthentication;
     private final ScheduleService scheduleService;
     private final SiteService siteService;
     private final WeatherService weatherService;
@@ -68,9 +70,7 @@ public class MemberController {
         } else {
             request.changeSessionId();
         }
-        session.removeAttribute("loginAdminId");
-        session.setAttribute("loginMemberId", member.getMemberId());
-        session.setAttribute("loginMemberName", member.getName());
+        sessionAuthentication.authenticateMember(session, member);
 
         return "redirect:/member";
     }

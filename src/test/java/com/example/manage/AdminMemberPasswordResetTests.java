@@ -4,6 +4,7 @@ import com.example.manage.domain.Admin;
 import com.example.manage.domain.Member;
 import com.example.manage.repository.AdminRepository;
 import com.example.manage.repository.MemberRepository;
+import com.example.manage.service.SessionAuthentication;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ class AdminMemberPasswordResetTests {
     @Autowired MemberRepository members;
     @Autowired AdminRepository admins;
     @Autowired PasswordEncoder encoder;
+    @Autowired SessionAuthentication authentication;
     MockMvc mvc;
 
     @BeforeEach
@@ -55,7 +57,7 @@ class AdminMemberPasswordResetTests {
     private MockHttpSession adminSession() {
         Admin admin = admins.saveAndFlush(new Admin("reset-admin-" + UUID.randomUUID(), encoder.encode(CURRENT)));
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute("loginAdminId", admin.getAdminId());
+        authentication.authenticateAdmin(session, admin);
         return session;
     }
 
