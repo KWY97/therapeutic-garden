@@ -331,6 +331,51 @@ class SpatialLayoutTests {
         mvc.perform(get(path()).sessionAttr("loginAdminId", 1L)).andExpect(status().isOk())
                 .andExpect(content().string(containsString("HS2 · 숲"))).andExpect(content().string(containsString("spatial-image")));
     }
+    @Test void spatialEditorShowsEachSpotGpsEvenWithoutImagePosition() throws Exception {
+        spotService.updateHealingSpot(first.getSpotId(), course.getCourseId(), "HS1", "정원", 37.101, 127.101);
+        spotService.updateHealingSpot(second.getSpotId(), course.getCourseId(), "HS2", "숲", 37.202, 127.202);
+        List<HealingSpot> six = new ArrayList<>(List.of(first, second));
+        for (int number = 3; number <= 6; number++) {
+            six.add(spots.saveAndFlush(new HealingSpot(course, "HS" + number, "스팟 " + number,
+                    37.0 + number / 10.0, 127.0 + number / 10.0)));
+        }
+
+        String html = mvc.perform(get(path()).sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+        for (HealingSpot spot : six) {
+            HealingSpot saved = spots.findById(spot.getSpotId()).orElseThrow();
+            String row = html.substring(html.indexOf("data-spot-id=\"" + spot.getSpotId() + "\""));
+            row = row.substring(0, row.indexOf("</div>"));
+            assertThat(row).contains("위도: " + saved.getLatitude(), "경도: " + saved.getLongitude(),
+                    "data-position-status", "위치 해제").doesNotContain("/ 경도:");
+            assertThat(row.indexOf(spot.getCode() + " · ")).isLessThan(row.indexOf("data-position-status"));
+            assertThat(row.indexOf("data-position-status")).isLessThan(row.indexOf("위도: "));
+            assertThat(row.indexOf("위도: ")).isLessThan(row.indexOf("경도: "));
+            assertThat(row.indexOf("경도: ")).isLessThan(row.indexOf("위치 해제"));
+        }
+        assertThat(layouts.load(site.getSiteId()).spots()).allSatisfy(spot -> {
+            assertThat(spot.xPercent()).isNull();
+            assertThat(spot.latitude()).isNotNull();
+        });
+    }
+    @Test void imagePositionSaveAndClearLeaveSpotGpsUntouched() throws Exception {
+        double latitude = first.getLatitude(), longitude = first.getLongitude();
+        save(draft());
+        assertThat(layouts.load(site.getSiteId()).spots().getFirst().xPercent()).isEqualByComparingTo("20.1235");
+        var cleared = draft();
+        cleared.setPositions(List.of(point(first.getSpotId(), null, null), point(second.getSpotId(), "100", "0")));
+        save(cleared);
+
+        var firstLayout = layouts.load(site.getSiteId()).spots().getFirst();
+        assertThat(firstLayout.xPercent()).isNull();
+        assertThat(firstLayout.latitude()).isEqualTo(latitude);
+        assertThat(firstLayout.longitude()).isEqualTo(longitude);
+        assertThat(spots.findById(first.getSpotId()).orElseThrow().getLatitude()).isEqualTo(latitude);
+        assertThat(spots.findById(first.getSpotId()).orElseThrow().getLongitude()).isEqualTo(longitude);
+        mvc.perform(get(path()).sessionAttr("loginAdminId", 1L))
+                .andExpect(content().string(containsString("위도: " + latitude)))
+                .andExpect(content().string(containsString("경도: " + longitude)));
+    }
     @Test void noSpatialImageAndNoSpotsRenderGracefully() throws Exception {
         select(null);
         mvc.perform(get(path()).sessionAttr("loginAdminId", 1L)).andExpect(status().isOk())

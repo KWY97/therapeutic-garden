@@ -40,7 +40,8 @@ public class MemberSpatialLayoutController {
                     ? apiBase + "/monitoring/spots/" + spot.spotId() + "/thumbnail"
                     : spot.readUrl();
             return new SpatialLayoutService.Spot(spot.spotId(), spot.course(), spot.courseId(), spot.courseCode(),
-                    spot.courseName(), spot.code(), spot.name(), readUrl, spot.xPercent(), spot.yPercent());
+                    spot.courseName(), spot.code(), spot.name(), readUrl, spot.xPercent(), spot.yPercent(),
+                    spot.latitude(), spot.longitude());
         }).toList();
         return new SpatialLayoutService.Layout(layout.siteId(), layout.name(), layout.revision(), image, spots);
     }

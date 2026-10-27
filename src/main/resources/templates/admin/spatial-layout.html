@@ -44,6 +44,11 @@
                             <p class="spatial-course" th:if="${state.first or layout.spots[state.index - 1].course != spot.course}" th:text="${spot.course}"></p>
                             <button type="button" data-select aria-pressed="false" th:text="|${spot.code} · ${spot.name}|"></button>
                             <span data-position-status></span>
+                            <p class="spatial-gps" th:if="${spot.latitude != null and spot.longitude != null}">
+                                <span th:text="|위도: ${spot.latitude}|"></span>
+                                <span th:text="|경도: ${spot.longitude}|"></span>
+                            </p>
+                            <p class="spatial-gps" th:unless="${spot.latitude != null and spot.longitude != null}">좌표 정보 없음</p>
                             <button type="button" data-clear>위치 해제</button>
                             <input type="hidden" th:name="|positions[${state.index}].spotId|" th:value="${spot.spotId}">
                             <input type="hidden" data-x th:name="|positions[${state.index}].xPercent|" th:value="${spot.xPercent}">
