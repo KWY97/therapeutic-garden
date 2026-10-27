@@ -17,10 +17,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.TransactionException;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -181,7 +184,9 @@ public class MemberController {
     }
 
     @GetMapping("/schedules/{scheduleId}")
-    public String scheduleDetail(@PathVariable Long scheduleId, HttpSession session, Model model) {
+    public String scheduleDetail(@PathVariable Long scheduleId,
+                                 @RequestParam(required = false) String from,
+                                 HttpSession session, Model model) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
         ScheduleResponse schedule = scheduleService.findMemberScheduleResponse(scheduleId, memberId);
         if (schedule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
@@ -189,7 +194,77 @@ public class MemberController {
         model.addAttribute("schedule", schedule);
         model.addAttribute("scheduleSpots", schedule.getSpots());
         model.addAttribute("memberMode", true);
+        model.addAttribute("from", memberScheduleOrigin(from));
         return "admin/schedule-detail";
+    }
+
+    private String memberScheduleOrigin(String from) {
+        return "calendar".equals(from) ? "calendar" : "list";
+    }
+
+    private String renderScheduleEdit(Model model, Long scheduleId, String from) {
+        model.addAttribute("memberMode", true);
+        model.addAttribute("scheduleId", scheduleId);
+        model.addAttribute("from", memberScheduleOrigin(from));
+        model.addAttribute("sites", siteService.findAllSites().stream().map(SiteResponse::new).toList());
+        return "admin/schedule-edit";
+    }
+
+    @GetMapping("/schedules/{scheduleId}/edit")
+    public String editSchedule(@PathVariable Long scheduleId,
+                               @RequestParam(required = false) String from,
+                               HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        ScheduleResponse schedule = scheduleService.findMemberScheduleResponse(scheduleId, memberId);
+        if (schedule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        model.addAttribute("scheduleForm", MemberScheduleForm.fromSchedule(schedule));
+        return renderScheduleEdit(model, scheduleId, from);
+    }
+
+    @PostMapping("/schedules/{scheduleId}/edit")
+    public String updateSchedule(@PathVariable Long scheduleId,
+                                 @RequestParam(required = false) String from,
+                                 @Valid @ModelAttribute("scheduleForm") MemberScheduleForm form,
+                                 BindingResult bindingResult, HttpSession session, Model model) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        if (scheduleService.findMemberScheduleResponse(scheduleId, memberId) == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        if (bindingResult.hasErrors()) return renderScheduleEdit(model, scheduleId, from);
+
+        try {
+            scheduleService.updateMemberSchedule(scheduleId, memberId, form.getScheduleDate(),
+                    form.getSiteId(), form.getCourseId(), form.getFirstSpotId(), form.getFirstStartTime(),
+                    form.getSecondSpotId(), form.getSecondStartTime(), form.getWeather(),
+                    form.getTemperature(), form.getHumidity());
+        } catch (ScheduleService.DuplicateScheduleException exception) {
+            bindingResult.reject("duplicateSchedule", exception.getMessage());
+            return renderScheduleEdit(model, scheduleId, from);
+        } catch (IllegalArgumentException exception) {
+            bindingResult.reject("invalidSchedule", exception.getMessage());
+            return renderScheduleEdit(model, scheduleId, from);
+        }
+        return "redirect:/member/schedules/" + scheduleId + "?from=" + memberScheduleOrigin(from);
+    }
+
+    @PostMapping("/schedules/{scheduleId}/delete")
+    public String deleteSchedule(@PathVariable Long scheduleId,
+                                 @RequestParam(required = false) String from,
+                                 HttpSession session,
+                                 RedirectAttributes redirectAttributes) {
+        Long memberId = (Long) session.getAttribute("loginMemberId");
+        try {
+            scheduleService.deleteMemberSchedule(scheduleId, memberId);
+        } catch (DataAccessException | TransactionException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", "일정을 삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+            return "redirect:/member/schedules/" + scheduleId + "?from=" + memberScheduleOrigin(from);
+        }
+        return "redirect:/member/schedules";
+    }
+
+    @ExceptionHandler(ScheduleService.MemberScheduleNotFoundException.class)
+    public ResponseEntity<Void> memberScheduleNotFound() {
+        return ResponseEntity.notFound().build();
     }
 
     @GetMapping("/api/schedules/{scheduleId}")

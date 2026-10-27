@@ -267,6 +267,9 @@ public class ScheduleService {
         }
     }
 
+    public static class MemberScheduleNotFoundException extends RuntimeException {
+    }
+
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateSchedule(
@@ -291,7 +294,7 @@ public class ScheduleService {
          * 수정할 일정 조회
          */
         Schedule schedule =
-                scheduleRepository.findById(scheduleId)
+                scheduleRepository.findLockedById(scheduleId)
                         .orElse(null);
 
         if (schedule == null) {
@@ -299,9 +302,31 @@ public class ScheduleService {
         }
 
 
-        /*
-         * 수정 화면에서 선택한 참가자 조회
-         */
+        applyScheduleUpdate(schedule, member, scheduleDate, siteId, courseId,
+                firstSpotId, firstStartTime, secondSpotId, secondStartTime,
+                weather, temperature, humidity, true);
+    }
+
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void updateMemberSchedule(Long scheduleId, Long memberId,
+                                     LocalDate scheduleDate, Long siteId, Long courseId,
+                                     Long firstSpotId, LocalTime firstStartTime,
+                                     Long secondSpotId, LocalTime secondStartTime,
+                                     String weather, Double temperature, Double humidity) {
+        Member member = memberRepository.findLockedById(memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        Schedule schedule = scheduleRepository.findLockedByIdAndMemberId(scheduleId, memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        applyScheduleUpdate(schedule, member, scheduleDate, siteId, courseId,
+                firstSpotId, firstStartTime, secondSpotId, secondStartTime,
+                weather, temperature, humidity, false);
+    }
+
+    private void applyScheduleUpdate(Schedule schedule, Member member, LocalDate scheduleDate,
+                                     Long siteId, Long courseId, Long firstSpotId,
+                                     LocalTime firstStartTime, Long secondSpotId,
+                                     LocalTime secondStartTime, String weather,
+                                     Double temperature, Double humidity, boolean reassignMember) {
         HealingSpot firstHealingSpot = findSelectedSpot(firstSpotId, siteId, courseId);
         HealingSpot secondHealingSpot = findSelectedSpot(secondSpotId, siteId, courseId);
 
@@ -318,7 +343,7 @@ public class ScheduleService {
         List<ScheduleSpot> scheduleSpots =
                 scheduleSpotRepository
                         .findByScheduleScheduleIdOrderBySequenceAsc(
-                                scheduleId
+                        schedule.getScheduleId()
                         );
 
 
@@ -328,16 +353,14 @@ public class ScheduleService {
             throw new IllegalArgumentException("일정에는 순서가 지정된 두 개의 스팟이 필요합니다.");
         }
 
-        rejectDuplicate(scheduleId, memberId, scheduleDate, firstSpotId, firstStartTime,
+        rejectDuplicate(schedule.getScheduleId(), member.getMemberId(), scheduleDate, firstSpotId, firstStartTime,
                 secondSpotId, secondStartTime);
 
         /*
          * 일정 기본 정보 수정
          */
-        schedule.update(
-                member,
-                scheduleDate
-        );
+        if (reassignMember) schedule.update(member, scheduleDate);
+        else schedule.updateDate(scheduleDate);
 
 
         /*
@@ -384,16 +407,27 @@ public class ScheduleService {
     public void deleteSchedule(Long scheduleId) {
 
         Schedule schedule =
-                scheduleRepository.findById(scheduleId)
+                scheduleRepository.findLockedById(scheduleId)
                         .orElse(null);
 
         if (schedule == null) {
             return;
         }
 
-        scheduleSpotRepository
-                .deleteByScheduleScheduleId(scheduleId);
+        deleteScheduleAndSpots(schedule);
+    }
 
+    @Transactional(isolation = Isolation.READ_COMMITTED)
+    public void deleteMemberSchedule(Long scheduleId, Long memberId) {
+        memberRepository.findLockedById(memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        Schedule schedule = scheduleRepository.findLockedByIdAndMemberId(scheduleId, memberId)
+                .orElseThrow(MemberScheduleNotFoundException::new);
+        deleteScheduleAndSpots(schedule);
+    }
+
+    private void deleteScheduleAndSpots(Schedule schedule) {
+        scheduleSpotRepository.deleteByScheduleScheduleId(schedule.getScheduleId());
         scheduleRepository.delete(schedule);
     }
 }

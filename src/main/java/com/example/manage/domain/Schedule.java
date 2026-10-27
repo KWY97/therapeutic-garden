@@ -42,6 +42,10 @@ public class Schedule {
         this.scheduleDate = scheduleDate;
     }
 
+    public void updateDate(LocalDate scheduleDate) {
+        this.scheduleDate = scheduleDate;
+    }
+
     public void updateWeather(
             String weather,
             Double temperature,

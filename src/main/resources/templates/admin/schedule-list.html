@@ -123,7 +123,7 @@
                         <a
                                 class="member-detail-link"
                                 th:if="${memberMode}"
-                                th:href="@{/member/schedules/{scheduleId}(scheduleId=${schedule.scheduleId})}"
+                                th:href="@{/member/schedules/{scheduleId}(scheduleId=${schedule.scheduleId},from='list')}"
                                 th:text="${schedule.scheduleDate}">
                         </a>
                         <a

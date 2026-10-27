@@ -39,4 +39,23 @@ public class MemberScheduleForm {
     private String weather;
     private Double temperature;
     private Double humidity;
+
+    public static MemberScheduleForm fromSchedule(ScheduleResponse schedule) {
+        MemberScheduleForm form = new MemberScheduleForm();
+        form.setScheduleDate(schedule.getScheduleDate());
+        form.setSiteId(schedule.getSiteId());
+        form.setCourseId(schedule.getCourseId());
+        form.setWeather(schedule.getWeather());
+        form.setTemperature(schedule.getTemperature());
+        form.setHumidity(schedule.getHumidity());
+        if (!schedule.getSpots().isEmpty()) {
+            form.setFirstSpotId(schedule.getSpots().get(0).getSpotId());
+            form.setFirstStartTime(schedule.getSpots().get(0).getStartTime());
+        }
+        if (schedule.getSpots().size() > 1) {
+            form.setSecondSpotId(schedule.getSpots().get(1).getSpotId());
+            form.setSecondStartTime(schedule.getSpots().get(1).getStartTime());
+        }
+        return form;
+    }
 }

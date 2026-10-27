@@ -282,14 +282,14 @@ class ScheduleMigrationTests {
 
         String calendar = mvc.perform(get("/member").sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(calendar).contains("eventClick", "window.location.assign(`/member/schedules/${scheduleId}`)",
+        assertThat(calendar).contains("eventClick", "window.location.assign(`/member/schedules/${scheduleId}?from=calendar`)",
                         "data-id=\"" + ownId + "\"", "href=\"/member/schedules\"")
                 .doesNotContain("data-id=\"" + otherId + "\"");
 
         String list = mvc.perform(get("/member/schedules").sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-list"))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(list).contains("href=\"/member/schedules/" + ownId + "\"", "달력으로 돌아가기",
+        assertThat(list).contains("href=\"/member/schedules/" + ownId + "?from=list\"", "달력으로 돌아가기",
                         "href=\"/member/schedules/new\"")
                 .doesNotContain("/member/schedules/" + otherId, "other-member", "/admin/schedules");
 
@@ -298,8 +298,10 @@ class ScheduleMigrationTests {
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-detail"))
                 .andReturn().getResponse().getContentAsString();
         assertThat(detail).contains("일정 상세 정보", "기온(℃)", "습도(%)", "스팟 일정",
-                        "SPOT-X 첫 정원", "SPOT-Y 둘째 정원", "href=\"/member/schedules\"", "달력으로 돌아가기")
-                .doesNotContain("/admin/schedules", "일정 수정", "일정 삭제");
+                        "SPOT-X 첫 정원", "SPOT-Y 둘째 정원", "href=\"/member/schedules\"", "일정 목록으로",
+                        "/member/schedules/" + ownId + "/edit", "/member/schedules/" + ownId + "/delete",
+                        "일정 수정", "일정 삭제")
+                .doesNotContain("/admin/schedules");
 
         mvc.perform(get("/member/schedules/" + otherId).sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isNotFound());
@@ -325,7 +327,16 @@ class ScheduleMigrationTests {
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-detail"))
                 .andReturn().getResponse().getContentAsString();
         assertThat(adminDetail).contains("/admin/schedules/" + otherId + "/edit",
-                "/admin/schedules/" + otherId + "/delete");
+                "/admin/schedules/" + otherId + "/delete", "일정 목록으로")
+                .containsOnlyOnce("class=\"secondary-link-button\"")
+                .doesNotContain("/member/schedules/");
+        String adminCalendarDetail = mvc.perform(get("/admin/schedules/" + otherId)
+                        .param("from", "calendar").sessionAttr("loginAdminId", 1L))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(adminCalendarDetail).contains("일정 수정", "일정 삭제", "달력으로",
+                        "href=\"/admin/schedules/calendar\"")
+                .containsOnlyOnce("class=\"secondary-link-button\"")
+                .doesNotContain("/member/schedules/");
     }
 
     @Test

@@ -97,6 +97,8 @@
             </p>
         </section>
 
+        <p class="error-message" role="alert" th:if="${errorMessage}" th:text="${errorMessage}"></p>
+
         <div class="detail-action-list">
 
             <a
@@ -123,6 +125,15 @@
                 </button>
             </form>
 
+            <a class="primary-button" th:if="${memberMode}"
+               th:href="@{/member/schedules/{scheduleId}/edit(scheduleId=${schedule.scheduleId},from=${from})}">일정 수정</a>
+
+            <form class="delete-form" th:if="${memberMode}"
+                  th:action="@{/member/schedules/{scheduleId}/delete(scheduleId=${schedule.scheduleId},from=${from})}"
+                  method="post" onsubmit="return confirm('정말 이 일정을 삭제하시겠습니까?');">
+                <button class="delete-button" type="submit">일정 삭제</button>
+            </form>
+
 
             <!-- 일정 목록에서 상세로 들어온 경우 -->
             <a
@@ -141,8 +152,10 @@
                 달력으로
             </a>
 
-            <a class="primary-link-button" th:if="${memberMode}" th:href="@{/member/schedules}">일정 목록</a>
-            <a class="secondary-link-button" th:if="${memberMode}" th:href="@{/member}">달력으로 돌아가기</a>
+            <a class="secondary-link-button" th:if="${memberMode == true and from == 'calendar'}"
+               th:href="@{/member}">달력으로</a>
+            <a class="secondary-link-button" th:if="${memberMode == true and from != 'calendar'}"
+               th:href="@{/member/schedules}">일정 목록으로</a>
 
         </div>
     </section>
