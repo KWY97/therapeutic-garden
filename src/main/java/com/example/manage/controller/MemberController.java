@@ -12,6 +12,7 @@ import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SiteService;
 import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +52,7 @@ public class MemberController {
     public String memberLogin(
             @RequestParam String loginId,
             @RequestParam String password,
-            HttpSession session,
+            HttpServletRequest request,
             Model model
     ) {
         Member member = memberService.login(loginId, password);
@@ -61,6 +62,12 @@ public class MemberController {
             return "member/login";
         }
 
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            session = request.getSession();
+        } else {
+            request.changeSessionId();
+        }
         session.removeAttribute("loginAdminId");
         session.setAttribute("loginMemberId", member.getMemberId());
         session.setAttribute("loginMemberName", member.getName());

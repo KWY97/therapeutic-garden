@@ -35,6 +35,7 @@ import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -459,7 +460,7 @@ public class AdminController {
     public String adminLogin(
             @RequestParam String loginId,
             @RequestParam String password,
-            HttpSession session,
+            HttpServletRequest request,
             Model model
     ) {
 
@@ -476,7 +477,14 @@ public class AdminController {
             return "admin/login";
         }
 
+        HttpSession session = request.getSession(false);
+        if (session == null) {
+            session = request.getSession();
+        } else {
+            request.changeSessionId();
+        }
         session.removeAttribute("loginMemberId");
+        session.removeAttribute("loginMemberName");
         session.setAttribute(
                 "loginAdminId",
                 admin.getAdminId()
