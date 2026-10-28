@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@ControllerAdvice(assignableTypes = {AdminImageController.class, AdminController.class, AdminSpotController.class})
+@ControllerAdvice(assignableTypes = {AdminImageController.class, AdminSiteController.class, AdminSpotController.class})
 public class ImageUploadExceptionHandler {
     @ExceptionHandler(MultipartException.class)
     public String uploadError(HttpServletRequest request, MultipartException exception, RedirectAttributes flash) {

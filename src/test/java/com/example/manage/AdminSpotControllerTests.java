@@ -2,6 +2,7 @@ package com.example.manage;
 
 import com.example.manage.controller.AdminController;
 import com.example.manage.controller.AdminImageController;
+import com.example.manage.controller.AdminSiteController;
 import com.example.manage.controller.AdminSpotController;
 import com.example.manage.controller.ImageUploadExceptionHandler;
 import com.example.manage.domain.Admin;
@@ -181,7 +182,7 @@ class AdminSpotControllerTests {
     void uploadAdviceRetainsSpotFormRedirectsAndNarrowScope() throws Exception {
         Class<?>[] advised = ImageUploadExceptionHandler.class.getAnnotation(ControllerAdvice.class).assignableTypes();
         assertThat(advised).containsExactlyInAnyOrder(
-                AdminImageController.class, AdminController.class, AdminSpotController.class);
+                AdminImageController.class, AdminSiteController.class, AdminSpotController.class);
         doThrow(new MaxUploadSizeExceededException(10))
                 .when(placeForms).createSpot(any(HealingSpotForm.class), any());
         mvc.perform(multipart("/admin/spots/new").session(admin).with(csrf())
