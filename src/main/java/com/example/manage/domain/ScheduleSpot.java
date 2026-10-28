@@ -33,8 +33,7 @@ public class ScheduleSpot {
             Schedule schedule,
             HealingSpot healingSpot,
             LocalTime startTime,
-            Integer sequence)
-    {
+            Integer sequence) {
         this.schedule = schedule;
         this.healingSpot = healingSpot;
         this.startTime = startTime;

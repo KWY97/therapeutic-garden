@@ -28,8 +28,7 @@ public class Schedule {
 
     public Schedule(
             Member member,
-            LocalDate scheduleDate)
-    {
+            LocalDate scheduleDate) {
         this.member = member;
         this.scheduleDate = scheduleDate;
     }
