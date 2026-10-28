@@ -8,6 +8,7 @@ import com.example.manage.dto.MemberScheduleForm;
 import com.example.manage.dto.SiteResponse;
 import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.MemberService;
+import com.example.manage.service.LoginAttemptLimiter;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SessionAuthentication;
 import com.example.manage.service.SiteService;
@@ -39,6 +40,7 @@ import java.time.LocalTime;
 public class MemberController {
 
     private final MemberService memberService;
+    private final LoginAttemptLimiter loginAttempts;
     private final SessionAuthentication sessionAuthentication;
     private final ScheduleService scheduleService;
     private final SiteService siteService;
@@ -57,6 +59,10 @@ public class MemberController {
             HttpServletRequest request,
             Model model
     ) {
+        if (!loginAttempts.allow(LoginAttemptLimiter.Role.MEMBER, loginId, request.getRemoteAddr())) {
+            model.addAttribute("errorMessage", "로그인 시도가 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
+            return "member/login";
+        }
         Member member = memberService.login(loginId, password);
 
         if (member == null) {
@@ -71,6 +77,7 @@ public class MemberController {
             request.changeSessionId();
         }
         sessionAuthentication.authenticateMember(session, member);
+        loginAttempts.clearOnSuccess(LoginAttemptLimiter.Role.MEMBER, loginId, request.getRemoteAddr());
 
         return "redirect:/member";
     }

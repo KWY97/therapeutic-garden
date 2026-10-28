@@ -12,6 +12,7 @@ public class AdminService {
 
     private final AdminRepository adminRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LoginPasswordVerification loginPasswords;
 
     public void createAdmin(String loginId, String rawPassword) {
 
@@ -29,11 +30,7 @@ public class AdminService {
 
         Admin admin = adminRepository.findByLoginId(loginId).orElse(null);
 
-        if (admin == null) {
-            return null;
-        }
-
-        if (!passwordEncoder.matches(rawPassword, admin.getPassword())) {
+        if (!loginPasswords.matches(rawPassword, admin == null ? null : admin.getPassword())) {
             return null;
         }
 

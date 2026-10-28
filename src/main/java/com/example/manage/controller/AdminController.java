@@ -32,6 +32,7 @@ import com.example.manage.dto.SiteResponse;
 import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.AdminService;
 import com.example.manage.service.MemberService;
+import com.example.manage.service.LoginAttemptLimiter;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SessionAuthentication;
 import com.example.manage.service.WeatherService;
@@ -56,6 +57,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final LoginAttemptLimiter loginAttempts;
     private final SessionAuthentication sessionAuthentication;
     private final MemberService memberService;
     private final com.example.manage.service.MemberAnalysisModelService analysisModel;
@@ -466,6 +468,11 @@ public class AdminController {
             Model model
     ) {
 
+        if (!loginAttempts.allow(LoginAttemptLimiter.Role.ADMIN, loginId, request.getRemoteAddr())) {
+            model.addAttribute("errorMessage", "로그인 시도가 잠시 제한되었습니다. 잠시 후 다시 시도해 주세요.");
+            return "admin/login";
+        }
+
         Admin admin =
                 adminService.login(loginId, password);
 
@@ -486,6 +493,7 @@ public class AdminController {
             request.changeSessionId();
         }
         sessionAuthentication.authenticateAdmin(session, admin);
+        loginAttempts.clearOnSuccess(LoginAttemptLimiter.Role.ADMIN, loginId, request.getRemoteAddr());
 
         return "redirect:/admin/monitoring";
     }

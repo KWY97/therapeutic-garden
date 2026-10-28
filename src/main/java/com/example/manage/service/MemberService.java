@@ -23,6 +23,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LoginPasswordVerification loginPasswords;
     private final ScheduleRepository scheduleRepository;
     private final ScheduleSpotRepository scheduleSpotRepository;
     private final com.example.manage.repository.MemberHealingSpotEffectSummaryRepository effectSummaries;
@@ -77,11 +78,7 @@ public class MemberService {
 
         Member member = memberRepository.findByLoginId(loginId).orElse(null);
 
-        if (member == null) {
-            return null;
-        }
-
-        if (!passwordEncoder.matches(rawPassword, member.getPassword())) {
+        if (!loginPasswords.matches(rawPassword, member == null ? null : member.getPassword())) {
             return null;
         }
 
