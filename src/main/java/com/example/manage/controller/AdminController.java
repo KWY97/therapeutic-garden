@@ -29,13 +29,11 @@ import com.example.manage.dto.ScheduleForm;
 import com.example.manage.dto.ScheduleResponse;
 import com.example.manage.service.SiteService;
 import com.example.manage.dto.SiteResponse;
-import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.AdminService;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.LoginAttemptLimiter;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SessionAuthentication;
-import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -49,7 +47,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.Map;
 
 @Controller
 @RequiredArgsConstructor
@@ -62,7 +59,7 @@ public class AdminController {
     private final MemberService memberService;
     private final com.example.manage.service.MemberAnalysisModelService analysisModel;
     private final ScheduleService scheduleService;
-    private final WeatherService weatherService;
+    private final WeatherLookupResponse weatherResponses;
     private final SiteService siteService;
     private final AdminPlaceFormService placeForms;
     private final SiteImageService siteImages;
@@ -1216,27 +1213,7 @@ public class AdminController {
             @RequestParam LocalDate date,
             @RequestParam LocalTime time
     ) {
-
-        try {
-            WeatherResult result = weatherService.getWeather(
-                    date,
-                    time
-            );
-
-            if (result == null) {
-                return ResponseEntity.status(404).body(Map.of(
-                        "message",
-                        "선택한 날짜의 날씨 데이터가 제공되지 않습니다. 다른 날짜를 선택해 주세요."
-                ));
-            }
-
-            return ResponseEntity.ok(result);
-        } catch (WeatherService.WeatherDateOutOfRangeException exception) {
-            return ResponseEntity.badRequest().body(Map.of(
-                    "message",
-                    exception.getMessage()
-            ));
-        }
+        return weatherResponses.getWeather(date, time);
     }
 
 

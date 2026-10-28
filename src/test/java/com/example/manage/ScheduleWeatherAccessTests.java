@@ -5,6 +5,8 @@ import com.example.manage.service.WeatherService;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -104,5 +106,34 @@ class ScheduleWeatherAccessTests {
                         .param("date", date.toString()).param("time", "09:00"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"admin", "member"})
+    void bothWeatherEndpointsKeepExactNotFoundAndRangeErrorResponses(String role) throws Exception {
+        LocalDate date = LocalDate.of(2026, 10, 28);
+        LocalTime time = LocalTime.of(9, 0);
+        String path = "/" + role + "/weather";
+        String sessionKey = role.equals("admin") ? "loginAdminId" : "loginMemberId";
+
+        mvc.perform(get(path).sessionAttr(sessionKey, 1L)
+                        .param("date", date.toString()).param("time", "09:00"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.message").value(
+                        "선택한 날짜의 날씨 데이터가 제공되지 않습니다. 다른 날짜를 선택해 주세요."));
+
+        var rangeError = new WeatherService.WeatherDateOutOfRangeException(
+                date.minusDays(69), date.plusDays(15));
+        when(weatherService.getWeather(date, time)).thenThrow(rangeError);
+        mvc.perform(get(path).sessionAttr(sessionKey, 1L)
+                        .param("date", date.toString()).param("time", "09:00"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.message").value(rangeError.getMessage()));
+
+        mvc.perform(get(path).sessionAttr(sessionKey, 1L)
+                        .param("date", "invalid-date").param("time", "09:00"))
+                .andExpect(status().isBadRequest());
     }
 }

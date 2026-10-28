@@ -6,13 +6,11 @@ import com.example.manage.dto.MemberScheduleDetailResponse;
 import com.example.manage.dto.MemberProfileView;
 import com.example.manage.dto.MemberScheduleForm;
 import com.example.manage.dto.SiteResponse;
-import com.example.manage.dto.WeatherResult;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.LoginAttemptLimiter;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SessionAuthentication;
 import com.example.manage.service.SiteService;
-import com.example.manage.service.WeatherService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,7 +28,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -44,7 +41,7 @@ public class MemberController {
     private final SessionAuthentication sessionAuthentication;
     private final ScheduleService scheduleService;
     private final SiteService siteService;
-    private final WeatherService weatherService;
+    private final WeatherLookupResponse weatherResponses;
     private final com.example.manage.service.MemberAnalysisModelService analysisModel;
 
     @GetMapping("/login")
@@ -184,17 +181,7 @@ public class MemberController {
     @GetMapping("/weather")
     @ResponseBody
     public ResponseEntity<?> getWeather(@RequestParam LocalDate date, @RequestParam LocalTime time) {
-        try {
-            WeatherResult result = weatherService.getWeather(date, time);
-            if (result == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                        "message", "선택한 날짜의 날씨 데이터가 제공되지 않습니다. 다른 날짜를 선택해 주세요."
-                ));
-            }
-            return ResponseEntity.ok(result);
-        } catch (WeatherService.WeatherDateOutOfRangeException exception) {
-            return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
-        }
+        return weatherResponses.getWeather(date, time);
     }
 
     @GetMapping("/schedules/{scheduleId}")
