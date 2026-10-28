@@ -33,6 +33,10 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     List<Schedule> findByMemberMemberIdAndScheduleDate(Long memberId, LocalDate scheduleDate);
 
+    @EntityGraph(attributePaths = "member")
+    @Query("select s from Schedule s")
+    List<Schedule> findAllForAdminCalendar();
+
     @Override
     @EntityGraph(attributePaths = "member")
     List<Schedule> findAll(Sort sort);

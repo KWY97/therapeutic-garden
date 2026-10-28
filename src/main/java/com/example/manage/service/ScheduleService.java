@@ -114,7 +114,7 @@ public class ScheduleService {
     @Transactional(readOnly = true)
     public List<Schedule> findAllSchedules() {
 
-        return scheduleRepository.findAll();
+        return scheduleRepository.findAllForAdminCalendar();
     }
 
     @Transactional(readOnly = true)
