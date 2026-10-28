@@ -20,9 +20,6 @@ public interface MemberHealingSpotEffectSummaryRepository extends JpaRepository<
     @EntityGraph(attributePaths = "healingSpot")
     List<MemberHealingSpotEffectSummary> findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(
             Long memberId, Long siteId);
-    @EntityGraph(attributePaths = {"member", "healingSpot"})
-    List<MemberHealingSpotEffectSummary> findByHealingSpotHealingCourseSiteSiteIdOrderByMemberParticipantNoAscHealingSpotCodeAsc(
-            Long siteId);
     @EntityGraph(attributePaths = "healingSpot")
     Optional<MemberHealingSpotEffectSummary> findByMemberMemberIdAndHealingSpotSpotId(Long memberId, Long spotId);
     void deleteByMemberMemberId(Long memberId);

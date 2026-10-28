@@ -29,13 +29,6 @@ public class HealingSpotImageService {
     }
 
     @Transactional(readOnly = true)
-    public String representativeReadUrl(Long parentId) {
-        requireParent(parentId);
-        return ordered(parentId).stream().filter(HealingSpotImage::isRepresentative).findFirst()
-                .map(image -> response(parentId, image).readUrl()).orElse(null);
-    }
-
-    @Transactional(readOnly = true)
     public String monitoringReadUrl(Long parentId) {
         requireParent(parentId);
         return ordered(parentId).stream().filter(HealingSpotImage::isRepresentative).findFirst()

@@ -52,27 +52,6 @@ public class MemberService {
         return phone == null ? null : phone.replace("-", "");
     }
 
-    public void createMember(
-            Integer participantNo,
-            Integer groupNo,
-            String loginId,
-            String rawPassword
-    ) {
-
-        if (memberRepository.findByLoginId(loginId).isPresent()) {
-            return;
-        }
-
-        if (memberRepository.findByParticipantNo(participantNo).isPresent()) {
-            return;
-        }
-
-        String encodedPassword = passwordEncoder.encode(rawPassword);
-        Member member = new Member(participantNo, groupNo, loginId, encodedPassword);
-
-        memberRepository.save(member);
-    }
-
     @Transactional(readOnly = true)
     public Member login(String loginId, String rawPassword) {
 
