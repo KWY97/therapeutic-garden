@@ -14,6 +14,7 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 public class PersonalEegMeasurementRepository {
+
     private final JdbcTemplate jdbc;
 
     public record ActiveHistory(long siteId, List<HealingMeasurementRecord> rows) {}
@@ -22,16 +23,18 @@ public class PersonalEegMeasurementRepository {
     public Optional<ActiveHistory> findActiveMember(Long memberId) {
         boolean ready = Boolean.TRUE.equals(jdbc.execute((ConnectionCallback<Boolean>)
                 PersonalEegDatabaseImporter::schemaReady));
-        if (!ready) return Optional.empty();
+        if (!ready)
+            return Optional.empty();
         var active = jdbc.query("""
                 select b.id, b.target_site_id
                 from personal_eeg_active_version a
                 join personal_eeg_analysis_batch b on b.id=a.batch_id
                 where a.id=1
-                """, (rs,n) -> new long[]{rs.getLong(1),rs.getLong(2)});
-        if (active.isEmpty()) return Optional.empty();
-        long batchId=active.getFirst()[0], siteId=active.getFirst()[1];
-        var rows=jdbc.query("""
+                """, (rs, n) -> new long[]{rs.getLong(1), rs.getLong(2)});
+        if (active.isEmpty())
+            return Optional.empty();
+        long batchId = active.getFirst()[0], siteId = active.getFirst()[1];
+        var rows = jdbc.query("""
                 select x.member_id, p.spot_id, x.confirmed_date, c.code,
                        p.baseline_stress, p.stress_post, p.baseline_emotional, p.emotional_post
                 from personal_eeg_analysis_session x
@@ -40,9 +43,9 @@ public class PersonalEegMeasurementRepository {
                 join healing_spot h on h.spot_id=p.spot_id
                 where x.batch_id=? and x.member_id=? and c.site_id=? and h.course_id=x.course_id
                 order by x.confirmed_date, x.source_row, p.spot_id
-                """, (r,n) -> new HealingMeasurementRecord(r.getLong(1),r.getLong(2),
-                        r.getDate(3).toLocalDate(),r.getString(4),r.getBigDecimal(5),r.getBigDecimal(6),
-                        r.getBigDecimal(7),r.getBigDecimal(8)),batchId,memberId,siteId);
-        return Optional.of(new ActiveHistory(siteId,rows));
+                """, (r, n) -> new HealingMeasurementRecord(r.getLong(1), r.getLong(2),
+                        r.getDate(3).toLocalDate(), r.getString(4), r.getBigDecimal(5), r.getBigDecimal(6),
+                        r.getBigDecimal(7), r.getBigDecimal(8)), batchId, memberId, siteId);
+        return Optional.of(new ActiveHistory(siteId, rows));
     }
 }

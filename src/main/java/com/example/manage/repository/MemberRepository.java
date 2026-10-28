@@ -3,8 +3,8 @@ package com.example.manage.repository;
 import com.example.manage.domain.Member;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
 import java.util.List;
+import java.util.Optional;
 
 // Entity가 Member, PK는 Long
 public interface MemberRepository extends JpaRepository<Member, Long> {

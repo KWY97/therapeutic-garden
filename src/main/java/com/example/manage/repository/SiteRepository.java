@@ -8,7 +8,6 @@ public interface SiteRepository extends JpaRepository<Site, Long> {
     @org.springframework.data.jpa.repository.Query("select p from Site p where p.siteId = :id")
     java.util.Optional<Site> findLockedById(@org.springframework.data.repository.query.Param("id") Long id);
 
-
     // Membership changes serialize with spatial saves, including cross-Site moves.
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select s from Site s order by s.siteId")
