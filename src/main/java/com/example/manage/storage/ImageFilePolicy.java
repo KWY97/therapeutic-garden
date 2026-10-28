@@ -9,6 +9,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.zip.CRC32;
@@ -22,6 +23,12 @@ public class ImageFilePolicy {
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a};
     private static final Map<String, String> EXTENSIONS = Map.of(
             "image/jpeg", "jpg", "image/png", "png", "image/webp", "webp");
+
+    public void validateBatch(List<MultipartFile> uploads) {
+        if (uploads == null || uploads.isEmpty()) throw new IllegalArgumentException("이미지를 선택해 주세요.");
+        if (uploads.size() > MAX_FILES) throw new IllegalArgumentException("한 번에 최대 10장까지 등록할 수 있습니다.");
+        uploads.forEach(this::validate);
+    }
 
     public void validate(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("빈 파일은 등록할 수 없습니다.");

@@ -346,6 +346,44 @@ class ImageManagementTests {
     }
 
     @ParameterizedTest @ValueSource(booleans = {true, false})
+    void invalidMiddleOrLastFileLeavesTheWholeBatchUnstored(boolean site) {
+        for (int invalidIndex : List.of(1, 2)) {
+            Long id = parent(site);
+            List<org.springframework.web.multipart.MultipartFile> batch = new ArrayList<>(List.of(file(), file(), file()));
+            batch.set(invalidIndex, new MockMultipartFile("files", "fake.jpg", "image/jpeg",
+                    "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            assertThatThrownBy(() -> {
+                if (site) siteImages.upload(id, batch); else spotImages.upload(id, batch);
+            }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("이미지 파일 내용");
+            assertThat(list(site, id)).isEmpty();
+            assertThat(objects).isEmpty();
+        }
+        verify(storage, never()).upload(anyString(), any(byte[].class), anyString());
+    }
+
+    @Test
+    void invalidSiteReplacementDoesNotChangeImagesOrSpatialRevision() {
+        Long id = parent(true);
+        upload(true, id, 2);
+        var before = list(true, id);
+        long revision = sites.findById(id).orElseThrow().getSpatialRevision();
+        var form = new com.example.manage.dto.ImageEditForm();
+        form.setImageOrder("e:" + before.getFirst().imageId() + ",n:0");
+        form.setImageDeleted("e:" + before.getLast().imageId());
+        form.setImageSpatial("n:0");
+        var invalid = new MockMultipartFile("files", "fake.jpg", "image/jpeg",
+                "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> siteImages.edit(id, List.of(invalid), form))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("이미지 파일 내용");
+        assertThat(list(true, id)).isEqualTo(before);
+        assertThat(objects).hasSize(2);
+        assertThat(sites.findById(id).orElseThrow().getSpatialRevision()).isEqualTo(revision);
+        verify(storage, times(2)).upload(anyString(), any(byte[].class), anyString());
+        verify(storage, never()).delete(anyString());
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {true, false})
     void validWebpUsesTheSharedValidationBeforeStorage(boolean site) {
         Long id = parent(site);
         var file = new MockMultipartFile("files", "photo.webp", "image/webp", ImageTestFiles.webp());

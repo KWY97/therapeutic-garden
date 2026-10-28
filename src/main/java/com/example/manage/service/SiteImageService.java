@@ -43,9 +43,11 @@ public class SiteImageService {
     }
 
     public void upload(Long parentId, List<MultipartFile> uploads) {
-        if (uploads == null || uploads.isEmpty()) throw new IllegalArgumentException("이미지를 선택해 주세요.");
-        if (uploads.size() > ImageFilePolicy.MAX_FILES) throw new IllegalArgumentException("한 번에 최대 10장까지 등록할 수 있습니다.");
-        uploads.forEach(files::validate); // Validate the entire batch before any storage side effect.
+        files.validateBatch(uploads);
+        uploadValidated(parentId, uploads);
+    }
+
+    private void uploadValidated(Long parentId, List<MultipartFile> uploads) {
         Site parent = lockParent(parentId);
         List<SiteImage> current = ordered(parentId);
         int order = current.size();
@@ -63,6 +65,7 @@ public class SiteImageService {
         lockParent(parentId);
         List<SiteImage> current = ordered(parentId);
         ImageEditPlan plan = ImageEditPlan.validate(form, current, uploads.size());
+        if (!uploads.isEmpty()) files.validateBatch(uploads);
         String spatial = form.getImageSpatial();
         if (spatial == null) spatial = current.stream().filter(SiteImage::isSpatial)
                 .map(image -> "e:" + image.getImageId()).findFirst().orElse("");
@@ -80,7 +83,7 @@ public class SiteImageService {
         Map<String, SiteImage> resolved = new HashMap<>();
         current.forEach(image -> resolved.put("e:" + image.getImageId(), image));
         // Upload first: invalid files or unavailable storage cannot touch existing objects.
-        if (!uploads.isEmpty()) upload(parentId, uploads);
+        if (!uploads.isEmpty()) uploadValidated(parentId, uploads);
         Set<Long> existingIds = new HashSet<>();
         current.forEach(image -> existingIds.add(image.getImageId()));
         int index = 0;
