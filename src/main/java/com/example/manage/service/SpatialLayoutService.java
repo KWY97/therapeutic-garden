@@ -6,11 +6,15 @@ import com.example.manage.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.util.*;
 
-@Service @RequiredArgsConstructor @Transactional
+@Service
+@RequiredArgsConstructor
+@Transactional
 public class SpatialLayoutService {
+
     private final SiteRepository sites;
     private final SiteImageRepository images;
     private final HealingSpotRepository spots;
@@ -19,8 +23,9 @@ public class SpatialLayoutService {
     private final HealingSpotImageService spotImages;
 
     public record Spot(Long spotId, String course, Long courseId, String courseCode, String courseName,
-                       String code, String name, String readUrl,
-                       BigDecimal xPercent, BigDecimal yPercent, Double latitude, Double longitude) {}
+            String code, String name, String readUrl,
+            BigDecimal xPercent, BigDecimal yPercent, Double latitude, Double longitude) {}
+
     public record Layout(Long siteId, String name, long revision, ImageResponse image, List<Spot> spots) {}
 
     @Transactional(readOnly = true)
@@ -28,8 +33,9 @@ public class SpatialLayoutService {
         Site site = sites.findById(siteId).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Site입니다."));
         ImageResponse image = siteImages.list(siteId).stream().filter(ImageResponse::spatial).findFirst().orElse(null);
         Map<Long, SiteImageSpotPosition> saved = new HashMap<>();
-        if (image != null) positions.findBySiteImageImageId(image.imageId())
-                .forEach(p -> saved.put(p.getHealingSpot().getSpotId(), p));
+        if (image != null)
+            positions.findBySiteImageImageId(image.imageId())
+                    .forEach(p -> saved.put(p.getHealingSpot().getSpotId(), p));
         List<Spot> result = spots.findByHealingCourseSiteSiteId(siteId).stream()
                 .sorted(Comparator.comparing((HealingSpot s) -> s.getHealingCourse().getCode())
                         .thenComparing(HealingSpot::getCode).thenComparing(HealingSpot::getSpotId))
@@ -49,31 +55,40 @@ public class SpatialLayoutService {
         SiteImage image = images.findBySiteSiteIdOrderByDisplayOrderAscImageIdAsc(siteId).stream()
                 .filter(SiteImage::isSpatial).findFirst().orElseThrow(SpatialLayoutService::stale);
         if (!image.getImageId().equals(form.getSiteImageId()) || form.getRevision() == null
-                || form.getRevision() != site.getSpatialRevision()) throw stale();
+                || form.getRevision() != site.getSpatialRevision())
+            throw stale();
         Map<Long, HealingSpot> owned = new HashMap<>();
         spots.findByHealingCourseSiteSiteId(siteId).forEach(s -> owned.put(s.getSpotId(), s));
         Set<Long> submitted = new HashSet<>();
-        if (form.getPositions() == null) throw stale();
+        if (form.getPositions() == null)
+            throw stale();
         for (var p : form.getPositions()) {
             if (p == null || !owned.containsKey(p.getSpotId()) || !submitted.add(p.getSpotId()))
                 throw new IllegalArgumentException("이 Site의 HS만 중복 없이 배치할 수 있습니다.");
             if (p.getXPercent() != null || p.getYPercent() != null) {
-                SiteImageSpotPosition.validate(p.getXPercent()); SiteImageSpotPosition.validate(p.getYPercent());
+                SiteImageSpotPosition.validate(p.getXPercent());
+                SiteImageSpotPosition.validate(p.getYPercent());
             }
         }
-        if (!submitted.equals(owned.keySet())) throw stale();
+        if (!submitted.equals(owned.keySet()))
+            throw stale();
         Map<Long, SiteImageSpotPosition> existing = new HashMap<>();
         positions.findBySiteImageImageId(image.getImageId()).forEach(p -> existing.put(p.getHealingSpot().getSpotId(), p));
         for (var p : form.getPositions()) {
             var previous = existing.remove(p.getSpotId());
-            if (p.getXPercent() == null) { if (previous != null) positions.delete(previous); }
-            else if (previous != null) previous.move(p.getXPercent(), p.getYPercent());
-            else positions.save(new SiteImageSpotPosition(image, owned.get(p.getSpotId()), p.getXPercent(), p.getYPercent()));
+            if (p.getXPercent() == null) {
+                if (previous != null)
+                    positions.delete(previous);
+            } else if (previous != null)
+                previous.move(p.getXPercent(), p.getYPercent());
+            else
+                positions.save(new SiteImageSpotPosition(image, owned.get(p.getSpotId()), p.getXPercent(), p.getYPercent()));
         }
         existing.values().forEach(positions::delete);
         site.advanceSpatialRevision();
         positions.flush();
     }
+
     private static IllegalArgumentException stale() {
         return new IllegalArgumentException("모니터링 이미지 또는 HS 위치 정보가 변경되었습니다. 화면에 다시 진입해 HS 위치를 설정해 주세요.");
     }
