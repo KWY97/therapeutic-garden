@@ -1,8 +1,10 @@
 package com.example.manage.dto;
 
-import java.math.*;
-import java.util.List;
 import com.example.manage.domain.HealingMeasurementRecord;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.List;
 
 public record MeasurementHistoryView(String spotCode, String spotName, List<Record> records) {
     public record Metric(BigDecimal baseline, BigDecimal post, BigDecimal change,
