@@ -3,7 +3,6 @@ package com.example.manage.controller;
 import com.example.manage.domain.HealingCourse;
 import com.example.manage.domain.Site;
 import com.example.manage.dto.HealingCourseForm;
-import com.example.manage.dto.SiteResponse;
 import com.example.manage.service.HealingCourseService;
 import com.example.manage.service.SiteService;
 import jakarta.validation.Valid;
@@ -16,7 +15,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -27,11 +25,6 @@ public class AdminCourseController {
 
     @Value("${kakao.maps.javascript-key}")
     private String kakaoMapsJavaScriptKey;
-
-    @ModelAttribute("sites")
-    public List<SiteResponse> scheduleSites() {
-        return siteService.findAllSites().stream().map(SiteResponse::new).toList();
-    }
 
     private String courseForm(Model model, Long courseId) {
         model.addAttribute("courseId", courseId);

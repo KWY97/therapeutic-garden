@@ -89,19 +89,19 @@ class AdminSiteControllerTests {
         mvc.perform(get("/admin/sites").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/site-list"))
                 .andExpect(model().attribute("siteList", hasSize(1)))
-                .andExpect(model().attributeExists("sites"));
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/sites/new").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/site-form"))
-                .andExpect(model().attributeExists("siteForm", "sites", "images", "imageTitle", "kakaoMapsJavaScriptKey"))
+                .andExpect(model().attributeExists("siteForm", "images", "imageTitle", "kakaoMapsJavaScriptKey"))
                 .andExpect(model().attribute("siteImageEditor", true))
                 .andExpect(model().attribute("kakaoMapsJavaScriptKey", mapsKey));
         mvc.perform(get("/admin/sites/" + site.getSiteId()).session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/site-detail"))
-                .andExpect(model().attributeExists("site", "sites", "images"))
+                .andExpect(model().attributeExists("site", "images"))
                 .andExpect(model().attribute("imageBasePath", "/admin/sites/" + site.getSiteId() + "/images"));
         mvc.perform(get("/admin/sites/" + site.getSiteId() + "/edit").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/site-edit"))
-                .andExpect(model().attributeExists("siteForm", "siteId", "sites", "images", "kakaoMapsJavaScriptKey"));
+                .andExpect(model().attributeExists("siteForm", "siteId", "images", "kakaoMapsJavaScriptKey"));
         mvc.perform(get("/admin/sites/" + site.getSiteId() + "/spatial-layout").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/spatial-layout"));
     }
@@ -111,11 +111,11 @@ class AdminSiteControllerTests {
         mvc.perform(post("/admin/sites/new").session(admin).with(csrf()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/site-form"))
                 .andExpect(model().attributeHasFieldErrors("siteForm", "name", "address", "latitude", "longitude"))
-                .andExpect(model().attributeExists("siteForm", "sites", "images", "imageSelectionNotice", "kakaoMapsJavaScriptKey"));
+                .andExpect(model().attributeExists("siteForm", "images", "imageSelectionNotice", "kakaoMapsJavaScriptKey"));
         mvc.perform(post("/admin/sites/" + site.getSiteId() + "/edit").session(admin).with(csrf()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/site-edit"))
                 .andExpect(model().attributeHasFieldErrors("siteForm", "name", "address", "latitude", "longitude"))
-                .andExpect(model().attributeExists("siteForm", "siteId", "sites", "images", "imageSelectionNotice", "kakaoMapsJavaScriptKey"));
+                .andExpect(model().attributeExists("siteForm", "siteId", "images", "imageSelectionNotice", "kakaoMapsJavaScriptKey"));
 
         mvc.perform(form("/admin/sites/new", "새 사이트 " + UUID.randomUUID()))
                 .andExpect(redirectedUrlPattern("/admin/sites/*"));
@@ -166,18 +166,21 @@ class AdminSiteControllerTests {
     }
 
     @Test
-    void scheduleAndSeparatedControllersKeepSitesModel() throws Exception {
+    void scheduleFormKeepsSitesWhileSeparatedControllersUseTheirOwnModels() throws Exception {
         HealingCourse course = courses.createHealingCourse(site.getSiteId(), "HC-A", "코스", 37.0, 127.0, 50.0);
         mvc.perform(get("/admin/schedules/new").session(admin))
                 .andExpect(status().isOk()).andExpect(model().attribute("sites", hasSize(1)));
         mvc.perform(get("/admin/schedules").session(admin))
-                .andExpect(status().isOk()).andExpect(model().attributeExists("sites"));
+                .andExpect(status().isOk()).andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/courses").session(admin))
-                .andExpect(status().isOk()).andExpect(model().attributeExists("sites"));
+                .andExpect(status().isOk()).andExpect(model().attributeExists("courseSites"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/spots/new").session(admin).param("courseId", course.getCourseId().toString()))
-                .andExpect(status().isOk()).andExpect(model().attributeExists("sites"));
+                .andExpect(status().isOk()).andExpect(model().attributeExists("spotCourses"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/members").session(admin))
-                .andExpect(status().isOk()).andExpect(model().attributeExists("sites"));
+                .andExpect(status().isOk()).andExpect(model().attributeExists("members"))
+                .andExpect(model().attributeDoesNotExist("sites"));
     }
 
     @Test

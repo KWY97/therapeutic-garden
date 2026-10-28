@@ -3,7 +3,6 @@ package com.example.manage.controller;
 import com.example.manage.domain.Site;
 import com.example.manage.dto.ImageResponse;
 import com.example.manage.dto.SiteForm;
-import com.example.manage.dto.SiteResponse;
 import com.example.manage.service.AdminPlaceFormService;
 import com.example.manage.service.SiteImageService;
 import com.example.manage.service.SiteService;
@@ -33,11 +32,6 @@ public class AdminSiteController {
 
     @Value("${kakao.maps.javascript-key}")
     private String kakaoMapsJavaScriptKey;
-
-    @ModelAttribute("sites")
-    public List<SiteResponse> scheduleSites() {
-        return siteService.findAllSites().stream().map(SiteResponse::new).toList();
-    }
 
     /* ================================
        사이트 관리

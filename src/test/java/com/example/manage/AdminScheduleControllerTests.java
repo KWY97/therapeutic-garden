@@ -114,12 +114,12 @@ class AdminScheduleControllerTests {
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-list"))
                 .andExpect(model().attribute("sort", "group"))
                 .andExpect(model().attribute("schedules", hasSize(1)))
-                .andExpect(model().attribute("sites", hasSize(1)))
+                .andExpect(model().attributeDoesNotExist("sites"))
                 .andExpect(content().string(containsString("/admin/schedules/" + id)));
         mvc.perform(get("/admin/schedules/calendar").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-calendar"))
                 .andExpect(model().attribute("schedules", hasSize(1)))
-                .andExpect(model().attributeExists("sites"))
+                .andExpect(model().attributeDoesNotExist("sites"))
                 .andExpect(content().string(containsString("?from=calendar")));
         mvc.perform(get("/admin/schedules/new").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-form"))
@@ -162,7 +162,8 @@ class AdminScheduleControllerTests {
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-detail"))
                 .andExpect(model().attribute("from", "calendar"))
                 .andExpect(model().attribute("scheduleSpots", hasSize(2)))
-                .andExpect(model().attributeExists("schedule", "sites"))
+                .andExpect(model().attributeExists("schedule"))
+                .andExpect(model().attributeDoesNotExist("sites"))
                 .andExpect(content().string(containsString("href=\"/admin/schedules/calendar\"")));
         mvc.perform(get("/admin/schedules/" + id + "/edit").session(admin).param("from", "calendar"))
                 .andExpect(status().isOk()).andExpect(view().name("admin/schedule-edit"))

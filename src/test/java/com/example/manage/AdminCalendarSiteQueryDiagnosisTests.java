@@ -85,7 +85,8 @@ class AdminCalendarSiteQueryDiagnosisTests {
         String html = mvc.perform(get("/admin/schedules/calendar").session(admin))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/schedule-calendar"))
-                .andExpect(model().attributeExists("sites", "schedules"))
+                .andExpect(model().attributeExists("schedules"))
+                .andExpect(model().attributeDoesNotExist("sites"))
                 .andReturn().getResponse().getContentAsString();
         assertThat(html).contains("id=\"schedule-data\"", "?from=calendar")
                 .doesNotContain("class=\"schedule-data-item\"");
@@ -100,7 +101,8 @@ class AdminCalendarSiteQueryDiagnosisTests {
         String html = mvc.perform(get("/admin/schedules/calendar").session(admin))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/schedule-calendar"))
-                .andExpect(model().attributeExists("sites", "schedules"))
+                .andExpect(model().attributeExists("schedules"))
+                .andExpect(model().attributeDoesNotExist("sites"))
                 .andReturn().getResponse().getContentAsString();
         assertThat(html).contains("data-participant-no=\"1700000001\"", "data-group-no=\"1\"",
                 "?from=calendar");
@@ -115,7 +117,8 @@ class AdminCalendarSiteQueryDiagnosisTests {
         }
         String html = mvc.perform(get("/admin/schedules/calendar").session(admin))
                 .andExpect(status().isOk())
-                .andExpect(model().attributeExists("sites", "schedules"))
+                .andExpect(model().attributeExists("schedules"))
+                .andExpect(model().attributeDoesNotExist("sites"))
                 .andReturn().getResponse().getContentAsString();
         for (int i = 0; i < 3; i++) {
             assertThat(html).contains("data-participant-no=\"" + (1_700_000_021 + i) + "\"",
@@ -170,39 +173,63 @@ class AdminCalendarSiteQueryDiagnosisTests {
     }
 
     @Test
-    void commonSitesRunsForListAndWeatherAndSiteListCallsTwice() throws Exception {
+    void onlySiteListStillQueriesSitesAmongUnrelatedRequests() throws Exception {
         clearInvocations(siteService);
         mvc.perform(get("/admin/members").session(admin)).andExpect(status().isOk());
-        verify(siteService, times(1)).findAllSites();
+        verify(siteService, times(0)).findAllSites();
 
         clearInvocations(siteService);
         mvc.perform(get("/admin/sites").session(admin)).andExpect(status().isOk());
-        verify(siteService, times(2)).findAllSites();
+        verify(siteService, times(1)).findAllSites();
 
         clearInvocations(siteService);
         mvc.perform(get("/admin/weather").session(admin)
                 .param("date", "2000-01-01").param("time", "09:00")).andExpect(status().isBadRequest());
-        verify(siteService, times(1)).findAllSites();
+        verify(siteService, times(0)).findAllSites();
     }
 
     @Test
-    void separatedAdminRequestsStillInvokeTheirControllerSitesModel() throws Exception {
+    void separatedAdminRequestsOnlyLoadSitesForSelectionForms() throws Exception {
         Site site = sites.saveAndFlush(new Site("diagnostic-detail-" + UUID.randomUUID(),
                 "address", 37.0, 127.0, 3));
         HealingCourse course = courses.saveAndFlush(new HealingCourse(site, "HC-D", "course", 37.0, 127.0, 50.0));
         HealingSpot spot = spots.saveAndFlush(new HealingSpot(course, "HS-D", "spot", 37.0, 127.0));
 
-        verifySiteCalls("/admin/courses", 2);
-        verifySiteCalls("/admin/courses/" + course.getCourseId(), 1);
-        verifySiteCalls("/admin/spots?courseId=" + course.getCourseId(), 1);
-        verifySiteCalls("/admin/spots/" + spot.getSpotId(), 1);
-        verifySiteCalls("/admin/sites/" + site.getSiteId(), 1);
+        verifySiteCalls("/admin/courses", 1);
+        verifySiteCalls("/admin/courses/" + course.getCourseId(), 0);
+        verifySiteCalls("/admin/spots?courseId=" + course.getCourseId(), 0);
+        verifySiteCalls("/admin/spots/" + spot.getSpotId(), 0);
+        verifySiteCalls("/admin/sites/" + site.getSiteId(), 0);
         verifySiteCalls("/admin/schedules/new", 1);
+        verifySiteCalls("/admin/schedules", 0);
+        verifySiteCalls("/admin/schedules/calendar", 0);
 
         clearInvocations(siteService);
         mvc.perform(post("/admin/schedules/new").session(admin).with(csrf()))
                 .andExpect(status().isOk());
         verify(siteService, times(1)).findAllSites();
+
+        Member member = members.saveAndFlush(new Member(1_700_000_041, 1,
+                "site-query-member-" + UUID.randomUUID(), "test-hash"));
+        Schedule schedule = schedules.saveAndFlush(new Schedule(member, LocalDate.of(2026, 10, 28)));
+        verifySiteCalls("/admin/schedules/" + schedule.getScheduleId() + "/edit", 1);
+        clearInvocations(siteService);
+        mvc.perform(post("/admin/schedules/" + schedule.getScheduleId() + "/edit")
+                .session(admin).with(csrf())).andExpect(status().isOk());
+        verify(siteService, times(1)).findAllSites();
+
+        clearInvocations(siteService);
+        mvc.perform(post("/admin/schedules/new").session(admin)).andExpect(status().isForbidden());
+        verify(siteService, times(0)).findAllSites();
+        clearInvocations(siteService);
+        mvc.perform(get("/admin/schedules/new")).andExpect(redirectedUrl("/admin/login"));
+        verify(siteService, times(0)).findAllSites();
+        MockHttpSession participant = new MockHttpSession();
+        authentication.authenticateMember(participant, member);
+        clearInvocations(siteService);
+        mvc.perform(get("/admin/schedules/new").session(participant))
+                .andExpect(redirectedUrl("/admin/login"));
+        verify(siteService, times(0)).findAllSites();
     }
 
     private void verifySiteCalls(String path, int expected) throws Exception {

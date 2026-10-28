@@ -4,10 +4,8 @@ import com.example.manage.domain.Member;
 import com.example.manage.dto.MemberCreateForm;
 import com.example.manage.dto.MemberEditForm;
 import com.example.manage.dto.MemberProfileView;
-import com.example.manage.dto.SiteResponse;
 import com.example.manage.service.MemberAnalysisModelService;
 import com.example.manage.service.MemberService;
-import com.example.manage.service.SiteService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -30,12 +28,6 @@ import java.util.List;
 public class AdminMemberController {
     private final MemberService memberService;
     private final MemberAnalysisModelService analysisModel;
-    private final SiteService siteService;
-
-    @ModelAttribute("sites")
-    public List<SiteResponse> scheduleSites() {
-        return siteService.findAllSites().stream().map(SiteResponse::new).toList();
-    }
 
     /* ================================
        참가자 목록

@@ -65,10 +65,12 @@ class AdminMemberControllerTests {
         MockHttpSession admin = adminSession();
         mvc.perform(get("/admin/members").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/member-list"))
-                .andExpect(model().attributeExists("members", "sites"));
+                .andExpect(model().attributeExists("members"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/members/" + member.getMemberId()).session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/member-detail"))
-                .andExpect(model().attributeExists("member", "formattedPhone", "sites"));
+                .andExpect(model().attributeExists("member", "formattedPhone"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/members/" + member.getMemberId() + "/data").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/member-data"))
                 .andExpect(model().attribute("analysisApiBase", "/admin/members/" + member.getMemberId() + "/data/api"));
@@ -83,7 +85,8 @@ class AdminMemberControllerTests {
         String path = "/admin/members/" + member.getMemberId();
         mvc.perform(get(path + "/edit").session(admin))
                 .andExpect(view().name("admin/member-edit"))
-                .andExpect(model().attributeExists("memberEditForm", "memberId", "sites"));
+                .andExpect(model().attributeExists("memberEditForm", "memberId"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(post(path + "/edit").session(admin).with(csrf()).param("loginId", " "))
                 .andExpect(status().isOk()).andExpect(view().name("admin/member-edit"))
                 .andExpect(model().attributeHasErrors("memberEditForm"));

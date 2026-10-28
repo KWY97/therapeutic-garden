@@ -29,9 +29,8 @@ public class AdminScheduleController {
     private final SiteService siteService;
     private final WeatherLookupResponse weatherResponses;
 
-    @ModelAttribute("sites")
-    public List<SiteResponse> scheduleSites() {
-        return siteService.findAllSites().stream().map(SiteResponse::new).toList();
+    private void addScheduleSites(Model model) {
+        model.addAttribute("sites", siteService.findAllSites().stream().map(SiteResponse::new).toList());
     }
 
     /* ================================
@@ -42,6 +41,8 @@ public class AdminScheduleController {
     public String scheduleForm(
             Model model
     ) {
+
+        addScheduleSites(model);
 
         List<Member> members =
                 memberService.findAllMembers();
@@ -73,6 +74,8 @@ public class AdminScheduleController {
 
         if (bindingResult.hasErrors()) {
 
+            addScheduleSites(model);
+
             List<Member> members =
                     memberService.findAllMembers();
 
@@ -101,10 +104,12 @@ public class AdminScheduleController {
             );
         } catch (ScheduleService.DuplicateScheduleException exception) {
             bindingResult.reject("duplicateSchedule", exception.getMessage());
+            addScheduleSites(model);
             model.addAttribute("members", memberService.findAllMembers());
             return "admin/schedule-form";
         } catch (IllegalArgumentException exception) {
             bindingResult.rejectValue("firstSpotId", "invalid", exception.getMessage());
+            addScheduleSites(model);
             model.addAttribute("members", memberService.findAllMembers());
             return "admin/schedule-form";
         }
@@ -296,6 +301,8 @@ public class AdminScheduleController {
         }
 
 
+        addScheduleSites(model);
+
         List<Member> members =
                 memberService.findAllMembers();
 
@@ -340,6 +347,8 @@ public class AdminScheduleController {
 
         if (bindingResult.hasErrors()) {
 
+            addScheduleSites(model);
+
             List<Member> members =
                     memberService.findAllMembers();
 
@@ -379,12 +388,14 @@ public class AdminScheduleController {
             );
         } catch (ScheduleService.DuplicateScheduleException exception) {
             bindingResult.reject("duplicateSchedule", exception.getMessage());
+            addScheduleSites(model);
             model.addAttribute("members", memberService.findAllMembers());
             model.addAttribute("scheduleId", scheduleId);
             model.addAttribute("from", from);
             return "admin/schedule-edit";
         } catch (IllegalArgumentException exception) {
             bindingResult.rejectValue("firstSpotId", "invalid", exception.getMessage());
+            addScheduleSites(model);
             model.addAttribute("members", memberService.findAllMembers());
             model.addAttribute("scheduleId", scheduleId);
             model.addAttribute("from", from);

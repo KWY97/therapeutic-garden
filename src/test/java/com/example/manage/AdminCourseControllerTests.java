@@ -83,7 +83,7 @@ class AdminCourseControllerTests {
         mvc.perform(get("/admin/courses").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/course-list"))
                 .andExpect(model().attribute("courseSites", hasSize(2)))
-                .andExpect(model().attributeExists("sites"));
+                .andExpect(model().attributeDoesNotExist("sites"));
         mvc.perform(get("/admin/courses").session(admin).param("siteId", site.getSiteId().toString()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/course-list"))
                 .andExpect(model().attributeExists("selectedSite"))
@@ -91,7 +91,7 @@ class AdminCourseControllerTests {
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("HC-A")));
         mvc.perform(get("/admin/courses/new").session(admin).param("siteId", site.getSiteId().toString()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/course-form"))
-                .andExpect(model().attributeExists("healingCourseForm", "courseSites", "sites"))
+                .andExpect(model().attributeExists("healingCourseForm", "courseSites"))
                 .andExpect(model().attribute("courseId", org.hamcrest.Matchers.nullValue()))
                 .andExpect(model().attribute("kakaoMapsJavaScriptKey", mapsKey))
                 .andExpect(result -> assertThat(((HealingCourseForm) result.getModelAndView().getModel()
@@ -117,18 +117,18 @@ class AdminCourseControllerTests {
             mvc.perform(post(path).session(admin).with(csrf()))
                     .andExpect(status().isOk()).andExpect(view().name("admin/course-form"))
                     .andExpect(model().attributeHasFieldErrors("healingCourseForm", "siteId", "code", "name"))
-                    .andExpect(model().attributeExists("healingCourseForm", "courseSites", "sites", "kakaoMapsJavaScriptKey"))
+                    .andExpect(model().attributeExists("healingCourseForm", "courseSites", "kakaoMapsJavaScriptKey"))
                     .andExpect(result -> assertThat(result.getModelAndView().getModel()).containsKey("courseId"));
             mvc.perform(form(path, site.getSiteId(), "HC-D"))
                     .andExpect(status().isOk()).andExpect(view().name("admin/course-form"))
                     .andExpect(model().attributeHasErrors("healingCourseForm"))
-                    .andExpect(model().attributeExists("courseSites", "sites", "kakaoMapsJavaScriptKey"))
+                    .andExpect(model().attributeExists("courseSites", "kakaoMapsJavaScriptKey"))
                     .andExpect(result -> assertThat(result.getModelAndView().getModel()).containsKey("courseId"));
         }
         mvc.perform(get("/admin/courses/" + course.getCourseId() + "/edit").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/course-form"))
                 .andExpect(model().attribute("courseId", course.getCourseId()))
-                .andExpect(model().attributeExists("healingCourseForm", "courseSites", "sites", "kakaoMapsJavaScriptKey"));
+                .andExpect(model().attributeExists("healingCourseForm", "courseSites", "kakaoMapsJavaScriptKey"));
         mvc.perform(form("/admin/courses/" + course.getCourseId() + "/edit", other.getSiteId(), "HC-C"))
                 .andExpect(redirectedUrl("/admin/courses?siteId=" + other.getSiteId()));
         assertThat(courses.findHealingCourse(course.getCourseId()).getSite().getSiteId()).isEqualTo(other.getSiteId());
@@ -139,7 +139,8 @@ class AdminCourseControllerTests {
     void detailDeleteAndMissingCourseKeepRedirectAndFlash() throws Exception {
         mvc.perform(get("/admin/courses/" + course.getCourseId()).session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/course-detail"))
-                .andExpect(model().attributeExists("course", "sites"));
+                .andExpect(model().attributeExists("course"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         for (String path : new String[]{"/admin/courses/-1", "/admin/courses/-1/edit"}) {
             mvc.perform(get(path).session(admin))
                     .andExpect(redirectedUrl("/admin/courses"))

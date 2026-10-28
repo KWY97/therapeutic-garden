@@ -102,13 +102,13 @@ class AdminSpotControllerTests {
         mvc.perform(get("/admin/spots").session(admin)
                         .param("courseId", course.getCourseId().toString()).param("siteId", site.getSiteId().toString()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/spot-list"))
-                .andExpect(model().attributeExists("selectedCourse", "sites"))
+                .andExpect(model().attributeExists("selectedCourse"))
                 .andExpect(model().attribute("spots", hasSize(1)));
         mvc.perform(get("/admin/spots/new").session(admin)
                         .param("courseId", course.getCourseId().toString()).param("siteId", site.getSiteId().toString()))
                 .andExpect(status().isOk()).andExpect(view().name("admin/spot-form"))
                 .andExpect(model().attribute("spotCourses", hasSize(2)))
-                .andExpect(model().attributeExists("healingSpotForm", "sites", "images", "imageTitle", "kakaoMapsJavaScriptKey"))
+                .andExpect(model().attributeExists("healingSpotForm", "images", "imageTitle", "kakaoMapsJavaScriptKey"))
                 .andExpect(model().attribute("kakaoMapsJavaScriptKey", mapsKey))
                 .andExpect(result -> assertThat(result.getModelAndView().getModel()).containsKey("spotId"))
                 .andExpect(result -> assertThat(((HealingSpotForm) result.getModelAndView().getModel()
@@ -134,7 +134,7 @@ class AdminSpotControllerTests {
             mvc.perform(post(path).session(admin).with(csrf()))
                     .andExpect(status().isOk()).andExpect(view().name("admin/spot-form"))
                     .andExpect(model().attributeHasFieldErrors("healingSpotForm", "courseId", "code", "name", "latitude", "longitude"))
-                    .andExpect(model().attributeExists("healingSpotForm", "spotCourses", "sites", "images", "imageSelectionNotice", "kakaoMapsJavaScriptKey"))
+                    .andExpect(model().attributeExists("healingSpotForm", "spotCourses", "images", "imageSelectionNotice", "kakaoMapsJavaScriptKey"))
                     .andExpect(result -> assertThat(result.getModelAndView().getModel()).containsKey("spotId"));
             mvc.perform(post(path).session(admin).with(csrf())
                             .param("courseId", course.getCourseId().toString())
@@ -148,7 +148,7 @@ class AdminSpotControllerTests {
         mvc.perform(get("/admin/spots/" + spot.getSpotId() + "/edit").session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/spot-form"))
                 .andExpect(model().attribute("spotId", spot.getSpotId()))
-                .andExpect(model().attributeExists("images", "spotCourses", "sites", "kakaoMapsJavaScriptKey"));
+                .andExpect(model().attributeExists("images", "spotCourses", "kakaoMapsJavaScriptKey"));
         mvc.perform(form("/admin/spots/" + spot.getSpotId() + "/edit", otherCourse.getCourseId(), "HS-A"))
                 .andExpect(redirectedUrl("/admin/spots/" + spot.getSpotId()));
         HealingSpot updated = spots.findHealingSpot(spot.getSpotId());
@@ -160,7 +160,8 @@ class AdminSpotControllerTests {
     void detailDeleteAndMissingSpotKeepResponses() throws Exception {
         mvc.perform(get("/admin/spots/" + spot.getSpotId()).session(admin))
                 .andExpect(status().isOk()).andExpect(view().name("admin/spot-detail"))
-                .andExpect(model().attributeExists("spot", "sites", "images", "imageTitle"));
+                .andExpect(model().attributeExists("spot", "images", "imageTitle"))
+                .andExpect(model().attributeDoesNotExist("sites"));
         for (String path : new String[]{"/admin/spots/-1", "/admin/spots/-1/edit"}) {
             mvc.perform(get(path).session(admin))
                     .andExpect(redirectedUrl("/admin/courses"))

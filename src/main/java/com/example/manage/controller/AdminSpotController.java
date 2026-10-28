@@ -4,12 +4,10 @@ import com.example.manage.domain.HealingCourse;
 import com.example.manage.domain.HealingSpot;
 import com.example.manage.dto.HealingSpotForm;
 import com.example.manage.dto.ImageResponse;
-import com.example.manage.dto.SiteResponse;
 import com.example.manage.service.AdminPlaceFormService;
 import com.example.manage.service.HealingCourseService;
 import com.example.manage.service.HealingSpotImageService;
 import com.example.manage.service.HealingSpotService;
-import com.example.manage.service.SiteService;
 import com.example.manage.storage.ImageStorageException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,17 +30,11 @@ import java.util.List;
 public class AdminSpotController {
     private final HealingCourseService healingCourseService;
     private final HealingSpotService healingSpotService;
-    private final SiteService siteService;
     private final AdminPlaceFormService placeForms;
     private final HealingSpotImageService spotImages;
 
     @Value("${kakao.maps.javascript-key}")
     private String kakaoMapsJavaScriptKey;
-
-    @ModelAttribute("sites")
-    public List<SiteResponse> scheduleSites() {
-        return siteService.findAllSites().stream().map(SiteResponse::new).toList();
-    }
 
     private String spotForm(Model model, Long spotId) {
         model.addAttribute("spotId", spotId);
