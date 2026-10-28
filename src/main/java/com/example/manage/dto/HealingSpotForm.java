@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class HealingSpotForm extends ImageEditForm {
+
     @NotNull(message = "코스를 선택해 주세요.")
     private Long courseId;
 

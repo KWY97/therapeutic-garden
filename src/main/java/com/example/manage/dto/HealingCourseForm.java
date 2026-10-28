@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class HealingCourseForm {
+
     @NotNull(message = "사이트를 선택해 주세요.")
     private Long siteId;
 

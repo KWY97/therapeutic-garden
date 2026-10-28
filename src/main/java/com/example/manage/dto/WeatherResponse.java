@@ -12,7 +12,6 @@ public class WeatherResponse {
 
     private Hourly hourly;
 
-
     @Getter
     @Setter
     public static class Hourly {

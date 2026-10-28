@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @Getter
 public class MemberProfileView {
+
     private final Long memberId;
     private final Integer participantNo;
     private final Integer groupNo;

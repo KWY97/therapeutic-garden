@@ -35,7 +35,8 @@ public record HealingEffectView(
     }
 
     private static String directionalDisplay(BigDecimal rate, String positiveDirection, String negativeDirection) {
-        if (rate.signum() == 0) return "0.0% 변화 없음";
+        if (rate.signum() == 0)
+            return "0.0% 변화 없음";
         String direction = rate.signum() > 0 ? positiveDirection : negativeDirection;
         return display(rate.abs()) + " " + direction;
     }

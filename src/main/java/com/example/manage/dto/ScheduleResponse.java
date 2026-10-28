@@ -48,6 +48,7 @@ public class ScheduleResponse {
     @Getter
     @AllArgsConstructor
     public static class MemberResponse {
+
         private Long memberId;
         private Integer participantNo;
         private Integer groupNo;
