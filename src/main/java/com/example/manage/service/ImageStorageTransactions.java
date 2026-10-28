@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 import java.io.IOException;
 import java.nio.file.*;
 
@@ -15,6 +16,7 @@ import java.nio.file.*;
 @RequiredArgsConstructor
 @Slf4j
 public class ImageStorageTransactions {
+
     private final ImageStorage storage;
     private final ImageStorageProperties properties;
 
@@ -22,14 +24,17 @@ public class ImageStorageTransactions {
         requireTransaction();
         // Register before PUT: a timeout can mean the server already stored the object.
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCompletion(int status) {
-                if (status == STATUS_COMMITTED) return;
+            @Override
+            public void afterCompletion(int status) {
+                if (status == STATUS_COMMITTED)
+                    return;
                 if (status == STATUS_UNKNOWN) {
                     log.error("Image upload transaction outcome unknown; reconcile objectKey={}", key);
                     return;
                 }
-                try { storage.delete(key); }
-                catch (RuntimeException e) {
+                try {
+                    storage.delete(key);
+                } catch (RuntimeException e) {
                     // Never log SDK exceptions, credentials or presigned URLs.
                     log.error("Image upload compensation failed; reconcile objectKey={}", key);
                 }
@@ -57,26 +62,35 @@ public class ImageStorageTransactions {
             throw new ImageStorageException("이미지 삭제 복구 파일을 준비하지 못했습니다. 삭제하지 않았습니다.", e);
         }
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override public void afterCompletion(int status) {
+            @Override
+            public void afterCompletion(int status) {
                 if (status == STATUS_UNKNOWN) {
                     log.error("Image deletion transaction outcome unknown; reconcile backup={}", backup);
                     return;
                 }
                 if (status != STATUS_COMMITTED) {
-                    try { storage.upload(key, Files.readAllBytes(backup), contentType); }
-                    catch (RuntimeException | IOException e) {
+                    try {
+                        storage.upload(key, Files.readAllBytes(backup), contentType);
+                    } catch (RuntimeException | IOException e) {
                         log.error("Image deletion rollback restore failed; recover objectKey={} from backup={}", key, backup);
                         return; // Preserve bytes and metadata for manual recovery.
                     }
                 }
-                try { Files.deleteIfExists(backup); Files.deleteIfExists(metadata(backup)); }
-                catch (IOException e) { log.warn("Image recovery file cleanup required: {}", backup); }
+                try {
+                    Files.deleteIfExists(backup);
+                    Files.deleteIfExists(metadata(backup));
+                } catch (IOException e) {
+                    log.warn("Image recovery file cleanup required: {}", backup);
+                }
             }
         });
         storage.delete(key); // A failure propagates and rolls back the DB transaction.
     }
 
-    private Path metadata(Path backup) { return backup.resolveSibling(backup.getFileName() + ".metadata"); }
+    private Path metadata(Path backup) {
+        return backup.resolveSibling(backup.getFileName() + ".metadata");
+    }
+
     private void requireTransaction() {
         if (!TransactionSynchronizationManager.isActualTransactionActive()
                 || !TransactionSynchronizationManager.isSynchronizationActive())
