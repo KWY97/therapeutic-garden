@@ -16,9 +16,12 @@ import java.util.function.LongSupplier;
 
 @Component
 public class LoginAttemptLimiter {
-    public enum Role { ADMIN, MEMBER }
+    public enum Role {
+        ADMIN, MEMBER
+    }
 
-    private record Key(String loginIdDigest, String peerDigest) {}
+    private record Key(String loginIdDigest, String peerDigest) {
+    }
 
     private static final class Attempts {
         private long windowStart;
@@ -53,7 +56,7 @@ public class LoginAttemptLimiter {
     }
 
     LoginAttemptLimiter(int maxAttempts, long windowSeconds, long cooldownSeconds,
-                        int maxEntriesPerRole, LongSupplier nanoTime) {
+            int maxEntriesPerRole, LongSupplier nanoTime) {
         if (maxAttempts < 1 || windowSeconds < 1 || cooldownSeconds < 1 || maxEntriesPerRole < 1) {
             throw new IllegalArgumentException("Login limit settings must be positive");
         }
@@ -63,7 +66,8 @@ public class LoginAttemptLimiter {
         this.retentionNanos = Math.max(windowNanos, cooldownNanos);
         this.maxEntriesPerRole = maxEntriesPerRole;
         this.nanoTime = nanoTime;
-        for (Role role : Role.values()) attempts.put(role, new LinkedHashMap<>(16, 0.75f, true));
+        for (Role role : Role.values())
+            attempts.put(role, new LinkedHashMap<>(16, 0.75f, true));
     }
 
     public synchronized boolean allow(Role role, String loginId, String peerAddress) {

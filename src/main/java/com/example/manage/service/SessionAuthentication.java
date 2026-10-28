@@ -4,6 +4,7 @@ import com.example.manage.domain.Admin;
 import com.example.manage.domain.Member;
 import com.example.manage.repository.AdminRepository;
 import com.example.manage.repository.MemberRepository;
+
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,9 @@ import java.security.NoSuchAlgorithmException;
 @Service
 @RequiredArgsConstructor
 public class SessionAuthentication {
-    public enum Role { NONE, ADMIN, MEMBER }
+    public enum Role {
+        NONE, ADMIN, MEMBER
+    }
 
     private static final String ADMIN_ID = "loginAdminId";
     private static final String MEMBER_ID = "loginMemberId";
@@ -42,7 +45,8 @@ public class SessionAuthentication {
     }
 
     public Role role(HttpSession session) {
-        if (session == null) return Role.NONE;
+        if (session == null)
+            return Role.NONE;
         Object adminId = session.getAttribute(ADMIN_ID);
         Object memberId = session.getAttribute(MEMBER_ID);
         Object adminFingerprint = session.getAttribute(ADMIN_FINGERPRINT);
