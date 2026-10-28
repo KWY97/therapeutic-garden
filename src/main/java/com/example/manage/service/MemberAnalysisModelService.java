@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 @Service
 @RequiredArgsConstructor
 public class MemberAnalysisModelService {
+
     private final HealingEffectQueryService healingEffects;
     private final MeasurementHistoryQueryService measurementHistory;
     private final HealingEffectImportBatchRepository effectBatches;

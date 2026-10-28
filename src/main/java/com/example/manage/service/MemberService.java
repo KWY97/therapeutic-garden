@@ -1,9 +1,9 @@
 package com.example.manage.service;
 
 import com.example.manage.domain.Member;
+import com.example.manage.domain.Schedule;
 import com.example.manage.dto.MemberCreateForm;
 import com.example.manage.dto.MemberProfileView;
-import com.example.manage.domain.Schedule;
 import com.example.manage.repository.MemberRepository;
 import com.example.manage.repository.ScheduleRepository;
 import com.example.manage.repository.ScheduleSpotRepository;
