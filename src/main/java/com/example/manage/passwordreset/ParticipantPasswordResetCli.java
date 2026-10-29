@@ -1,10 +1,10 @@
 package com.example.manage.passwordreset;
 
 import java.io.PrintStream;
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -16,7 +16,8 @@ public final class ParticipantPasswordResetCli {
         Connection open(DatabaseConfig config, char[] databasePassword) throws SQLException;
     }
 
-    private ParticipantPasswordResetCli() {}
+    private ParticipantPasswordResetCli() {
+    }
 
     public static void main(String[] args) {
         int exit;
@@ -28,7 +29,8 @@ public final class ParticipantPasswordResetCli {
             System.err.println("TERMINAL_REQUIRED: 대화형 로컬 터미널에서 실행해야 합니다.");
             exit = 1;
         }
-        if (exit != 0) System.exit(exit);
+        if (exit != 0)
+            System.exit(exit);
     }
 
     static int run(String[] args, Map<String, String> environment, PrintStream out, PrintStream err,
@@ -43,7 +45,8 @@ public final class ParticipantPasswordResetCli {
                     + ", ddlAuto=none, webServer=off");
 
             databasePassword = terminal.readSecret(options.target() + " DB password: ");
-            if (databasePassword.length == 0) throw new IllegalArgumentException("DB password가 비어 있습니다.");
+            if (databasePassword.length == 0)
+                throw new IllegalArgumentException("DB password가 비어 있습니다.");
 
             ParticipantPasswordResetter resetter = new ParticipantPasswordResetter();
             List<ParticipantPasswordResetter.Account> accounts;
@@ -93,8 +96,10 @@ public final class ParticipantPasswordResetCli {
             err.println("RESET_FAILED: no secret or connection detail was logged; verify database state before retry");
             return 1;
         } finally {
-            if (databasePassword != null) Arrays.fill(databasePassword, '\0');
-            if (hashes != null) hashes.replaceAll((participantNo, hash) -> "[CLEARED]");
+            if (databasePassword != null)
+                Arrays.fill(databasePassword, '\0');
+            if (hashes != null)
+                hashes.replaceAll((participantNo, hash) -> "[CLEARED]");
         }
     }
 

@@ -24,19 +24,23 @@ record ResetArguments(DatabaseTarget target, PasswordMode passwordMode, boolean 
                     }
                 }
                 case "--generate" -> {
-                    if (passwordMode != null) throw invalid("--generate와 --reuse 중 하나만 선택해야 합니다.");
+                    if (passwordMode != null)
+                        throw invalid("--generate와 --reuse 중 하나만 선택해야 합니다.");
                     passwordMode = PasswordMode.GENERATE;
                 }
                 case "--reuse" -> {
-                    if (passwordMode != null) throw invalid("--generate와 --reuse 중 하나만 선택해야 합니다.");
+                    if (passwordMode != null)
+                        throw invalid("--generate와 --reuse 중 하나만 선택해야 합니다.");
                     passwordMode = PasswordMode.REUSE;
                 }
                 case "--write" -> {
-                    if (write) throw invalid("--write가 중복되었습니다.");
+                    if (write)
+                        throw invalid("--write가 중복되었습니다.");
                     write = true;
                 }
                 case "--dry-run" -> {
-                    if (explicitDryRun) throw invalid("--dry-run이 중복되었습니다.");
+                    if (explicitDryRun)
+                        throw invalid("--dry-run이 중복되었습니다.");
                     explicitDryRun = true;
                 }
                 case "--allow-production-tunnel" -> {
@@ -48,9 +52,12 @@ record ResetArguments(DatabaseTarget target, PasswordMode passwordMode, boolean 
                 default -> throw invalid("허용되지 않은 인수가 있습니다. 비밀값은 명령행에 넣지 마세요.");
             }
         }
-        if (target == null) throw invalid("--target LOCAL|PRODUCTION을 명시해야 합니다.");
-        if (passwordMode == null) throw invalid("--generate 또는 --reuse를 명시해야 합니다.");
-        if (write && explicitDryRun) throw invalid("--dry-run과 --write를 함께 사용할 수 없습니다.");
+        if (target == null)
+            throw invalid("--target LOCAL|PRODUCTION을 명시해야 합니다.");
+        if (passwordMode == null)
+            throw invalid("--generate 또는 --reuse를 명시해야 합니다.");
+        if (write && explicitDryRun)
+            throw invalid("--dry-run과 --write를 함께 사용할 수 없습니다.");
         if (allowProductionTunnel && target != DatabaseTarget.PRODUCTION) {
             throw invalid("--allow-production-tunnel은 PRODUCTION에서만 사용할 수 있습니다.");
         }

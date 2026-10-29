@@ -31,33 +31,56 @@ public final class TestParticipantProvisionCli {
             for (int i = 0; i < args.length; i++) {
                 switch (args[i]) {
                     case "--target" -> {
-                        if (target != null || ++i >= args.length) throw invalid("--target LOCAL|PRODUCTION이 필요합니다.");
-                        try { target = DatabaseTarget.valueOf(args[i].toUpperCase(Locale.ROOT)); }
-                        catch (IllegalArgumentException exception) { throw invalid("--target은 LOCAL 또는 PRODUCTION이어야 합니다."); }
+                        if (target != null || ++i >= args.length)
+                            throw invalid("--target LOCAL|PRODUCTION이 필요합니다.");
+                        try {
+                            target = DatabaseTarget.valueOf(args[i].toUpperCase(Locale.ROOT));
+                        } catch (IllegalArgumentException exception) {
+                            throw invalid("--target은 LOCAL 또는 PRODUCTION이어야 합니다.");
+                        }
                     }
                     case "--p004-member-id" -> {
-                        if (p004MemberId != null || ++i >= args.length) throw invalid("--p004-member-id가 필요합니다.");
-                        try { p004MemberId = Long.parseLong(args[i]); }
-                        catch (NumberFormatException exception) { throw invalid("P004 member_id 형식이 올바르지 않습니다."); }
+                        if (p004MemberId != null || ++i >= args.length)
+                            throw invalid("--p004-member-id가 필요합니다.");
+                        try {
+                            p004MemberId = Long.parseLong(args[i]);
+                        } catch (NumberFormatException exception) {
+                            throw invalid("P004 member_id 형식이 올바르지 않습니다.");
+                        }
                     }
-                    case "--write" -> { if (write) throw invalid("--write가 중복되었습니다."); write = true; }
-                    case "--dry-run" -> { if (dryRun) throw invalid("--dry-run이 중복되었습니다."); dryRun = true; }
-                    case "--allow-production-tunnel" -> { if (tunnel) throw invalid("터널 옵션이 중복되었습니다."); tunnel = true; }
+                    case "--write" -> {
+                        if (write)
+                            throw invalid("--write가 중복되었습니다.");
+                        write = true;
+                    }
+                    case "--dry-run" -> {
+                        if (dryRun)
+                            throw invalid("--dry-run이 중복되었습니다.");
+                        dryRun = true;
+                    }
+                    case "--allow-production-tunnel" -> {
+                        if (tunnel)
+                            throw invalid("터널 옵션이 중복되었습니다.");
+                        tunnel = true;
+                    }
                     default -> throw invalid("허용되지 않은 인수가 있습니다. 비밀값은 명령행에 넣지 마세요.");
                 }
             }
             if (target == null || p004MemberId == null || p004MemberId <= 0)
                 throw invalid("--target LOCAL|PRODUCTION 및 유효한 --p004-member-id가 필요합니다.");
-            if (write && dryRun) throw invalid("--dry-run과 --write를 함께 사용할 수 없습니다.");
+            if (write && dryRun)
+                throw invalid("--dry-run과 --write를 함께 사용할 수 없습니다.");
             if (tunnel && target != DatabaseTarget.PRODUCTION)
                 throw invalid("--allow-production-tunnel은 PRODUCTION에서만 허용합니다.");
             return new Options(target, p004MemberId, write, tunnel);
         }
     }
 
-    private record Preflight(int participantNo) {}
+    private record Preflight(int participantNo) {
+    }
 
-    private TestParticipantProvisionCli() {}
+    private TestParticipantProvisionCli() {
+    }
 
     public static void main(String[] args) {
         int exit;
@@ -69,7 +92,8 @@ public final class TestParticipantProvisionCli {
             System.err.println("TERMINAL_REQUIRED: 대화형 로컬 터미널이 필요합니다.");
             exit = 1;
         }
-        if (exit != 0) System.exit(exit);
+        if (exit != 0)
+            System.exit(exit);
     }
 
     static int run(String[] args, Map<String, String> environment, PrintStream out, PrintStream err,
@@ -90,7 +114,8 @@ public final class TestParticipantProvisionCli {
             out.println("mode=" + (options.write() ? "WRITE" : "DRY_RUN") + ", target=" + options.target()
                     + ", productionTunnel=" + options.allowProductionTunnel() + ", ddlAuto=none, webServer=off");
             databasePassword = terminal.readSecret(options.target() + " DB password: ");
-            if (databasePassword.length == 0) throw invalid("DB password가 비어 있습니다.");
+            if (databasePassword.length == 0)
+                throw invalid("DB password가 비어 있습니다.");
 
             Preflight preflight;
             try (Connection connection = connections.open(config, databasePassword)) {
@@ -129,7 +154,8 @@ public final class TestParticipantProvisionCli {
                         statement.setInt(1, locked.participantNo());
                         statement.setString(2, hash);
                         statement.setLong(3, options.p004MemberId());
-                        if (statement.executeUpdate() != 1) throw new SQLException("insert count mismatch");
+                        if (statement.executeUpdate() != 1)
+                            throw new SQLException("insert count mismatch");
                     }
                     commitAttempted = true;
                     connection.commit();
@@ -138,7 +164,9 @@ public final class TestParticipantProvisionCli {
                     return 0;
                 } catch (SQLException | RuntimeException exception) {
                     if (!commitAttempted) {
-                        try { connection.rollback(); } catch (SQLException ignored) { /* inspect before retry */ }
+                        try {
+                            connection.rollback();
+                        } catch (SQLException ignored) { /* inspect before retry */ }
                     }
                     throw exception;
                 }
@@ -161,9 +189,12 @@ public final class TestParticipantProvisionCli {
             err.println("PROVISION_FAILED: 비밀값과 연결 정보는 출력하지 않습니다. DB 상태를 확인하세요.");
             return 1;
         } finally {
-            if (databasePassword != null) Arrays.fill(databasePassword, '\0');
-            if (password != null) Arrays.fill(password, '\0');
-            if (confirmation != null) Arrays.fill(confirmation, '\0');
+            if (databasePassword != null)
+                Arrays.fill(databasePassword, '\0');
+            if (password != null)
+                Arrays.fill(password, '\0');
+            if (confirmation != null)
+                Arrays.fill(confirmation, '\0');
         }
     }
 
@@ -186,7 +217,8 @@ public final class TestParticipantProvisionCli {
         }
         try (var statement = connection.createStatement();
              var rows = statement.executeQuery("select greatest(coalesce(max(participant_no),0)+1,900004) from member")) {
-            if (!rows.next()) throw invalid("다음 참가자 번호를 확인할 수 없습니다.");
+            if (!rows.next())
+                throw invalid("다음 참가자 번호를 확인할 수 없습니다.");
             return new Preflight(rows.getInt(1));
         }
     }
