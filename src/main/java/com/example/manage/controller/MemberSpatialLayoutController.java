@@ -21,7 +21,8 @@ public class MemberSpatialLayoutController {
     public ResponseEntity<SpatialLayoutService.Layout> data() {
         var siteId = effectBatches.findFirstByOrderByIdAsc()
                 .map(batch -> batch.getTargetSiteId()).orElse(null);
-        if (siteId == null) return ResponseEntity.notFound().build();
+        if (siteId == null)
+            return ResponseEntity.notFound().build();
         try {
             return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(memberLayout(layouts.load(siteId), "/member/api"));
         } catch (IllegalArgumentException exception) {

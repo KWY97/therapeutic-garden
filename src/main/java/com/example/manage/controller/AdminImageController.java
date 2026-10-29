@@ -1,13 +1,15 @@
 package com.example.manage.controller;
 
 import com.example.manage.service.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.http.*;
+
 import java.util.List;
 
 @Controller
@@ -50,7 +52,9 @@ public class AdminImageController {
         try {
             var content = siteImages.localContent(parentId, imageId);
             return imageResponses.noStore(content.bytes(), content.contentType());
-        } catch (IllegalArgumentException e) { return ResponseEntity.notFound().build(); }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/spots/{parentId}/images")
@@ -85,7 +89,9 @@ public class AdminImageController {
         try {
             var content = spotImages.localContent(parentId, imageId);
             return imageResponses.noStore(content.bytes(), content.contentType());
-        } catch (IllegalArgumentException e) { return ResponseEntity.notFound().build(); }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     @GetMapping("/spots/{parentId}/images/{imageId}/thumbnail")
@@ -93,7 +99,9 @@ public class AdminImageController {
         try {
             var content = spotImages.localThumbnail(parentId, imageId);
             return imageResponses.noStore(content.bytes(), content.contentType());
-        } catch (IllegalArgumentException e) { return ResponseEntity.notFound().build(); }
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     private String action(String path, RedirectAttributes flash, Runnable work) {

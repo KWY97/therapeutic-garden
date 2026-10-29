@@ -1,14 +1,15 @@
 package com.example.manage.controller;
 
 import com.example.manage.dto.HealingCourseResponse;
-import com.example.manage.dto.HealingSpotResponse;
 import com.example.manage.dto.HealingSpotDetailResponse;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.CacheControl;
+import com.example.manage.dto.HealingSpotResponse;
 import com.example.manage.service.HealingCourseService;
 import com.example.manage.service.HealingSpotService;
 import com.example.manage.service.SessionAuthentication;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,7 +39,6 @@ public class HealingSpaceController {
         }
     }
 
-
     /*
      * 특정 Site에 속한 HealingCourse 조회
      *
@@ -59,7 +59,6 @@ public class HealingSpaceController {
                 .map(HealingCourseResponse::new)
                 .toList();
     }
-
 
     /*
      * 특정 Site에 속한 HealingSpot 조회
