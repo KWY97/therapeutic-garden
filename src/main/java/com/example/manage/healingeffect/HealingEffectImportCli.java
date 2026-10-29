@@ -49,7 +49,8 @@ public final class HealingEffectImportCli {
 
     private static String required(Map<String, String> environment, String key) {
         String value = environment.get(key);
-        if (value == null) throw new IllegalArgumentException("환경변수 필요: " + key);
+        if (value == null)
+            throw new IllegalArgumentException("환경변수 필요: " + key);
         return value;
     }
 
@@ -61,7 +62,8 @@ public final class HealingEffectImportCli {
                 throw new IllegalArgumentException("알 수 없거나 중복된 argument: " + key);
             String value = "true";
             if (key.equals("--file") || key.equals("--site-id")) {
-                if (++i >= args.length) throw new IllegalArgumentException("argument 값 필요: " + key);
+                if (++i >= args.length)
+                    throw new IllegalArgumentException("argument 값 필요: " + key);
                 value = args[i];
             }
             options.put(key, value);
