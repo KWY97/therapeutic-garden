@@ -10,6 +10,7 @@ import com.example.manage.repository.HealingSpotRepository;
 import com.example.manage.repository.MemberRepository;
 import com.example.manage.repository.ScheduleRepository;
 import com.example.manage.repository.ScheduleSpotRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -362,7 +363,6 @@ public class ScheduleService {
                 humidity
         );
 
-
         /*
          * 첫 번째 스팟 수정
          */
@@ -376,7 +376,6 @@ public class ScheduleService {
                     firstStartTime
             );
         }
-
 
         /*
          * 두 번째 스팟 수정

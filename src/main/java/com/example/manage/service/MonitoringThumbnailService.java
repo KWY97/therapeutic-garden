@@ -1,15 +1,15 @@
 package com.example.manage.service;
 
 import com.example.manage.storage.*;
+
+import javax.imageio.*;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import javax.imageio.*;
-import javax.imageio.stream.MemoryCacheImageInputStream;
-import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

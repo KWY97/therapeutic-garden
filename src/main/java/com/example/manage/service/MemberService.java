@@ -7,6 +7,7 @@ import com.example.manage.dto.MemberProfileView;
 import com.example.manage.repository.MemberRepository;
 import com.example.manage.repository.ScheduleRepository;
 import com.example.manage.repository.ScheduleSpotRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -139,7 +140,6 @@ public class MemberService {
          * 형식으로 저장한다.
          */
         phone = normalizePhone(phone);
-
 
         /*
          * 참가자 정보 수정

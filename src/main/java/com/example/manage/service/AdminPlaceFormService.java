@@ -6,6 +6,7 @@ import com.example.manage.dto.HealingSpotForm;
 import com.example.manage.dto.SiteForm;
 import com.example.manage.repository.HealingSpotRepository;
 import com.example.manage.repository.SiteRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,31 +58,42 @@ public class AdminPlaceFormService {
     private void saveSiteImages(Long id, SiteForm form, List<MultipartFile> files) {
         List<MultipartFile> selected = selectedFiles(files);
         imageWork(() -> {
-            if (form.getImageOrder() != null) siteImages.edit(id, selected, form);
-            else if (!selected.isEmpty()) siteImages.upload(id, selected);
+            if (form.getImageOrder() != null)
+                siteImages.edit(id, selected, form);
+            else if (!selected.isEmpty())
+                siteImages.upload(id, selected);
         });
     }
 
     private void saveSpotImages(Long id, HealingSpotForm form, List<MultipartFile> files) {
         List<MultipartFile> selected = selectedFiles(files);
         imageWork(() -> {
-            if (form.getImageOrder() != null) spotImages.edit(id, selected, form);
-            else if (!selected.isEmpty()) spotImages.upload(id, selected);
+            if (form.getImageOrder() != null)
+                spotImages.edit(id, selected, form);
+            else if (!selected.isEmpty())
+                spotImages.upload(id, selected);
         });
     }
 
     public static class ImageEditException extends IllegalArgumentException {
-        ImageEditException(IllegalArgumentException cause) { super(cause.getMessage(), cause); }
+        ImageEditException(IllegalArgumentException cause) {
+            super(cause.getMessage(), cause);
+        }
     }
 
     private void imageWork(Runnable work) {
-        try { work.run(); }
-        catch (com.example.manage.storage.ImageStorageException exception) { throw exception; }
-        catch (IllegalArgumentException exception) { throw new ImageEditException(exception); }
+        try {
+            work.run();
+        } catch (com.example.manage.storage.ImageStorageException exception) {
+            throw exception;
+        } catch (IllegalArgumentException exception) {
+            throw new ImageEditException(exception);
+        }
     }
 
     private List<MultipartFile> selectedFiles(List<MultipartFile> files) {
-        if (files == null) return List.of();
+        if (files == null)
+            return List.of();
         // Browsers send an empty part with no filename when the optional input is unused.
         // A selected, named zero-byte file must still reach ImageFilePolicy and be rejected.
         return files.stream().filter(file -> file == null || !file.isEmpty()

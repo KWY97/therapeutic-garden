@@ -5,6 +5,7 @@ import com.example.manage.domain.Site;
 import com.example.manage.repository.HealingCourseRepository;
 import com.example.manage.repository.HealingSpotRepository;
 import com.example.manage.repository.SiteRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
