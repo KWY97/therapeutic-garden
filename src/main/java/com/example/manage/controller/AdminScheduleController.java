@@ -8,6 +8,7 @@ import com.example.manage.dto.SiteResponse;
 import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SiteService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -60,7 +61,6 @@ public class AdminScheduleController {
         return "admin/schedule-form";
     }
 
-
     /* ================================
        일정 등록
     ================================= */
@@ -86,7 +86,6 @@ public class AdminScheduleController {
 
             return "admin/schedule-form";
         }
-
 
         try {
             scheduleService.createSchedule(
@@ -117,7 +116,6 @@ public class AdminScheduleController {
         return "redirect:/admin";
     }
 
-
     /* ================================
        일정 목록
     ================================= */
@@ -142,12 +140,10 @@ public class AdminScheduleController {
         List<ScheduleResponse> schedules =
                 scheduleService.findAllSchedules(sort);
 
-
         model.addAttribute(
                 "schedules",
                 schedules
         );
-
 
         /*
          * 현재 선택한 정렬 기준을
@@ -158,10 +154,8 @@ public class AdminScheduleController {
                 sort
         );
 
-
         return "admin/schedule-list";
     }
-
 
     /* ================================
        일정 상세
@@ -181,9 +175,7 @@ public class AdminScheduleController {
             return "redirect:/admin/schedules";
         }
 
-
         var scheduleSpots = schedule.getSpots();
-
 
         model.addAttribute(
                 "schedule",
@@ -194,7 +186,6 @@ public class AdminScheduleController {
                 "scheduleSpots",
                 scheduleSpots
         );
-
 
         /*
          * 상세 페이지에 어디에서 들어왔는지 전달
@@ -210,10 +201,8 @@ public class AdminScheduleController {
                 from
         );
 
-
         return "admin/schedule-detail";
     }
-
 
     /* ================================
        일정 수정 화면
@@ -233,13 +222,10 @@ public class AdminScheduleController {
             return "redirect:/admin/schedules";
         }
 
-
         var scheduleSpots = schedule.getSpots();
-
 
         ScheduleForm form =
                 new ScheduleForm();
-
 
         form.setMemberId(
                 schedule.getMember().getMemberId()
@@ -264,7 +250,6 @@ public class AdminScheduleController {
                 schedule.getHumidity()
         );
 
-
         /*
          * 첫 번째 스팟
          */
@@ -281,7 +266,6 @@ public class AdminScheduleController {
                     firstSpot.getStartTime()
             );
         }
-
 
         /*
          * 두 번째 스팟
@@ -300,12 +284,10 @@ public class AdminScheduleController {
             );
         }
 
-
         addScheduleSites(model);
 
         List<Member> members =
                 memberService.findAllMembers();
-
 
         model.addAttribute(
                 "scheduleId",
@@ -327,10 +309,8 @@ public class AdminScheduleController {
                 from
         );
 
-
         return "admin/schedule-edit";
     }
-
 
     /* ================================
        일정 수정
@@ -370,7 +350,6 @@ public class AdminScheduleController {
             return "admin/schedule-edit";
         }
 
-
         try {
             scheduleService.updateSchedule(
                     scheduleId,
@@ -402,7 +381,6 @@ public class AdminScheduleController {
             return "admin/schedule-edit";
         }
 
-
         /*
          * 달력에서 들어와서 수정한 경우
          * 다시 상세 페이지에서도
@@ -415,11 +393,9 @@ public class AdminScheduleController {
                     + "?from=calendar";
         }
 
-
         return "redirect:/admin/schedules/"
                 + scheduleId;
     }
-
 
     /* ================================
        일정 삭제
@@ -437,7 +413,6 @@ public class AdminScheduleController {
         return "redirect:/admin/schedules";
     }
 
-
     /* ================================
        날씨 조회 API
     ================================= */
@@ -450,7 +425,6 @@ public class AdminScheduleController {
     ) {
         return weatherResponses.getWeather(date, time);
     }
-
 
     /* ================================
        관리자 일정 달력

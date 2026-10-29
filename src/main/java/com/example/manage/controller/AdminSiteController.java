@@ -7,6 +7,7 @@ import com.example.manage.service.AdminPlaceFormService;
 import com.example.manage.service.SiteImageService;
 import com.example.manage.service.SiteService;
 import com.example.manage.storage.ImageStorageException;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -45,7 +46,8 @@ public class AdminSiteController {
 
     private String renderSiteForm(Model model, Long siteId) {
         model.addAttribute("kakaoMapsJavaScriptKey", kakaoMapsJavaScriptKey);
-        if (siteId != null) model.addAttribute("siteId", siteId);
+        if (siteId != null)
+            model.addAttribute("siteId", siteId);
         imageModel(model, siteId, false);
         return siteId == null ? "admin/site-form" : "admin/site-edit";
     }
@@ -58,7 +60,7 @@ public class AdminSiteController {
 
     @PostMapping("/sites/new")
     public String createSite(@Valid @ModelAttribute SiteForm siteForm, BindingResult bindingResult, Model model,
-                             @RequestParam(name = "files", required = false) List<MultipartFile> files) {
+            @RequestParam(name = "files", required = false) List<MultipartFile> files) {
         if (!bindingResult.hasErrors()) {
             try {
                 Site created = placeForms.createSite(siteForm, files);
@@ -109,8 +111,8 @@ public class AdminSiteController {
 
     @PostMapping("/sites/{siteId}/edit")
     public String updateSite(@PathVariable Long siteId, @Valid @ModelAttribute SiteForm siteForm,
-                             BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes,
-                             @RequestParam(name = "files", required = false) List<MultipartFile> files) {
+            BindingResult bindingResult, Model model, RedirectAttributes redirectAttributes,
+            @RequestParam(name = "files", required = false) List<MultipartFile> files) {
         if (siteService.findSite(siteId) == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "존재하지 않는 사이트입니다.");
             return "redirect:/admin/sites";
@@ -146,7 +148,8 @@ public class AdminSiteController {
                 model.addAttribute("imageError", "이미지를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
             }
         }
-        if (gallery) images = images.stream()
+        if (gallery)
+            images = images.stream()
                 .sorted(java.util.Comparator.comparing(ImageResponse::representative).reversed()).toList();
         model.addAttribute("images", images);
     }

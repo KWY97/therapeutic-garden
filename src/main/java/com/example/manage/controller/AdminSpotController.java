@@ -9,6 +9,7 @@ import com.example.manage.service.HealingCourseService;
 import com.example.manage.service.HealingSpotImageService;
 import com.example.manage.service.HealingSpotService;
 import com.example.manage.storage.ImageStorageException;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,9 +55,10 @@ public class AdminSpotController {
 
     @GetMapping("/spots")
     public String spotList(@RequestParam(required = false) Long courseId,
-                           @RequestParam(required = false) Long siteId,
-                           Model model, RedirectAttributes redirectAttributes) {
-        if (courseId == null) return "redirect:/admin/courses";
+            @RequestParam(required = false) Long siteId,
+            Model model, RedirectAttributes redirectAttributes) {
+        if (courseId == null)
+            return "redirect:/admin/courses";
         try {
             model.addAttribute("selectedCourse", spotCourse(courseId, siteId));
             model.addAttribute("spots", healingSpotService.findByCourseId(courseId));
@@ -69,10 +71,11 @@ public class AdminSpotController {
 
     @GetMapping("/spots/new")
     public String newSpot(@RequestParam(required = false) Long courseId,
-                          @RequestParam(required = false) Long siteId,
-                          Model model, RedirectAttributes redirectAttributes) {
+            @RequestParam(required = false) Long siteId,
+            Model model, RedirectAttributes redirectAttributes) {
         try {
-            if (courseId != null) spotCourse(courseId, siteId);
+            if (courseId != null)
+                spotCourse(courseId, siteId);
             HealingSpotForm form = new HealingSpotForm();
             form.setCourseId(courseId);
             model.addAttribute("healingSpotForm", form);
@@ -115,19 +118,19 @@ public class AdminSpotController {
 
     @PostMapping("/spots/new")
     public String createSpot(@Valid @ModelAttribute HealingSpotForm form, BindingResult result, Model model,
-                             @RequestParam(name = "files", required = false) List<MultipartFile> files) {
+            @RequestParam(name = "files", required = false) List<MultipartFile> files) {
         return saveSpot(null, form, result, model, files);
     }
 
     @PostMapping("/spots/{spotId}/edit")
     public String updateSpot(@PathVariable Long spotId, @Valid @ModelAttribute HealingSpotForm form,
-                             BindingResult result, Model model,
-                             @RequestParam(name = "files", required = false) List<MultipartFile> files) {
+            BindingResult result, Model model,
+            @RequestParam(name = "files", required = false) List<MultipartFile> files) {
         return saveSpot(spotId, form, result, model, files);
     }
 
     private String saveSpot(Long spotId, HealingSpotForm form, BindingResult result, Model model,
-                            List<MultipartFile> files) {
+            List<MultipartFile> files) {
         if (!result.hasErrors()) {
             try {
                 if (spotId == null) {
@@ -177,7 +180,8 @@ public class AdminSpotController {
                 model.addAttribute("imageError", "이미지를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
             }
         }
-        if (gallery) images = images.stream()
+        if (gallery)
+            images = images.stream()
                 .sorted(java.util.Comparator.comparing(ImageResponse::representative).reversed()).toList();
         model.addAttribute("images", images);
     }

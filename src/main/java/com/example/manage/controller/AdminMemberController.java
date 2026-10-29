@@ -6,6 +6,7 @@ import com.example.manage.dto.MemberEditForm;
 import com.example.manage.dto.MemberProfileView;
 import com.example.manage.service.MemberAnalysisModelService;
 import com.example.manage.service.MemberService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -78,7 +79,6 @@ public class AdminMemberController {
         return "redirect:/admin/members/" + member.getMemberId();
     }
 
-
     /* ================================
        참가자 상세
     ================================= */
@@ -94,7 +94,6 @@ public class AdminMemberController {
         if (member == null) {
             return "redirect:/admin/members";
         }
-
 
         model.addAttribute(
                 "member",
@@ -126,7 +125,6 @@ public class AdminMemberController {
         return "admin/member-data";
     }
 
-
     /* ================================
        참가자 수정 화면
     ================================= */
@@ -144,10 +142,8 @@ public class AdminMemberController {
             return "redirect:/admin/members";
         }
 
-
         MemberEditForm form =
                 new MemberEditForm();
-
 
         form.setParticipantNo(
                 member.getParticipantNo()
@@ -164,7 +160,6 @@ public class AdminMemberController {
         form.setName(
                 member.getName()
         );
-
 
         /*
          * 수정 화면에서도 전화번호를
@@ -186,7 +181,6 @@ public class AdminMemberController {
 
         form.setPhone(phone);
 
-
         model.addAttribute(
                 "memberId",
                 memberId
@@ -197,10 +191,8 @@ public class AdminMemberController {
                 form
         );
 
-
         return "admin/member-edit";
     }
-
 
     /* ================================
        참가자 수정
@@ -227,7 +219,6 @@ public class AdminMemberController {
             return "admin/member-edit";
         }
 
-
         String result =
                 memberService.updateMember(
                         memberId,
@@ -237,7 +228,6 @@ public class AdminMemberController {
                         form.getName(),
                         form.getPhone()
                 );
-
 
         /*
          * 참가자 번호 중복
@@ -259,7 +249,6 @@ public class AdminMemberController {
             return "admin/member-edit";
         }
 
-
         /*
          * 로그인 아이디 중복
          */
@@ -280,7 +269,6 @@ public class AdminMemberController {
             return "admin/member-edit";
         }
 
-
         /*
          * 참가자를 찾을 수 없는 경우
          */
@@ -291,14 +279,12 @@ public class AdminMemberController {
             return "redirect:/admin/members";
         }
 
-
         /*
          * 정상적으로 수정된 경우
          */
         return "redirect:/admin/members/"
                 + memberId;
     }
-
 
     /* ================================
        참가자 삭제

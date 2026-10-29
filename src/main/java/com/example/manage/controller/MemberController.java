@@ -1,24 +1,25 @@
 package com.example.manage.controller;
 
 import com.example.manage.domain.Member;
-import com.example.manage.dto.ScheduleResponse;
-import com.example.manage.dto.MemberScheduleDetailResponse;
 import com.example.manage.dto.MemberProfileView;
+import com.example.manage.dto.MemberScheduleDetailResponse;
 import com.example.manage.dto.MemberScheduleForm;
+import com.example.manage.dto.ScheduleResponse;
 import com.example.manage.dto.SiteResponse;
-import com.example.manage.service.MemberService;
 import com.example.manage.service.LoginAttemptLimiter;
+import com.example.manage.service.MemberService;
 import com.example.manage.service.ScheduleService;
 import com.example.manage.service.SessionAuthentication;
 import com.example.manage.service.SiteService;
-import jakarta.servlet.http.HttpSession;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.TransactionException;
 import org.springframework.ui.Model;
@@ -27,9 +28,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.List;
 
 @Controller
 @RequiredArgsConstructor
@@ -92,7 +93,8 @@ public class MemberController {
         if ((memberName == null || memberName.isBlank()) && !schedules.isEmpty()) {
             memberName = schedules.getFirst().getMember().getName();
         }
-        if (memberName == null || memberName.isBlank()) memberName = "참가자";
+        if (memberName == null || memberName.isBlank())
+            memberName = "참가자";
 
         model.addAttribute("schedules", schedules);
         try {
@@ -154,13 +156,14 @@ public class MemberController {
 
     @PostMapping("/schedules/new")
     public String createSchedule(@Valid @ModelAttribute("scheduleForm") MemberScheduleForm form,
-                                 BindingResult bindingResult, HttpSession session, Model model) {
+            BindingResult bindingResult, HttpSession session, Model model) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
         if (memberService.findMember(memberId) == null) {
             session.invalidate();
             return "redirect:/member/login";
         }
-        if (bindingResult.hasErrors()) return renderScheduleForm(model);
+        if (bindingResult.hasErrors())
+            return renderScheduleForm(model);
 
         try {
             scheduleService.createSchedule(memberId, form.getScheduleDate(), form.getSiteId(),
@@ -186,11 +189,12 @@ public class MemberController {
 
     @GetMapping("/schedules/{scheduleId}")
     public String scheduleDetail(@PathVariable Long scheduleId,
-                                 @RequestParam(required = false) String from,
-                                 HttpSession session, Model model) {
+            @RequestParam(required = false) String from,
+            HttpSession session, Model model) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
         ScheduleResponse schedule = scheduleService.findMemberScheduleResponse(scheduleId, memberId);
-        if (schedule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (schedule == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
 
         model.addAttribute("schedule", schedule);
         model.addAttribute("scheduleSpots", schedule.getSpots());
@@ -213,25 +217,27 @@ public class MemberController {
 
     @GetMapping("/schedules/{scheduleId}/edit")
     public String editSchedule(@PathVariable Long scheduleId,
-                               @RequestParam(required = false) String from,
-                               HttpSession session, Model model) {
+            @RequestParam(required = false) String from,
+            HttpSession session, Model model) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
         ScheduleResponse schedule = scheduleService.findMemberScheduleResponse(scheduleId, memberId);
-        if (schedule == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        if (schedule == null)
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         model.addAttribute("scheduleForm", MemberScheduleForm.fromSchedule(schedule));
         return renderScheduleEdit(model, scheduleId, from);
     }
 
     @PostMapping("/schedules/{scheduleId}/edit")
     public String updateSchedule(@PathVariable Long scheduleId,
-                                 @RequestParam(required = false) String from,
-                                 @Valid @ModelAttribute("scheduleForm") MemberScheduleForm form,
-                                 BindingResult bindingResult, HttpSession session, Model model) {
+            @RequestParam(required = false) String from,
+            @Valid @ModelAttribute("scheduleForm") MemberScheduleForm form,
+            BindingResult bindingResult, HttpSession session, Model model) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
         if (scheduleService.findMemberScheduleResponse(scheduleId, memberId) == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-        if (bindingResult.hasErrors()) return renderScheduleEdit(model, scheduleId, from);
+        if (bindingResult.hasErrors())
+            return renderScheduleEdit(model, scheduleId, from);
 
         try {
             scheduleService.updateMemberSchedule(scheduleId, memberId, form.getScheduleDate(),
@@ -250,9 +256,9 @@ public class MemberController {
 
     @PostMapping("/schedules/{scheduleId}/delete")
     public String deleteSchedule(@PathVariable Long scheduleId,
-                                 @RequestParam(required = false) String from,
-                                 HttpSession session,
-                                 RedirectAttributes redirectAttributes) {
+            @RequestParam(required = false) String from,
+            HttpSession session,
+            RedirectAttributes redirectAttributes) {
         Long memberId = (Long) session.getAttribute("loginMemberId");
         try {
             scheduleService.deleteMemberSchedule(scheduleId, memberId);

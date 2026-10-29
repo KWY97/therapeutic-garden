@@ -5,6 +5,7 @@ import com.example.manage.domain.Site;
 import com.example.manage.dto.HealingCourseForm;
 import com.example.manage.service.HealingCourseService;
 import com.example.manage.service.SiteService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +15,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 
 @Controller
 @RequiredArgsConstructor
@@ -35,7 +35,7 @@ public class AdminCourseController {
 
     @GetMapping("/courses")
     public String courseList(@RequestParam(required = false) Long siteId, Model model,
-                             RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes) {
         model.addAttribute("courseSites", siteService.findAllSites());
         if (siteId != null) {
             Site site = siteService.findSite(siteId);
@@ -51,7 +51,7 @@ public class AdminCourseController {
 
     @GetMapping("/courses/new")
     public String newCourse(@RequestParam(required = false) Long siteId, Model model,
-                            RedirectAttributes redirectAttributes) {
+            RedirectAttributes redirectAttributes) {
         if (siteId != null && siteService.findSite(siteId) == null) {
             redirectAttributes.addFlashAttribute("errorMessage", "존재하지 않는 사이트입니다.");
             return "redirect:/admin/courses";
@@ -99,7 +99,7 @@ public class AdminCourseController {
 
     @PostMapping("/courses/{courseId}/edit")
     public String updateCourse(@PathVariable Long courseId, @Valid @ModelAttribute HealingCourseForm form,
-                               BindingResult result, Model model) {
+            BindingResult result, Model model) {
         return saveCourse(courseId, form, result, model);
     }
 

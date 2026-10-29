@@ -1,8 +1,9 @@
 package com.example.manage.controller;
 
+import com.example.manage.dto.HealingSpotDetailResponse;
 import com.example.manage.service.ImageHttpResponseService;
 import com.example.manage.service.MemberMonitoringImageService;
-import com.example.manage.dto.HealingSpotDetailResponse;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
