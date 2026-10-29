@@ -10,7 +10,10 @@ public record HealingEffectSource(String sha256, String filename, List<Overall> 
     }
 
     public record Overall(String spot, int stressParticipants, int stressSessions, BigDecimal stressRate,
-            int emotionalParticipants, int emotionalSessions, BigDecimal emotionalRate) {}
+            int emotionalParticipants, int emotionalSessions, BigDecimal emotionalRate) {
+    }
+
     public record Participant(String participant, int participantNo, String spot, int stressSessions,
-            BigDecimal stressRate, int emotionalSessions, BigDecimal emotionalRate) {}
+            BigDecimal stressRate, int emotionalSessions, BigDecimal emotionalRate) {
+    }
 }

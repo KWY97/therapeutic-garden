@@ -10,5 +10,7 @@ public class EffectImportValidationException extends IllegalArgumentException {
         this.errors = List.copyOf(errors);
     }
 
-    public List<String> getErrors() { return errors; }
+    public List<String> getErrors() {
+        return errors;
+    }
 }
