@@ -6,6 +6,7 @@ import com.example.manage.dto.HealingSpotDetailResponse;
 import com.example.manage.repository.HealingCourseRepository;
 import com.example.manage.repository.HealingSpotRepository;
 import com.example.manage.repository.ScheduleSpotRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,12 +27,12 @@ public class HealingSpotService {
     private final com.example.manage.repository.MemberHealingSpotEffectSummaryRepository memberEffectSummaries;
 
     public HealingSpot createHealingSpot(HealingCourse course, String code, String name,
-                                         Double latitude, Double longitude) {
+            Double latitude, Double longitude) {
         return createHealingSpot(course == null ? null : course.getCourseId(), code, name, latitude, longitude);
     }
 
     public HealingSpot createHealingSpot(Long courseId, String code, String name,
-                                         Double latitude, Double longitude) {
+            Double latitude, Double longitude) {
         siteRepository.lockForMembershipChange();
         HealingCourse course = requireCourse(courseId);
         if (healingSpotRepository.existsByHealingCourseSiteSiteIdAndCode(course.getSite().getSiteId(), code)) {
@@ -68,7 +69,7 @@ public class HealingSpotService {
     }
 
     public void updateHealingSpot(Long spotId, Long courseId, String code, String name,
-                                  Double latitude, Double longitude) {
+            Double latitude, Double longitude) {
         siteRepository.lockForMembershipChange();
         HealingSpot spot = findHealingSpot(spotId);
         HealingCourse course = requireCourse(courseId);
@@ -99,7 +100,8 @@ public class HealingSpotService {
     }
 
     private HealingCourse requireCourse(Long courseId) {
-        if (courseId == null) throw new IllegalArgumentException("코스를 선택해 주세요.");
+        if (courseId == null)
+            throw new IllegalArgumentException("코스를 선택해 주세요.");
         return healingCourseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 HealingCourse입니다."));
     }

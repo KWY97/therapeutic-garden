@@ -2,6 +2,7 @@ package com.example.manage.service;
 
 import com.example.manage.dto.WeatherResponse;
 import com.example.manage.dto.WeatherResult;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
@@ -41,7 +42,6 @@ public class WeatherService {
         this.clock = clock;
     }
 
-
     public WeatherResponse getWeatherResponse() {
 
         return restClient.get()
@@ -65,7 +65,6 @@ public class WeatherService {
                 .body(WeatherResponse.class);
     }
 
-
     public WeatherResult getWeather(
             LocalDate scheduleDate,
             LocalTime startTime
@@ -83,7 +82,6 @@ public class WeatherService {
             return null;
         }
 
-
         /*
          * 일정 날짜 + 시작 시간을 하나의 LocalDateTime으로 만든다.
          */
@@ -93,18 +91,16 @@ public class WeatherService {
                         startTime
                 );
 
-
         int closestIndex = -1;
         long smallestDifference = Long.MAX_VALUE;
-
 
         /*
          * Open-Meteo가 반환한 모든 시간 중에서
          * 일정 시작 시간과 가장 가까운 시간을 찾는다.
          */
         for (int i = 0;
-             i < response.getHourly().getTime().size();
-             i++) {
+            i < response.getHourly().getTime().size();
+            i++) {
 
             LocalDateTime weatherDateTime =
                     LocalDateTime.parse(
@@ -117,7 +113,6 @@ public class WeatherService {
                 continue;
             }
 
-
             long difference =
                     Math.abs(
                             ChronoUnit.MINUTES.between(
@@ -126,14 +121,12 @@ public class WeatherService {
                             )
                     );
 
-
             if (difference < smallestDifference) {
 
                 smallestDifference = difference;
                 closestIndex = i;
             }
         }
-
 
         /*
          * 적절한 시간을 찾지 못한 경우
@@ -145,7 +138,6 @@ public class WeatherService {
         if (!hasWeatherValues(response.getHourly(), closestIndex)) {
             return null;
         }
-
 
         Double temperature =
                 response.getHourly()
@@ -162,10 +154,8 @@ public class WeatherService {
                         .getWeatherCode()
                         .get(closestIndex);
 
-
         String weather =
                 convertWeatherCode(weatherCode);
-
 
         return new WeatherResult(
                 weather,
@@ -241,7 +231,6 @@ public class WeatherService {
             return endDate;
         }
     }
-
 
     /*
      * Open-Meteo WMO Weather Code를
