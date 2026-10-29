@@ -31,21 +31,27 @@ public final class ProductionPersonalEegVersionCli {
     record Config(String jdbcUrl, String user, String password, String expectedDatabase,
             long expectedSiteId, String expectedSiteName, String targetLabel,
             ProtectedState expectedProtectedState) {
-        @Override public String toString() {
+        @Override
+        public String toString() {
             return "Config[target=" + targetLabel + ",database=" + expectedDatabase
                     + ",siteId=" + expectedSiteId + ",credentials=[REDACTED]]";
         }
     }
+
     record ProtectedState(int admins, int members, int operatingMembers, int testAccounts,
-            int legacySessions, int legacyResults, int summaryRows) {}
+            int legacySessions, int legacyResults, int summaryRows) {
+    }
 
     @FunctionalInterface
-    interface ConnectionFactory { Connection open(Config config) throws SQLException; }
+    interface ConnectionFactory {
+        Connection open(Config config) throws SQLException;
+    }
 
     public static void main(String[] args) {
         int exit = run(args, System.getenv(), System.out, System.err,
                 config -> DriverManager.getConnection(config.jdbcUrl(), config.user(), config.password()));
-        if (exit != 0) System.exit(exit);
+        if (exit != 0)
+            System.exit(exit);
     }
 
     static int run(String[] args, Map<String, String> environment, PrintStream out, PrintStream err,
@@ -82,7 +88,9 @@ public final class ProductionPersonalEegVersionCli {
             connection.setReadOnly(true);
             connection.setAutoCommit(false);
             if ("MySQL".equals(connection.getMetaData().getDatabaseProductName()))
-                try (var statement = connection.createStatement()) { statement.execute("SET TRANSACTION READ ONLY"); }
+                try (var statement = connection.createStatement()) {
+                    statement.execute("SET TRANSACTION READ ONLY");
+                }
             validateTarget(connection, config);
             var state = protectedState(connection);
             requireProtectedState(config, state);
@@ -136,8 +144,10 @@ public final class ProductionPersonalEegVersionCli {
                 throw new IllegalArgumentException("현재 활성 버전이 --expect-current와 일치하지 않습니다.");
 
             var versions = new PersonalEegVersionStore();
-            if (legacy) versions.returnToLegacyExpected(connection, expectedCurrent);
-            else versions.activateExpected(connection, batchId, expectedCurrent);
+            if (legacy)
+                versions.returnToLegacyExpected(connection, expectedCurrent);
+            else
+                versions.activateExpected(connection, batchId, expectedCurrent);
             connection.setAutoCommit(true);
 
             var after = integrity.active(connection);
@@ -212,7 +222,8 @@ public final class ProductionPersonalEegVersionCli {
 
     private static Config config(Map<String, String> environment) {
         String database = required(environment, EXPECTED_DATABASE);
-        if (!database.matches("[A-Za-z0-9_]+")) throw new IllegalArgumentException("expected database 형식 오류");
+        if (!database.matches("[A-Za-z0-9_]+"))
+            throw new IllegalArgumentException("expected database 형식 오류");
         long siteId = positive(required(environment, EXPECTED_SITE_ID), EXPECTED_SITE_ID);
         String siteName = required(environment, EXPECTED_SITE_NAME);
         String target = required(environment, TARGET_LABEL);
@@ -234,8 +245,11 @@ public final class ProductionPersonalEegVersionCli {
                 || url.toLowerCase(Locale.ROOT).matches(".*(?:[?&](?:user|password)=|@).*"))
             throw new IllegalArgumentException("credential 없는 MySQL JDBC URL이 필요합니다.");
         URI uri;
-        try { uri = URI.create(url.substring("jdbc:".length()).split("\\?", 2)[0]); }
-        catch (IllegalArgumentException ex) { throw new IllegalArgumentException("JDBC URL 형식 오류"); }
+        try {
+            uri = URI.create(url.substring("jdbc:".length()).split("\\?", 2)[0]);
+        } catch (IllegalArgumentException ex) {
+            throw new IllegalArgumentException("JDBC URL 형식 오류");
+        }
         String host = uri.getHost();
         if (host == null || host.isBlank() || uri.getPath() == null || !uri.getPath().matches("/[A-Za-z0-9_]+"))
             throw new IllegalArgumentException("JDBC host/database 형식 오류");
@@ -249,7 +263,8 @@ public final class ProductionPersonalEegVersionCli {
 
     private static void requireWriteArguments(Map<String, String> options, Config config,
             boolean activate, boolean legacy) {
-        if (!options.containsKey("--write")) throw new IllegalArgumentException("상태 변경에는 --write가 필요합니다.");
+        if (!options.containsKey("--write"))
+            throw new IllegalArgumentException("상태 변경에는 --write가 필요합니다.");
         if (!"production".equals(options.get("--confirm-environment")))
             throw new IllegalArgumentException("--confirm-environment production이 필요합니다.");
         if (!config.targetLabel().equals(options.get("--confirm-target")))
@@ -272,7 +287,8 @@ public final class ProductionPersonalEegVersionCli {
         for (String key : Set.of("--write", "--legacy", "--confirm-environment", "--confirm-target",
                 "--confirm-database", "--confirm-batch-id", "--confirm-version", "--confirm-legacy",
                 "--confirm-source-sha", "--expect-current"))
-            if (options.containsKey(key)) throw new IllegalArgumentException("--list에는 write 인자를 사용할 수 없습니다.");
+            if (options.containsKey(key))
+                throw new IllegalArgumentException("--list에는 write 인자를 사용할 수 없습니다.");
     }
 
     private static Map<String, String> parse(String[] args) {
@@ -285,36 +301,47 @@ public final class ProductionPersonalEegVersionCli {
                 if (++index >= args.length || args[index].startsWith("--"))
                     throw new IllegalArgumentException("argument 값 누락: " + key);
                 result.put(key, args[index]);
-            } else result.put(key, "true");
+            } else
+                result.put(key, "true");
         }
         return Map.copyOf(result);
     }
 
     private static Long expectedCurrent(String value) {
-        if ("legacy".equals(value)) return null;
+        if ("legacy".equals(value))
+            return null;
         return positive(value, "--expect-current");
     }
 
     private static int count(Connection connection, String sql) throws SQLException {
         try (var statement = connection.prepareStatement(sql); var rows = statement.executeQuery()) {
-            rows.next(); return rows.getInt(1);
+            rows.next();
+            return rows.getInt(1);
         }
     }
 
     private static long positive(String value, String label) {
-        try { long parsed = Long.parseLong(value); if (parsed <= 0) throw new NumberFormatException(); return parsed; }
-        catch (RuntimeException ex) { throw new IllegalArgumentException("양의 값 필요: " + label); }
+        try {
+            long parsed = Long.parseLong(value);
+            if (parsed <= 0)
+                throw new NumberFormatException();
+            return parsed;
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException("양의 값 필요: " + label);
+        }
     }
 
     private static int positiveInt(Map<String, String> environment, String key) {
         long value = positive(required(environment, key), key);
-        if (value > Integer.MAX_VALUE) throw new IllegalArgumentException("정수 범위 오류: " + key);
+        if (value > Integer.MAX_VALUE)
+            throw new IllegalArgumentException("정수 범위 오류: " + key);
         return (int) value;
     }
 
     private static String required(Map<String, String> environment, String key) {
         String value = environment.get(key);
-        if (value == null || value.isBlank()) throw new IllegalArgumentException("환경변수 필요: " + key);
+        if (value == null || value.isBlank())
+            throw new IllegalArgumentException("환경변수 필요: " + key);
         return value;
     }
 
@@ -324,10 +351,12 @@ public final class ProductionPersonalEegVersionCli {
 
     private static String safeMessage(Exception ex, Map<String, String> environment) {
         String message = ex.getMessage();
-        if (message == null || message.isBlank()) return ex.getClass().getSimpleName();
+        if (message == null || message.isBlank())
+            return ex.getClass().getSimpleName();
         for (String key : List.of(JDBC_URL, DB_USER, DB_PASSWORD)) {
             String secret = environment.get(key);
-            if (secret != null && !secret.isBlank()) message = message.replace(secret, "[REDACTED]");
+            if (secret != null && !secret.isBlank())
+                message = message.replace(secret, "[REDACTED]");
         }
         return message.replaceAll("jdbc:mysql://\\S+", "[REDACTED_JDBC_URL]");
     }

@@ -14,7 +14,8 @@ public final class ProductionRawMeasurementImportCli {
     public static void main(String[] args) {
         int exit = run(args, System.getenv(), System.out, System.err,
                 config -> DriverManager.getConnection(config.jdbcUrl(), config.user(), config.password()));
-        if (exit != 0) System.exit(exit);
+        if (exit != 0)
+            System.exit(exit);
     }
 
     static int run(String[] args, Map<String, String> environment, PrintStream out, PrintStream err,
@@ -24,15 +25,19 @@ public final class ProductionRawMeasurementImportCli {
             boolean dryRun = ProductionCliArguments.dryRun(options);
             long siteId = ProductionCliArguments.positiveSiteId(options);
             String filename = options.get("--file");
-            if (filename == null) throw new IllegalArgumentException("--file <absolute-xlsx-path>가 필요합니다.");
+            if (filename == null)
+                throw new IllegalArgumentException("--file <absolute-xlsx-path>가 필요합니다.");
             Path file = Path.of(filename);
-            if (!file.isAbsolute()) throw new IllegalArgumentException("--file은 absolute path여야 합니다.");
+            if (!file.isAbsolute())
+                throw new IllegalArgumentException("--file은 absolute path여야 합니다.");
 
             var guard = new ProductionDatabaseTargetGuard();
             var config = guard.config(environment);
             var expected = guard.rawExpectations(environment);
-            if (dryRun) ProductionCliArguments.rejectWriteConfirmationsForDryRun(options);
-            else ProductionCliArguments.requireWriteConfirmations(options,
+            if (dryRun)
+                ProductionCliArguments.rejectWriteConfirmationsForDryRun(options);
+            else
+                ProductionCliArguments.requireWriteConfirmations(options,
                     config.expectedSourceSha256(), true);
 
             var source = new RawMeasurementParser().parse(file);
@@ -94,7 +99,8 @@ public final class ProductionRawMeasurementImportCli {
                 && result.sessions() == expected.sessions() && result.measurements() == expected.measurements();
         boolean already = "ALREADY_IMPORTED".equals(result.status()) && result.schemaReady()
                 && result.sessions() == 0 && result.measurements() == 0;
-        if (!fresh && !already) throw new IllegalStateException("Raw dry-run 결과가 expected 상태와 일치하지 않습니다.");
+        if (!fresh && !already)
+            throw new IllegalStateException("Raw dry-run 결과가 expected 상태와 일치하지 않습니다.");
     }
 
     private static void printState(PrintStream out, ProductionDatabaseTargetGuard.RawState state) {
@@ -113,11 +119,13 @@ public final class ProductionRawMeasurementImportCli {
 
     private static String safeMessage(Exception ex, Map<String, String> environment) {
         String message = ex.getMessage();
-        if (message == null || message.isBlank()) return ex.getClass().getSimpleName();
+        if (message == null || message.isBlank())
+            return ex.getClass().getSimpleName();
         for (String key : List.of(ProductionDatabaseTargetGuard.JDBC_URL,
                 ProductionDatabaseTargetGuard.DB_USER, ProductionDatabaseTargetGuard.DB_PASSWORD)) {
             String secret = environment.get(key);
-            if (secret != null && !secret.isBlank()) message = message.replace(secret, "[REDACTED]");
+            if (secret != null && !secret.isBlank())
+                message = message.replace(secret, "[REDACTED]");
         }
         return message.replaceAll("jdbc:mysql://\\S+", "[REDACTED_JDBC_URL]");
     }
