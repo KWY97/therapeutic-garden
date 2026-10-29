@@ -3,6 +3,7 @@ package com.example.manage.domain;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 
 @Entity
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 @Table(uniqueConstraints = @UniqueConstraint(name = "uk_member_spot_effect",
         columnNames = {"member_id", "spot_id"}))
 public class MemberHealingSpotEffectSummary {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

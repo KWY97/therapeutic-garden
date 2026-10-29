@@ -1,11 +1,12 @@
 package com.example.manage.service;
 
 import com.example.manage.domain.Site;
-import com.example.manage.repository.SiteRepository;
 import com.example.manage.repository.HealingCourseRepository;
-import org.springframework.transaction.annotation.Transactional;
+import com.example.manage.repository.SiteRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -52,7 +53,7 @@ public class SiteService {
     }
 
     public void updateSite(Long siteId, String name, String address,
-                           Double latitude, Double longitude, Integer mapLevel) {
+            Double latitude, Double longitude, Integer mapLevel) {
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사이트입니다."));
         if (siteRepository.existsByNameAndSiteIdNot(name, siteId)) {

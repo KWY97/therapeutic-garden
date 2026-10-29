@@ -163,7 +163,7 @@ class ScheduleMigrationTests {
     @Test
     void duplicatePostReturnsReadableFormError() throws Exception {
         create();
-        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
         var duplicate = post("/admin/schedules/new").sessionAttr("loginAdminId", 1L)
                 .param("memberId", member.getMemberId().toString())
                 .param("scheduleDate", date.toString())
@@ -203,7 +203,7 @@ class ScheduleMigrationTests {
 
     @Test
     void firstAdminPostCreatesScheduleAndExistingDeleteStillWorks() throws Exception {
-        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
         mvc.perform(post("/admin/schedules/new").sessionAttr("loginAdminId", 1L)
                         .param("memberId", member.getMemberId().toString())
                         .param("scheduleDate", date.toString())
@@ -239,7 +239,7 @@ class ScheduleMigrationTests {
     @Test
     void rendersSchedulePagesAndRestoresInvalidForm() throws Exception {
         Long id = create();
-        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
         for (String path : new String[]{"/admin/schedules", "/admin/schedules/new",
                 "/admin/schedules/" + id, "/admin/schedules/" + id + "/edit"}) {
             mvc.perform(get(path).sessionAttr("loginAdminId", 1L)).andExpect(status().isOk());
@@ -278,7 +278,7 @@ class ScheduleMigrationTests {
         entityManager.flush();
         Long otherId = schedules.findByMemberMemberIdOrderByScheduleDateAsc(other.getMemberId())
                 .getFirst().getScheduleId();
-        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
 
         String calendar = mvc.perform(get("/member").sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
@@ -344,7 +344,7 @@ class ScheduleMigrationTests {
         Member other = members.save(new Member(101, 2, "other-member", "password"));
         service.createSchedule(other.getMemberId(), date, site.getSiteId(), course.getCourseId(),
                 first.getSpotId(), time, second.getSpotId(), time.plusMinutes(10), null, null, null);
-        var mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        var mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
         String list = mvc.perform(get("/member/schedules").sessionAttr("loginMemberId", member.getMemberId()))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         assertThat(list).contains("등록된 일정이 없습니다.", "달력으로 돌아가기",

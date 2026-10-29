@@ -25,8 +25,10 @@ final class ParticipantPasswords implements AutoCloseable {
             for (int index = 0; index < value.length; index++) {
                 value[index] = ALPHABET[random.nextInt(ALPHABET.length)];
             }
-            if (!contains(values, value)) values.add(value);
-            else Arrays.fill(value, '\0');
+            if (!contains(values, value))
+                values.add(value);
+            else
+                Arrays.fill(value, '\0');
         }
         terminal.printSecretLine("아래 비밀번호는 이 로컬 터미널에만 한 번 표시됩니다. 즉시 안전한 저장소에 보관하세요.");
         for (int index = 0; index < values.size(); index++) {
@@ -53,7 +55,8 @@ final class ParticipantPasswords implements AutoCloseable {
                     values.add(first);
                     first = null;
                 } finally {
-                    if (first != null) Arrays.fill(first, '\0');
+                    if (first != null)
+                        Arrays.fill(first, '\0');
                     Arrays.fill(confirmation, '\0');
                 }
             }
@@ -70,7 +73,8 @@ final class ParticipantPasswords implements AutoCloseable {
 
     private static boolean contains(List<char[]> values, char[] candidate) {
         for (char[] value : values) {
-            if (Arrays.equals(value, candidate)) return true;
+            if (Arrays.equals(value, candidate))
+                return true;
         }
         return false;
     }
@@ -86,7 +90,8 @@ final class ParticipantPasswords implements AutoCloseable {
         }
     }
 
-    @Override public void close() {
+    @Override
+    public void close() {
         values.forEach(value -> Arrays.fill(value, '\0'));
         values.clear();
     }

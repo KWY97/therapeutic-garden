@@ -8,12 +8,13 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class HealingSpotImage extends ManagedImage {
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "spot_id", nullable = false)
     private HealingSpot healingSpot;
 
     public HealingSpotImage(HealingSpot healingSpot, String objectKey, String originalFileName,
-                       String contentType, int displayOrder, boolean representative) {
+            String contentType, int displayOrder, boolean representative) {
         super(objectKey, originalFileName, contentType, displayOrder, representative);
         this.healingSpot = healingSpot;
     }

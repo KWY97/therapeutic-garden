@@ -27,7 +27,8 @@ public class HealingSpotResponse {
         this(healingSpot, representativeImageUrl, java.util.List.of());
     }
 
-    public HealingSpotResponse(HealingSpot healingSpot, String representativeImageUrl, java.util.List<ImageResponse> images) {
+    public HealingSpotResponse(HealingSpot healingSpot, String representativeImageUrl,
+            java.util.List<ImageResponse> images) {
         this.images = images;
         this.representativeImageUrl = representativeImageUrl;
 
@@ -37,13 +38,10 @@ public class HealingSpotResponse {
         this.latitude = healingSpot.getLatitude();
         this.longitude = healingSpot.getLongitude();
 
-        this.courseId =
-                healingSpot.getHealingCourse().getCourseId();
+        this.courseId = healingSpot.getHealingCourse().getCourseId();
 
-        this.courseCode =
-                healingSpot.getHealingCourse().getCode();
+        this.courseCode = healingSpot.getHealingCourse().getCode();
 
-        this.courseName =
-                healingSpot.getHealingCourse().getName();
+        this.courseName = healingSpot.getHealingCourse().getName();
     }
 }

@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @Getter
 public class SiteResponse {
+
     private final Long siteId;
     private final String name;
 

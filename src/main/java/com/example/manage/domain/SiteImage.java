@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 public class SiteImage extends ManagedImage {
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
     private Site site;
@@ -18,11 +19,16 @@ public class SiteImage extends ManagedImage {
     @Column(name = "spatial_image") // SPATIAL is a MySQL keyword; keep the physical name explicit.
     private Boolean spatial;
 
-    public boolean isSpatial() { return Boolean.TRUE.equals(spatial); }
-    public void changeSpatial(boolean selected) { spatial = selected ? Boolean.TRUE : null; }
+    public boolean isSpatial() {
+        return Boolean.TRUE.equals(spatial);
+    }
+
+    public void changeSpatial(boolean selected) {
+        spatial = selected ? Boolean.TRUE : null;
+    }
 
     public SiteImage(Site site, String objectKey, String originalFileName,
-                       String contentType, int displayOrder, boolean representative) {
+            String contentType, int displayOrder, boolean representative) {
         super(objectKey, originalFileName, contentType, displayOrder, representative);
         this.site = site;
     }

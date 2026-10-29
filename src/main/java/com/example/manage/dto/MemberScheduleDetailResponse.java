@@ -1,7 +1,7 @@
 package com.example.manage.dto;
 
-import lombok.AllArgsConstructor;
 import com.example.manage.domain.ScheduleSpot;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import java.time.LocalDate;
@@ -22,7 +22,6 @@ public class MemberScheduleDetailResponse {
     private Integer groupNo;
     private String weather;
     private List<SpotResponse> spots;
-
 
     @Getter
     public static class SpotResponse {

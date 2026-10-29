@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ImageEditForm {
+
     private String imageOrder;
     private String imageSpatial;
     private String imageRepresentative;

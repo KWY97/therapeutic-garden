@@ -72,9 +72,9 @@ class SpatialLayoutTests {
         siteImages.upload(site.getSiteId(), List.of(file("a.png"), file("b.png")));
         var list = siteImages.list(site.getSiteId()); a = list.get(0).imageId(); b = list.get(1).imageId();
         select(a);
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).addFilters(security).build();
     }
-    MockMultipartFile file(String name) { return new MockMultipartFile("files", name, "image/png", new byte[]{1,2,3}); }
+    MockMultipartFile file(String name) { return new MockMultipartFile("files", name, "image/png", ImageTestFiles.png()); }
     ImageEditForm editForm(String spatial) {
         var f = new ImageEditForm(); f.setImageOrder("e:" + a + ",e:" + b); f.setImageSpatial(spatial); f.setImageRepresentative("e:" + a); return f;
     }
@@ -100,9 +100,9 @@ class SpatialLayoutTests {
         spotImages.upload(first.getSpotId(), List.of(photo));
         Long imageId = spotImages.list(first.getSpotId()).getFirst().imageId();
         String base = "/admin/members/" + member.getMemberId() + "/data/api";
-        mvc.perform(get(base + "/spatial-layout")).andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(base + "/spatial-layout")).andExpect(status().isUnauthorized());
         mvc.perform(get(base + "/spatial-layout").sessionAttr("loginMemberId", member.getMemberId()))
-                .andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get(base + "/spatial-layout").sessionAttr("loginAdminId", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.image.readUrl").value(base + "/monitoring/site-image"))
@@ -121,10 +121,10 @@ class SpatialLayoutTests {
                         .sessionAttr("loginAdminId", 1L)).andExpect(status().isOk());
         mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId() + "/images/" + imageId + "/content")
                         .sessionAttr("loginMemberId", member.getMemberId()))
-                .andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get(base + "/monitoring/spots/" + first.getSpotId() + "/thumbnail")
                         .sessionAttr("loginMemberId", member.getMemberId()))
-                .andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/admin/members/9223372036854775807/data/api/spatial-layout")
                         .sessionAttr("loginAdminId", 1L)).andExpect(status().isNotFound());
         var outside = sites.saveAndFlush(new Site("outside-" + UUID.randomUUID(), "주소", 37.0, 127.0, 3));
@@ -135,7 +135,7 @@ class SpatialLayoutTests {
         mvc.perform(get(base + "/monitoring/spots/" + outsideSpot.getSpotId() + "/images/1/content")
                         .sessionAttr("loginAdminId", 1L)).andExpect(status().isNotFound());
         mvc.perform(get("/member/api/spatial-layout").sessionAttr("loginAdminId", 1L))
-                .andExpect(redirectedUrl("/member/login"));
+                .andExpect(status().isUnauthorized());
     }
 
     @Test void monitoringVariantsFollowRepresentativeWhileGalleryKeepsOriginalsAndDeletionCleansUp() throws Exception {
@@ -546,7 +546,7 @@ class SpatialLayoutTests {
                 .andExpect(jsonPath("$.spots[0].courseName").value(course.getName()))
                 .andExpect(jsonPath("$.spots[0].xPercent").value(76))
                 .andExpect(jsonPath("$.spots[0].yPercent").value(12))
-                .andExpect(jsonPath("$.spots[0].readUrl").value(representative.readUrl()))
+                .andExpect(jsonPath("$.spots[0].readUrl").value(spotImages.monitoringReadUrl(first.getSpotId())))
                 .andExpect(jsonPath("$.spots[1].xPercent").isEmpty())
                 .andExpect(jsonPath("$.spots[1].readUrl").isEmpty());
         select(a);
@@ -566,15 +566,15 @@ class SpatialLayoutTests {
     }
 
     @Test void monitoringLayoutApiRequiresAdminAndReturnsNotFoundForMissingSite() throws Exception {
-        mvc.perform(get(path() + "/data")).andExpect(redirectedUrl("/admin/login"));
-        mvc.perform(get(path() + "/data").sessionAttr("loginMemberId", 1L)).andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(path() + "/data")).andExpect(status().isUnauthorized());
+        mvc.perform(get(path() + "/data").sessionAttr("loginMemberId", 1L)).andExpect(status().isUnauthorized());
         mvc.perform(get("/admin/sites/9223372036854775807/spatial-layout/data").sessionAttr("loginAdminId", 1L))
                 .andExpect(status().isNotFound());
     }
 
     @Test void memberMonitoringLayoutApiUsesDatasetSiteAndRequiresMemberLogin() throws Exception {
         effectBatches.deleteAll();
-        mvc.perform(get("/member/api/spatial-layout")).andExpect(redirectedUrl("/member/login"));
+        mvc.perform(get("/member/api/spatial-layout")).andExpect(status().isUnauthorized());
         mvc.perform(get("/member/api/spatial-layout").sessionAttr("loginMemberId", 1L))
                 .andExpect(status().isNotFound());
 
@@ -606,7 +606,7 @@ class SpatialLayoutTests {
         spotImages.setRepresentative(first.getSpotId(), gallery.getLast().imageId());
         String endpoint = "/member/api/monitoring/spots/" + first.getSpotId();
 
-        mvc.perform(get(endpoint)).andExpect(redirectedUrl("/member/login"));
+        mvc.perform(get(endpoint)).andExpect(status().isUnauthorized());
         mvc.perform(get(endpoint).sessionAttr("loginMemberId", 1L))
                 .andExpect(status().isOk()).andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.spotId").value(first.getSpotId()))

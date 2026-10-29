@@ -4,10 +4,12 @@ import com.example.manage.domain.*;
 import com.example.manage.dto.ImageResponse;
 import com.example.manage.repository.*;
 import com.example.manage.storage.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -15,6 +17,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class SiteImageService {
+
     private final SiteRepository parents;
     private final SiteImageRepository images;
     private final SiteImageSpotPositionRepository positions;
@@ -43,16 +46,21 @@ public class SiteImageService {
     }
 
     public void upload(Long parentId, List<MultipartFile> uploads) {
-        if (uploads == null || uploads.isEmpty()) throw new IllegalArgumentException("이미지를 선택해 주세요.");
-        if (uploads.size() > ImageFilePolicy.MAX_FILES) throw new IllegalArgumentException("한 번에 최대 10장까지 등록할 수 있습니다.");
-        uploads.forEach(files::validate); // Validate the entire batch before any storage side effect.
+        files.validateBatch(uploads);
+        uploadValidated(parentId, uploads);
+    }
+
+    private void uploadValidated(Long parentId, List<MultipartFile> uploads) {
         Site parent = lockParent(parentId);
         List<SiteImage> current = ordered(parentId);
         int order = current.size();
         for (MultipartFile file : uploads) {
             String key = files.createKey(true, parentId, file.getContentType());
-            try { storageTransactions.upload(key, file.getBytes(), file.getContentType()); }
-            catch (IOException e) { throw new ImageStorageException("업로드 파일을 읽을 수 없습니다.", e); }
+            try {
+                storageTransactions.upload(key, file.getBytes(), file.getContentType());
+            } catch (IOException e) {
+                throw new ImageStorageException("업로드 파일을 읽을 수 없습니다.", e);
+            }
             images.save(new SiteImage(parent, key, files.displayName(file.getOriginalFilename()),
                     file.getContentType(), ++order, order == 1));
         }
@@ -63,15 +71,20 @@ public class SiteImageService {
         lockParent(parentId);
         List<SiteImage> current = ordered(parentId);
         ImageEditPlan plan = ImageEditPlan.validate(form, current, uploads.size());
+        if (!uploads.isEmpty())
+            files.validateBatch(uploads);
         String spatial = form.getImageSpatial();
-        if (spatial == null) spatial = current.stream().filter(SiteImage::isSpatial)
-                .map(image -> "e:" + image.getImageId()).findFirst().orElse("");
-        if (plan.deleted().contains(spatial)) spatial = "";
+        if (spatial == null)
+            spatial = current.stream().filter(SiteImage::isSpatial)
+                    .map(image -> "e:" + image.getImageId()).findFirst().orElse("");
+        if (plan.deleted().contains(spatial))
+            spatial = "";
         if (!spatial.isEmpty() && !plan.order().contains(spatial))
             throw new IllegalArgumentException("모니터링 이미지 정보가 올바르지 않습니다. 화면을 다시 열어 주세요.");
         String previous = current.stream().filter(SiteImage::isSpatial)
                 .map(image -> "e:" + image.getImageId()).findFirst().orElse("");
-        if (!previous.equals(spatial)) lockParent(parentId).advanceSpatialRevision();
+        if (!previous.equals(spatial))
+            lockParent(parentId).advanceSpatialRevision();
         // Release the unique role before assigning another image, regardless of flush ordering.
         if (!previous.isEmpty() && !previous.equals(spatial)) {
             current.forEach(image -> image.changeSpatial(false));
@@ -80,12 +93,14 @@ public class SiteImageService {
         Map<String, SiteImage> resolved = new HashMap<>();
         current.forEach(image -> resolved.put("e:" + image.getImageId(), image));
         // Upload first: invalid files or unavailable storage cannot touch existing objects.
-        if (!uploads.isEmpty()) upload(parentId, uploads);
+        if (!uploads.isEmpty())
+            uploadValidated(parentId, uploads);
         Set<Long> existingIds = new HashSet<>();
         current.forEach(image -> existingIds.add(image.getImageId()));
         int index = 0;
         for (SiteImage image : ordered(parentId)) {
-            if (!existingIds.contains(image.getImageId())) resolved.put("n:" + index++, image);
+            if (!existingIds.contains(image.getImageId()))
+                resolved.put("n:" + index++, image);
         }
         for (String key : plan.deleted()) {
             SiteImage image = resolved.get(key);
@@ -118,7 +133,8 @@ public class SiteImageService {
         List<SiteImage> current = ordered(parentId);
         int from = current.indexOf(owned(current, imageId));
         int to = from + ("up".equals(direction) ? -1 : 1);
-        if (to >= 0 && to < current.size()) Collections.swap(current, from, to);
+        if (to >= 0 && to < current.size())
+            Collections.swap(current, from, to);
         renumber(current);
         images.flush();
     }
@@ -129,7 +145,8 @@ public class SiteImageService {
         SiteImage selected = owned(current, imageId);
         storageTransactions.delete(selected.getObjectKey(), selected.getContentType());
         positions.deleteBySiteImageImageId(selected.getImageId());
-        if (selected.isSpatial()) lockParent(parentId).advanceSpatialRevision();
+        if (selected.isSpatial())
+            lockParent(parentId).advanceSpatialRevision();
         images.delete(selected);
         current.remove(selected);
         if (selected.isRepresentative() && !current.isEmpty()) {
@@ -154,7 +171,8 @@ public class SiteImageService {
 
     @Transactional(readOnly = true)
     public ImageContent localContent(Long parentId, Long imageId) {
-        if (!(storage instanceof LocalImageStorage)) throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
+        if (!(storage instanceof LocalImageStorage))
+            throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
         return authenticatedContent(parentId, imageId);
     }
 
@@ -166,18 +184,27 @@ public class SiteImageService {
     }
 
     public record ImageContent(byte[] bytes, String contentType) {}
-    private List<SiteImage> ordered(Long parentId) { return images.findBySiteSiteIdOrderByDisplayOrderAscImageIdAsc(parentId); }
+
+    private List<SiteImage> ordered(Long parentId) {
+        return images.findBySiteSiteIdOrderByDisplayOrderAscImageIdAsc(parentId);
+    }
+
     private SiteImage owned(List<SiteImage> current, Long imageId) {
         return current.stream().filter(image -> image.getImageId().equals(imageId)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("이 Site에 속한 이미지가 아닙니다."));
     }
+
     private void renumber(List<SiteImage> current) {
-        for (int i = 0; i < current.size(); i++) current.get(i).changeDisplayOrder(i + 1);
+        for (int i = 0; i < current.size(); i++)
+            current.get(i).changeDisplayOrder(i + 1);
     }
+
     private Site lockParent(Long id) {
         return parents.findLockedById(id).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 Site입니다."));
     }
+
     private void requireParent(Long id) {
-        if (!parents.existsById(id)) throw new IllegalArgumentException("존재하지 않는 Site입니다.");
+        if (!parents.existsById(id))
+            throw new IllegalArgumentException("존재하지 않는 Site입니다.");
     }
 }

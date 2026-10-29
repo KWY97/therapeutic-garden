@@ -38,7 +38,7 @@ class SiteManagementTests {
     @BeforeEach
     void setUp() {
         site = service.createSite("기준 사이트", "서울 주소", 37.0, 127.0, 3);
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
     }
 
     private void reload() {

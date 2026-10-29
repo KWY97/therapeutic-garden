@@ -31,7 +31,7 @@ class HealingManagementNavigationTests {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
         site = sites.createSite("탐색 사이트", "주소", 37.0, 127.0, 3);
         course = courses.createHealingCourse(site, "HC-A", "회복 코스", null, null, 50.0);
         spot = spots.createHealingSpot(course, "HS1", "곶자왈원", 37.1, 127.1);

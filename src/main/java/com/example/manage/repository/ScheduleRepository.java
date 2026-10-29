@@ -1,13 +1,13 @@
 package com.example.manage.repository;
 
 import com.example.manage.domain.Schedule;
-import org.springframework.data.jpa.repository.EntityGraph;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import jakarta.persistence.LockModeType;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -29,9 +29,13 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from Schedule s where s.scheduleId = :scheduleId and s.member.memberId = :memberId")
     Optional<Schedule> findLockedByIdAndMemberId(@Param("scheduleId") Long scheduleId,
-                                                 @Param("memberId") Long memberId);
+            @Param("memberId") Long memberId);
 
     List<Schedule> findByMemberMemberIdAndScheduleDate(Long memberId, LocalDate scheduleDate);
+
+    @EntityGraph(attributePaths = "member")
+    @Query("select s from Schedule s")
+    List<Schedule> findAllForAdminCalendar();
 
     @Override
     @EntityGraph(attributePaths = "member")

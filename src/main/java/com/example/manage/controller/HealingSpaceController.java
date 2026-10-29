@@ -1,13 +1,15 @@
 package com.example.manage.controller;
 
 import com.example.manage.dto.HealingCourseResponse;
-import com.example.manage.dto.HealingSpotResponse;
 import com.example.manage.dto.HealingSpotDetailResponse;
-import org.springframework.http.ResponseEntity;
-import org.springframework.http.CacheControl;
+import com.example.manage.dto.HealingSpotResponse;
 import com.example.manage.service.HealingCourseService;
 import com.example.manage.service.HealingSpotService;
+import com.example.manage.service.SessionAuthentication;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +23,7 @@ import java.util.List;
 public class HealingSpaceController {
 
     private final HealingCourseService healingCourseService;
+    private final SessionAuthentication sessionAuthentication;
     private final HealingSpotService healingSpotService;
     private final com.example.manage.service.HealingSpotImageService spotImages;
 
@@ -29,12 +32,12 @@ public class HealingSpaceController {
             @PathVariable Long siteId, @PathVariable Long spotId, jakarta.servlet.http.HttpSession session) {
         try {
             return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                    .body(healingSpotService.findDetail(siteId, spotId, session.getAttribute("loginAdminId") != null));
+                    .body(healingSpotService.findDetail(siteId, spotId,
+                            sessionAuthentication.role(session) == SessionAuthentication.Role.ADMIN));
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.notFound().build();
         }
     }
-
 
     /*
      * 특정 Site에 속한 HealingCourse 조회
@@ -57,7 +60,6 @@ public class HealingSpaceController {
                 .toList();
     }
 
-
     /*
      * 특정 Site에 속한 HealingSpot 조회
      *
@@ -70,12 +72,13 @@ public class HealingSpaceController {
             @org.springframework.web.bind.annotation.RequestParam(required = false) Long spotId
     ) {
 
+        boolean admin = sessionAuthentication.role(session) == SessionAuthentication.Role.ADMIN;
         return healingSpotService
                 .findBySiteId(siteId)
                 .stream()
                 .filter(spot -> spotId == null || spot.getSpotId().equals(spotId))
                 .map(spot -> {
-                    var images = session.getAttribute("loginAdminId") != null
+                    var images = admin
                             ? spotImages.list(spot.getSpotId()) : List.<com.example.manage.dto.ImageResponse>of();
                     return new HealingSpotResponse(spot, images.stream().filter(com.example.manage.dto.ImageResponse::representative)
                             .map(com.example.manage.dto.ImageResponse::readUrl).findFirst().orElse(null), images);

@@ -1,6 +1,7 @@
 package com.example.manage.dto;
 
 import com.example.manage.domain.HealingSpotEffectSummary;
+
 /** Summary-only data used by the protected Monitoring screen. */
 public record MonitoringSpotEffectView(
         String spotCode,
@@ -25,7 +26,8 @@ public record MonitoringSpotEffectView(
 
     private static ImprovementMetricView metric(Integer validCount, Integer improvedCount) {
         if (validCount == null || improvedCount == null || validCount < 0
-                || improvedCount < 0 || improvedCount > validCount) return null;
+                || improvedCount < 0 || improvedCount > validCount)
+            return null;
         return ImprovementMetricView.of(validCount, improvedCount);
     }
 }

@@ -4,6 +4,7 @@ import com.example.manage.domain.Admin;
 import com.example.manage.domain.Member;
 import com.example.manage.repository.AdminRepository;
 import com.example.manage.repository.MemberRepository;
+import com.example.manage.service.SessionAuthentication;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ class AccountPasswordChangeTests {
     @Autowired MemberRepository members;
     @Autowired AdminRepository admins;
     @Autowired PasswordEncoder encoder;
+    @Autowired SessionAuthentication authentication;
     MockMvc mvc;
 
     @BeforeEach
@@ -62,7 +64,11 @@ class AccountPasswordChangeTests {
             id = admins.saveAndFlush(new Admin(loginId, encoder.encode(CURRENT))).getAdminId();
         }
         MockHttpSession session = new MockHttpSession();
-        session.setAttribute(role.equals("member") ? "loginMemberId" : "loginAdminId", id);
+        if (role.equals("member")) {
+            authentication.authenticateMember(session, members.findById(id).orElseThrow());
+        } else {
+            authentication.authenticateAdmin(session, admins.findById(id).orElseThrow());
+        }
         return new Account(role, id, loginId, session);
     }
 

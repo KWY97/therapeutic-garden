@@ -1,6 +1,7 @@
 package com.example.manage.dto;
 
 import com.example.manage.domain.HealingSpot;
+
 import java.util.List;
 
 public record HealingSpotDetailResponse(

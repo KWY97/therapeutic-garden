@@ -70,7 +70,7 @@ class ImageManagementTests {
             return bytes;
         });
         when(storage.createReadUrl(anyString(), anyString())).thenReturn("https://example.invalid/temporary-image");
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).addFilters(security).build();
     }
 
     private Long parent(boolean site) {
@@ -79,7 +79,7 @@ class ImageManagementTests {
         HealingCourse c = courses.saveAndFlush(new HealingCourse(s, "HC-A", "회복 코스", 37.0, 127.0, 50.0));
         return spots.saveAndFlush(new HealingSpot(c, "HS1", "곶자왈원", 37.0, 127.0)).getSpotId();
     }
-    private MockMultipartFile file() { return new MockMultipartFile("files", "../원본.jpg", "image/jpeg", new byte[]{1, 2, 3}); }
+    private MockMultipartFile file() { return new MockMultipartFile("files", "../원본.jpg", "image/jpeg", ImageTestFiles.jpeg()); }
     private void upload(boolean site, Long id, int count) {
         var files = java.util.stream.IntStream.range(0, count)
                 .mapToObj(i -> (org.springframework.web.multipart.MultipartFile) file()).toList();
@@ -288,7 +288,7 @@ class ImageManagementTests {
             mvc.perform(post(path + "/1/" + action).sessionAttr("loginAdminId", 1L).param("direction", "up"))
                     .andExpect(status().isForbidden());
         }
-        mvc.perform(get(path + "/1/content")).andExpect(redirectedUrl("/admin/login"));
+        mvc.perform(get(path + "/1/content")).andExpect(status().isUnauthorized());
         verify(storage, never()).upload(anyString(), any(byte[].class), anyString());
     }
 
@@ -334,11 +334,82 @@ class ImageManagementTests {
     @ParameterizedTest @ValueSource(booleans = {true, false})
     void invalidBatchIsRejectedBeforeAnyStorageWrites(boolean site) {
         Long id = parent(site);
-        var batch = List.of(file(), new MockMultipartFile("files", "bad.gif", "image/gif", new byte[]{1}));
+        var batch = List.of(file(), new MockMultipartFile("files", "fake.jpg", "image/jpeg",
+                "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
         assertThatThrownBy(() -> { if (site) siteImages.upload(id, new ArrayList<>(batch));
-            else spotImages.upload(id, new ArrayList<>(batch)); }).isInstanceOf(IllegalArgumentException.class);
+            else spotImages.upload(id, new ArrayList<>(batch)); }).isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("이미지 파일 내용");
         assertThatThrownBy(() -> upload(site, id, 11)).hasMessageContaining("10장");
+        assertThat(list(site, id)).isEmpty();
+        assertThat(objects).isEmpty();
         verify(storage, never()).upload(anyString(), any(byte[].class), anyString());
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {true, false})
+    void invalidMiddleOrLastFileLeavesTheWholeBatchUnstored(boolean site) {
+        for (int invalidIndex : List.of(1, 2)) {
+            Long id = parent(site);
+            List<org.springframework.web.multipart.MultipartFile> batch = new ArrayList<>(List.of(file(), file(), file()));
+            batch.set(invalidIndex, new MockMultipartFile("files", "fake.jpg", "image/jpeg",
+                    "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+            assertThatThrownBy(() -> {
+                if (site) siteImages.upload(id, batch); else spotImages.upload(id, batch);
+            }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("이미지 파일 내용");
+            assertThat(list(site, id)).isEmpty();
+            assertThat(objects).isEmpty();
+        }
+        verify(storage, never()).upload(anyString(), any(byte[].class), anyString());
+    }
+
+    @Test
+    void invalidSiteReplacementDoesNotChangeImagesOrSpatialRevision() {
+        Long id = parent(true);
+        upload(true, id, 2);
+        var before = list(true, id);
+        long revision = sites.findById(id).orElseThrow().getSpatialRevision();
+        var form = new com.example.manage.dto.ImageEditForm();
+        form.setImageOrder("e:" + before.getFirst().imageId() + ",n:0");
+        form.setImageDeleted("e:" + before.getLast().imageId());
+        form.setImageSpatial("n:0");
+        var invalid = new MockMultipartFile("files", "fake.jpg", "image/jpeg",
+                "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> siteImages.edit(id, List.of(invalid), form))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("이미지 파일 내용");
+        assertThat(list(true, id)).isEqualTo(before);
+        assertThat(objects).hasSize(2);
+        assertThat(sites.findById(id).orElseThrow().getSpatialRevision()).isEqualTo(revision);
+        verify(storage, times(2)).upload(anyString(), any(byte[].class), anyString());
+        verify(storage, never()).delete(anyString());
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {true, false})
+    void validWebpUsesTheSharedValidationBeforeStorage(boolean site) {
+        Long id = parent(site);
+        var file = new MockMultipartFile("files", "photo.webp", "image/webp", ImageTestFiles.webp());
+        if (site) siteImages.upload(id, List.of(file)); else spotImages.upload(id, List.of(file));
+        assertThat(list(site, id)).hasSize(1);
+        assertThat(objects).hasSize(1);
+        assertThat(objects.keySet()).allMatch(key -> key.endsWith(".webp"));
+        verify(storage).upload(anyString(), eq(ImageTestFiles.webp()), eq("image/webp"));
+    }
+
+    @ParameterizedTest @ValueSource(booleans = {true, false})
+    void invalidReplacementLeavesExistingImageAndStorageUntouched(boolean site) {
+        Long id = parent(site);
+        upload(site, id, 1);
+        var before = list(site, id);
+        var form = new com.example.manage.dto.ImageEditForm();
+        form.setImageOrder("e:" + before.getFirst().imageId() + ",n:0");
+        form.setImageRepresentative("e:" + before.getFirst().imageId());
+        var fake = new MockMultipartFile("files", "fake.jpg", "image/jpeg",
+                "not an image".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        assertThatThrownBy(() -> {
+            if (site) siteImages.edit(id, List.of(fake), form); else spotImages.edit(id, List.of(fake), form);
+        }).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("이미지 파일 내용");
+        assertThat(list(site, id)).isEqualTo(before);
+        assertThat(objects).hasSize(1);
+        verify(storage, times(1)).upload(anyString(), any(byte[].class), anyString());
     }
 
     @ParameterizedTest @ValueSource(booleans = {true, false})

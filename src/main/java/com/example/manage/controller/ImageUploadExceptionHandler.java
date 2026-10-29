@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-@ControllerAdvice(assignableTypes = {AdminImageController.class, AdminController.class})
+@ControllerAdvice(assignableTypes = {AdminImageController.class, AdminSiteController.class, AdminSpotController.class})
 public class ImageUploadExceptionHandler {
     @ExceptionHandler(MultipartException.class)
     public String uploadError(HttpServletRequest request, MultipartException exception, RedirectAttributes flash) {
@@ -16,7 +16,8 @@ public class ImageUploadExceptionHandler {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         if (path.matches("/admin/(sites|spots)/[1-9][0-9]*/images"))
             return "redirect:" + path.replaceFirst("/images$", "/edit#place-images");
-        if (path.matches("/admin/(sites|spots)/(new|[1-9][0-9]*/edit)")) return "redirect:" + path;
+        if (path.matches("/admin/(sites|spots)/(new|[1-9][0-9]*/edit)"))
+            return "redirect:" + path;
         return "redirect:/admin/sites";
     }
 }

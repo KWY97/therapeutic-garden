@@ -1,26 +1,27 @@
 package com.example.manage.service;
 
-import com.example.manage.domain.Member;
 import com.example.manage.domain.HealingSpot;
-import com.example.manage.dto.ScheduleResponse;
-import com.example.manage.repository.HealingSpotRepository;
-import java.util.Map;
-import java.util.stream.Collectors;
+import com.example.manage.domain.Member;
 import com.example.manage.domain.Schedule;
 import com.example.manage.domain.ScheduleSpot;
 import com.example.manage.dto.MemberScheduleDetailResponse;
+import com.example.manage.dto.ScheduleResponse;
+import com.example.manage.repository.HealingSpotRepository;
 import com.example.manage.repository.MemberRepository;
 import com.example.manage.repository.ScheduleRepository;
 import com.example.manage.repository.ScheduleSpotRepository;
-import org.springframework.data.domain.Sort;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -31,7 +32,6 @@ public class ScheduleService {
     private final MemberRepository memberRepository;
     private final ScheduleRepository scheduleRepository;
     private final ScheduleSpotRepository scheduleSpotRepository;
-
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void createSchedule(
@@ -55,13 +55,13 @@ public class ScheduleService {
         if (member == null) {
             return;
         }
-        if (member.isTestAccount()) throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
+        if (member.isTestAccount())
+            throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
 
         HealingSpot firstHealingSpot = findSelectedSpot(firstSpotId, siteId, courseId);
         HealingSpot secondHealingSpot = findSelectedSpot(secondSpotId, siteId, courseId);
         rejectDuplicate(null, memberId, scheduleDate, firstSpotId, firstStartTime,
                 secondSpotId, secondStartTime);
-
 
         /*
          * 일정 생성
@@ -70,7 +70,6 @@ public class ScheduleService {
                 member,
                 scheduleDate
         );
-
 
         /*
          * 날씨 정보 설정
@@ -81,9 +80,7 @@ public class ScheduleService {
                 humidity
         );
 
-
         scheduleRepository.save(schedule);
-
 
         /*
          * 첫 번째 스팟
@@ -95,7 +92,6 @@ public class ScheduleService {
                 1
         );
 
-
         /*
          * 두 번째 스팟
          */
@@ -106,16 +102,14 @@ public class ScheduleService {
                 2
         );
 
-
         scheduleSpotRepository.save(firstSpot);
         scheduleSpotRepository.save(secondSpot);
     }
 
-
     @Transactional(readOnly = true)
     public List<Schedule> findAllSchedules() {
 
-        return scheduleRepository.findAll();
+        return scheduleRepository.findAllForAdminCalendar();
     }
 
     @Transactional(readOnly = true)
@@ -154,14 +148,12 @@ public class ScheduleService {
         return toResponses(scheduleRepository.findAll(scheduleSort));
     }
 
-
     @Transactional(readOnly = true)
     public List<ScheduleResponse> findScheduleByMemberId(Long memberId) {
 
         return toResponses(scheduleRepository
                 .findByMemberMemberIdOrderByScheduleDateAsc(memberId));
     }
-
 
     @Transactional(readOnly = true)
     public Schedule findSchedule(Long scheduleId) {
@@ -171,7 +163,6 @@ public class ScheduleService {
                 .orElse(null);
     }
 
-
     @Transactional(readOnly = true)
     public List<ScheduleSpot> findScheduleSpots(Long scheduleId) {
 
@@ -179,14 +170,14 @@ public class ScheduleService {
                 .findByScheduleScheduleIdOrderBySequenceAsc(scheduleId);
     }
 
-
     @Transactional(readOnly = true)
     public MemberScheduleDetailResponse findMemberScheduleDetail(
             Long scheduleId,
             Long memberId
     ) {
         ScheduleResponse response = findMemberScheduleResponse(scheduleId, memberId);
-        if (response == null) return null;
+        if (response == null)
+            return null;
         return new MemberScheduleDetailResponse(
                 response.getScheduleId(), response.getScheduleDate(),
                 response.getSiteId(), response.getSiteName(), response.getCourseId(),
@@ -234,11 +225,12 @@ public class ScheduleService {
     }
 
     private void rejectDuplicate(Long editingScheduleId, Long memberId, LocalDate scheduleDate,
-                                 Long firstSpotId, LocalTime firstStartTime,
-                                 Long secondSpotId, LocalTime secondStartTime) {
+            Long firstSpotId, LocalTime firstStartTime,
+            Long secondSpotId, LocalTime secondStartTime) {
         List<Schedule> sameDay = scheduleRepository.findByMemberMemberIdAndScheduleDate(memberId, scheduleDate)
                 .stream().filter(schedule -> !schedule.getScheduleId().equals(editingScheduleId)).toList();
-        if (sameDay.isEmpty()) return;
+        if (sameDay.isEmpty())
+            return;
 
         Map<Long, List<ScheduleSpot>> spotsBySchedule = scheduleSpotRepository
                 .findByScheduleScheduleIdInOrderBySequenceAsc(
@@ -270,7 +262,6 @@ public class ScheduleService {
     public static class MemberScheduleNotFoundException extends RuntimeException {
     }
 
-
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateSchedule(
             Long scheduleId,
@@ -288,7 +279,8 @@ public class ScheduleService {
     ) {
 
         Member member = memberRepository.findLockedById(memberId).orElse(null);
-        if (member == null) return;
+        if (member == null)
+            return;
 
         /*
          * 수정할 일정 조회
@@ -301,7 +293,6 @@ public class ScheduleService {
             return;
         }
 
-
         applyScheduleUpdate(schedule, member, scheduleDate, siteId, courseId,
                 firstSpotId, firstStartTime, secondSpotId, secondStartTime,
                 weather, temperature, humidity, true);
@@ -309,10 +300,10 @@ public class ScheduleService {
 
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public void updateMemberSchedule(Long scheduleId, Long memberId,
-                                     LocalDate scheduleDate, Long siteId, Long courseId,
-                                     Long firstSpotId, LocalTime firstStartTime,
-                                     Long secondSpotId, LocalTime secondStartTime,
-                                     String weather, Double temperature, Double humidity) {
+            LocalDate scheduleDate, Long siteId, Long courseId,
+            Long firstSpotId, LocalTime firstStartTime,
+            Long secondSpotId, LocalTime secondStartTime,
+            String weather, Double temperature, Double humidity) {
         Member member = memberRepository.findLockedById(memberId)
                 .orElseThrow(MemberScheduleNotFoundException::new);
         Schedule schedule = scheduleRepository.findLockedByIdAndMemberId(scheduleId, memberId)
@@ -323,15 +314,15 @@ public class ScheduleService {
     }
 
     private void applyScheduleUpdate(Schedule schedule, Member member, LocalDate scheduleDate,
-                                     Long siteId, Long courseId, Long firstSpotId,
-                                     LocalTime firstStartTime, Long secondSpotId,
-                                     LocalTime secondStartTime, String weather,
-                                     Double temperature, Double humidity, boolean reassignMember) {
+            Long siteId, Long courseId, Long firstSpotId,
+            LocalTime firstStartTime, Long secondSpotId,
+            LocalTime secondStartTime, String weather,
+            Double temperature, Double humidity, boolean reassignMember) {
         HealingSpot firstHealingSpot = findSelectedSpot(firstSpotId, siteId, courseId);
         HealingSpot secondHealingSpot = findSelectedSpot(secondSpotId, siteId, courseId);
 
-        if (member.isTestAccount()) throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
-
+        if (member.isTestAccount())
+            throw new IllegalArgumentException("테스트 계정에는 일정을 등록할 수 없습니다.");
 
         /*
          * 기존 ScheduleSpot 조회
@@ -343,9 +334,8 @@ public class ScheduleService {
         List<ScheduleSpot> scheduleSpots =
                 scheduleSpotRepository
                         .findByScheduleScheduleIdOrderBySequenceAsc(
-                        schedule.getScheduleId()
+                                schedule.getScheduleId()
                         );
-
 
         if (scheduleSpots.size() != 2
                 || scheduleSpots.get(0).getSequence() != 1
@@ -359,9 +349,10 @@ public class ScheduleService {
         /*
          * 일정 기본 정보 수정
          */
-        if (reassignMember) schedule.update(member, scheduleDate);
-        else schedule.updateDate(scheduleDate);
-
+        if (reassignMember)
+            schedule.update(member, scheduleDate);
+        else
+            schedule.updateDate(scheduleDate);
 
         /*
          * 날씨 정보 수정
@@ -371,7 +362,6 @@ public class ScheduleService {
                 temperature,
                 humidity
         );
-
 
         /*
          * 첫 번째 스팟 수정
@@ -387,7 +377,6 @@ public class ScheduleService {
             );
         }
 
-
         /*
          * 두 번째 스팟 수정
          */
@@ -402,7 +391,6 @@ public class ScheduleService {
             );
         }
     }
-
 
     public void deleteSchedule(Long scheduleId) {
 

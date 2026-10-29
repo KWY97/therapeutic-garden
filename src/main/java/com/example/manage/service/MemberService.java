@@ -1,12 +1,13 @@
 package com.example.manage.service;
 
 import com.example.manage.domain.Member;
+import com.example.manage.domain.Schedule;
 import com.example.manage.dto.MemberCreateForm;
 import com.example.manage.dto.MemberProfileView;
-import com.example.manage.domain.Schedule;
 import com.example.manage.repository.MemberRepository;
 import com.example.manage.repository.ScheduleRepository;
 import com.example.manage.repository.ScheduleSpotRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final PasswordEncoder passwordEncoder;
+    private final LoginPasswordVerification loginPasswords;
     private final ScheduleRepository scheduleRepository;
     private final ScheduleSpotRepository scheduleSpotRepository;
     private final com.example.manage.repository.MemberHealingSpotEffectSummaryRepository effectSummaries;
@@ -51,37 +53,12 @@ public class MemberService {
         return phone == null ? null : phone.replace("-", "");
     }
 
-    public void createMember(
-            Integer participantNo,
-            Integer groupNo,
-            String loginId,
-            String rawPassword
-    ) {
-
-        if (memberRepository.findByLoginId(loginId).isPresent()) {
-            return;
-        }
-
-        if (memberRepository.findByParticipantNo(participantNo).isPresent()) {
-            return;
-        }
-
-        String encodedPassword = passwordEncoder.encode(rawPassword);
-        Member member = new Member(participantNo, groupNo, loginId, encodedPassword);
-
-        memberRepository.save(member);
-    }
-
     @Transactional(readOnly = true)
     public Member login(String loginId, String rawPassword) {
 
         Member member = memberRepository.findByLoginId(loginId).orElse(null);
 
-        if (member == null) {
-            return null;
-        }
-
-        if (!passwordEncoder.matches(rawPassword, member.getPassword())) {
+        if (!loginPasswords.matches(rawPassword, member == null ? null : member.getPassword())) {
             return null;
         }
 
@@ -163,7 +140,6 @@ public class MemberService {
          * 형식으로 저장한다.
          */
         phone = normalizePhone(phone);
-
 
         /*
          * 참가자 정보 수정

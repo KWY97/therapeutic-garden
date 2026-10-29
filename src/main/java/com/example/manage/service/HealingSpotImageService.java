@@ -4,10 +4,12 @@ import com.example.manage.domain.*;
 import com.example.manage.dto.ImageResponse;
 import com.example.manage.repository.*;
 import com.example.manage.storage.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.util.*;
 
@@ -15,6 +17,7 @@ import java.util.*;
 @RequiredArgsConstructor
 @Transactional
 public class HealingSpotImageService {
+
     private final HealingSpotRepository parents;
     private final HealingSpotImageRepository images;
     private final ImageStorage storage;
@@ -29,13 +32,6 @@ public class HealingSpotImageService {
     }
 
     @Transactional(readOnly = true)
-    public String representativeReadUrl(Long parentId) {
-        requireParent(parentId);
-        return ordered(parentId).stream().filter(HealingSpotImage::isRepresentative).findFirst()
-                .map(image -> response(parentId, image).readUrl()).orElse(null);
-    }
-
-    @Transactional(readOnly = true)
     public String monitoringReadUrl(Long parentId) {
         requireParent(parentId);
         return ordered(parentId).stream().filter(HealingSpotImage::isRepresentative).findFirst()
@@ -46,7 +42,8 @@ public class HealingSpotImageService {
 
     @Transactional(readOnly = true)
     public ImageContent localThumbnail(Long parentId, Long imageId) {
-        if (!(storage instanceof LocalImageStorage)) throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
+        if (!(storage instanceof LocalImageStorage))
+            throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
         return authenticatedThumbnail(parentId, imageId);
     }
 
@@ -65,16 +62,21 @@ public class HealingSpotImageService {
     }
 
     public void upload(Long parentId, List<MultipartFile> uploads) {
-        if (uploads == null || uploads.isEmpty()) throw new IllegalArgumentException("이미지를 선택해 주세요.");
-        if (uploads.size() > ImageFilePolicy.MAX_FILES) throw new IllegalArgumentException("한 번에 최대 10장까지 등록할 수 있습니다.");
-        uploads.forEach(files::validate); // Validate the entire batch before any storage side effect.
+        files.validateBatch(uploads);
+        uploadValidated(parentId, uploads);
+    }
+
+    private void uploadValidated(Long parentId, List<MultipartFile> uploads) {
         HealingSpot parent = lockParent(parentId);
         List<HealingSpotImage> current = ordered(parentId);
         int order = current.size();
         for (MultipartFile file : uploads) {
             String key = files.createKey(false, parentId, file.getContentType());
-            try { storageTransactions.upload(key, file.getBytes(), file.getContentType()); }
-            catch (IOException e) { throw new ImageStorageException("업로드 파일을 읽을 수 없습니다.", e); }
+            try {
+                storageTransactions.upload(key, file.getBytes(), file.getContentType());
+            } catch (IOException e) {
+                throw new ImageStorageException("업로드 파일을 읽을 수 없습니다.", e);
+            }
             images.save(new HealingSpotImage(parent, key, files.displayName(file.getOriginalFilename()),
                     file.getContentType(), ++order, order == 1));
         }
@@ -85,15 +87,19 @@ public class HealingSpotImageService {
         lockParent(parentId);
         List<HealingSpotImage> current = ordered(parentId);
         ImageEditPlan plan = ImageEditPlan.validate(form, current, uploads.size());
+        if (!uploads.isEmpty())
+            files.validateBatch(uploads);
         Map<String, HealingSpotImage> resolved = new HashMap<>();
         current.forEach(image -> resolved.put("e:" + image.getImageId(), image));
         // Upload first: invalid files or unavailable storage cannot touch existing objects.
-        if (!uploads.isEmpty()) upload(parentId, uploads);
+        if (!uploads.isEmpty())
+            uploadValidated(parentId, uploads);
         Set<Long> existingIds = new HashSet<>();
         current.forEach(image -> existingIds.add(image.getImageId()));
         int index = 0;
         for (HealingSpotImage image : ordered(parentId)) {
-            if (!existingIds.contains(image.getImageId())) resolved.put("n:" + index++, image);
+            if (!existingIds.contains(image.getImageId()))
+                resolved.put("n:" + index++, image);
         }
         for (String key : plan.deleted()) {
             HealingSpotImage image = resolved.get(key);
@@ -125,7 +131,8 @@ public class HealingSpotImageService {
         List<HealingSpotImage> current = ordered(parentId);
         int from = current.indexOf(owned(current, imageId));
         int to = from + ("up".equals(direction) ? -1 : 1);
-        if (to >= 0 && to < current.size()) Collections.swap(current, from, to);
+        if (to >= 0 && to < current.size())
+            Collections.swap(current, from, to);
         renumber(current);
         images.flush();
     }
@@ -160,7 +167,8 @@ public class HealingSpotImageService {
 
     @Transactional(readOnly = true)
     public ImageContent localContent(Long parentId, Long imageId) {
-        if (!(storage instanceof LocalImageStorage)) throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
+        if (!(storage instanceof LocalImageStorage))
+            throw new IllegalArgumentException("로컬 이미지 조회를 사용할 수 없습니다.");
         return authenticatedContent(parentId, imageId);
     }
 
@@ -172,18 +180,27 @@ public class HealingSpotImageService {
     }
 
     public record ImageContent(byte[] bytes, String contentType) {}
-    private List<HealingSpotImage> ordered(Long parentId) { return images.findByHealingSpotSpotIdOrderByDisplayOrderAscImageIdAsc(parentId); }
+
+    private List<HealingSpotImage> ordered(Long parentId) {
+        return images.findByHealingSpotSpotIdOrderByDisplayOrderAscImageIdAsc(parentId);
+    }
+
     private HealingSpotImage owned(List<HealingSpotImage> current, Long imageId) {
         return current.stream().filter(image -> image.getImageId().equals(imageId)).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("이 HS에 속한 이미지가 아닙니다."));
     }
+
     private void renumber(List<HealingSpotImage> current) {
-        for (int i = 0; i < current.size(); i++) current.get(i).changeDisplayOrder(i + 1);
+        for (int i = 0; i < current.size(); i++)
+            current.get(i).changeDisplayOrder(i + 1);
     }
+
     private HealingSpot lockParent(Long id) {
         return parents.findLockedById(id).orElseThrow(() -> new IllegalArgumentException("존재하지 않는 HealingSpot입니다."));
     }
+
     private void requireParent(Long id) {
-        if (!parents.existsById(id)) throw new IllegalArgumentException("존재하지 않는 HealingSpot입니다.");
+        if (!parents.existsById(id))
+            throw new IllegalArgumentException("존재하지 않는 HealingSpot입니다.");
     }
 }

@@ -1,10 +1,11 @@
 package com.example.manage.service;
 
-import com.example.manage.dto.ImageResponse;
-import com.example.manage.dto.HealingSpotDetailResponse;
 import com.example.manage.domain.HealingSpot;
+import com.example.manage.dto.HealingSpotDetailResponse;
+import com.example.manage.dto.ImageResponse;
 import com.example.manage.repository.HealingEffectImportBatchRepository;
 import com.example.manage.repository.HealingSpotRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

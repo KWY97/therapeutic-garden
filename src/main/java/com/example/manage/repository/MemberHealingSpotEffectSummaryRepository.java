@@ -2,9 +2,11 @@ package com.example.manage.repository;
 
 import com.example.manage.domain.MemberHealingSpotEffectSummary;
 import org.springframework.data.jpa.repository.*;
+
 import java.util.*;
 
 public interface MemberHealingSpotEffectSummaryRepository extends JpaRepository<MemberHealingSpotEffectSummary, Long> {
+
     @Query("""
             select s.member.memberId from MemberHealingSpotEffectSummary s
             where s.healingSpot.healingCourse.site.siteId = :siteId
@@ -15,16 +17,18 @@ public interface MemberHealingSpotEffectSummaryRepository extends JpaRepository<
             order by s.member.participantNo, s.member.memberId
             """)
     List<Long> findCompleteExampleMemberIds(@org.springframework.data.repository.query.Param("siteId") Long siteId);
+
     @EntityGraph(attributePaths = "healingSpot")
     List<MemberHealingSpotEffectSummary> findByMemberMemberIdOrderByHealingSpotCodeAsc(Long memberId);
+
     @EntityGraph(attributePaths = "healingSpot")
     List<MemberHealingSpotEffectSummary> findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(
             Long memberId, Long siteId);
-    @EntityGraph(attributePaths = {"member", "healingSpot"})
-    List<MemberHealingSpotEffectSummary> findByHealingSpotHealingCourseSiteSiteIdOrderByMemberParticipantNoAscHealingSpotCodeAsc(
-            Long siteId);
+
     @EntityGraph(attributePaths = "healingSpot")
     Optional<MemberHealingSpotEffectSummary> findByMemberMemberIdAndHealingSpotSpotId(Long memberId, Long spotId);
+
     void deleteByMemberMemberId(Long memberId);
+
     void deleteByHealingSpotSpotId(Long spotId);
 }

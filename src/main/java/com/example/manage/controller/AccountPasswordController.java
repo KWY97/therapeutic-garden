@@ -1,9 +1,10 @@
 package com.example.manage.controller;
 
+import com.example.manage.dto.MemberProfileView;
 import com.example.manage.service.AccountPasswordService;
 import com.example.manage.service.AccountPasswordService.Result;
-import com.example.manage.dto.MemberProfileView;
 import com.example.manage.service.MemberService;
+
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -27,9 +28,9 @@ public class AccountPasswordController {
 
     @PostMapping("/member/password")
     public String changeMember(@RequestParam(required = false) String currentPassword,
-                               @RequestParam(required = false) String newPassword,
-                               @RequestParam(required = false) String confirmPassword,
-                               HttpSession session, Model model) {
+            @RequestParam(required = false) String newPassword,
+            @RequestParam(required = false) String confirmPassword,
+            HttpSession session, Model model) {
         Result result = passwords.changeMember((Long) session.getAttribute("loginMemberId"),
                 currentPassword, newPassword, confirmPassword);
         return finish(result, session, model, "member");
@@ -42,9 +43,9 @@ public class AccountPasswordController {
 
     @PostMapping("/admin/password")
     public String changeAdmin(@RequestParam(required = false) String currentPassword,
-                              @RequestParam(required = false) String newPassword,
-                              @RequestParam(required = false) String confirmPassword,
-                              HttpSession session, Model model) {
+            @RequestParam(required = false) String newPassword,
+            @RequestParam(required = false) String confirmPassword,
+            HttpSession session, Model model) {
         Result result = passwords.changeAdmin((Long) session.getAttribute("loginAdminId"),
                 currentPassword, newPassword, confirmPassword);
         return finish(result, session, model, "admin");
@@ -57,29 +58,32 @@ public class AccountPasswordController {
             return "redirect:/admin/login";
         }
         MemberProfileView member = members.findProfile(memberId);
-        if (member == null) return "redirect:/admin/members";
+        if (member == null)
+            return "redirect:/admin/members";
         model.addAttribute("member", member);
         return "admin/member-password-reset";
     }
 
     @PostMapping("/admin/members/{memberId}/password")
     public String resetMember(@PathVariable Long memberId,
-                              @RequestParam(required = false) String newPassword,
-                              @RequestParam(required = false) String confirmPassword,
-                              HttpSession session, Model model, RedirectAttributes redirectAttributes) {
+            @RequestParam(required = false) String newPassword,
+            @RequestParam(required = false) String confirmPassword,
+            HttpSession session, Model model, RedirectAttributes redirectAttributes) {
         Result result = passwords.resetMemberByAdmin((Long) session.getAttribute("loginAdminId"),
                 memberId, newPassword, confirmPassword);
         if (result == Result.ADMIN_NOT_FOUND) {
             session.invalidate();
             return "redirect:/admin/login";
         }
-        if (result == Result.ACCOUNT_NOT_FOUND) return "redirect:/admin/members";
+        if (result == Result.ACCOUNT_NOT_FOUND)
+            return "redirect:/admin/members";
         if (result == Result.SUCCESS) {
             redirectAttributes.addFlashAttribute("successMessage", "참가자 비밀번호를 변경했습니다.");
             return "redirect:/admin/members/" + memberId + "/edit";
         }
         MemberProfileView member = members.findProfile(memberId);
-        if (member == null) return "redirect:/admin/members";
+        if (member == null)
+            return "redirect:/admin/members";
         model.addAttribute("member", member);
         model.addAttribute("errorMessage", switch (result) {
             case TOO_SHORT -> "새 비밀번호는 8자 이상이어야 합니다.";

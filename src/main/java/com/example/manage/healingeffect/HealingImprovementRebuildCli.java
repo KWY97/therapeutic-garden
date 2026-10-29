@@ -31,7 +31,8 @@ public final class HealingImprovementRebuildCli {
 
     private static String required(String key) {
         String value = System.getenv(key);
-        if (value == null) throw new IllegalArgumentException("환경변수 필요: " + key);
+        if (value == null)
+            throw new IllegalArgumentException("환경변수 필요: " + key);
         return value;
     }
 

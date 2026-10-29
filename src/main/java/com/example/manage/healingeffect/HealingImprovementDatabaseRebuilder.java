@@ -1,6 +1,7 @@
 package com.example.manage.healingeffect;
 
 import com.example.manage.repository.HealingMeasurementRepository;
+
 import java.sql.*;
 import java.util.*;
 
@@ -14,15 +15,19 @@ public final class HealingImprovementDatabaseRebuilder {
 
     public record Result(String status, boolean schemaReady, int overallRows,
             int memberSpotRows, int participantOverallRows, List<String> warnings) {
-        public Result { warnings = List.copyOf(warnings); }
+        public Result {
+            warnings = List.copyOf(warnings);
+        }
     }
+
     public record ExpectedResult(int overallRows, int memberSpotRows, int participantOverallRows) {
         public ExpectedResult {
             if (overallRows <= 0 || memberSpotRows <= 0 || participantOverallRows <= 0)
                 throw new IllegalArgumentException("expected rebuild count는 양수여야 합니다.");
         }
     }
-    private record MemberSpotKey(long memberId, long spotId) {}
+    private record MemberSpotKey(long memberId, long spotId) {
+    }
 
     public Result execute(Connection connection, long siteId, boolean dryRun) throws SQLException {
         return execute(connection, siteId, dryRun, null);
@@ -31,14 +36,18 @@ public final class HealingImprovementDatabaseRebuilder {
     /** Production callers may require reviewed dataset counts before any Summary update begins. */
     public Result execute(Connection connection, long siteId, boolean dryRun, ExpectedResult expected)
             throws SQLException {
-        if (!connection.getAutoCommit()) throw new IllegalArgumentException("독립적인 새 connection이 필요합니다.");
+        if (!connection.getAutoCommit())
+            throw new IllegalArgumentException("독립적인 새 connection이 필요합니다.");
         connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         connection.setReadOnly(dryRun);
         connection.setAutoCommit(false);
         try {
             if (dryRun && connection.getMetaData().getDatabaseProductName().equals("MySQL"))
-                try (var statement = connection.createStatement()) { statement.execute("SET TRANSACTION READ ONLY"); }
-            if (!dryRun) lockSites(connection);
+                try (var statement = connection.createStatement()) {
+                    statement.execute("SET TRANSACTION READ ONLY");
+                }
+            if (!dryRun)
+                lockSites(connection);
 
             var missing = missingSchema(connection);
             boolean schemaReady = missing.isEmpty();
@@ -62,14 +71,19 @@ public final class HealingImprovementDatabaseRebuilder {
                         aggregate.memberSpots().size(), aggregate.participantOverall().size(),
                         schemaReady ? List.of() : List.of("실제 rebuild 전 schema 준비 필요: " + missing));
             }
-            if (!schemaReady) throw new IllegalArgumentException("Improvement schema 준비 필요: " + missing);
+            if (!schemaReady)
+                throw new IllegalArgumentException("Improvement schema 준비 필요: " + missing);
 
             update(connection, aggregate);
             connection.commit();
             return new Result("REBUILT", true, aggregate.overallSpots().size(),
                     aggregate.memberSpots().size(), aggregate.participantOverall().size(), List.of());
         } catch (SQLException | RuntimeException ex) {
-            try { connection.rollback(); } catch (SQLException rollback) { ex.addSuppressed(rollback); }
+            try {
+                connection.rollback();
+            } catch (SQLException rollback) {
+                ex.addSuppressed(rollback);
+            }
             throw ex;
         }
     }
@@ -96,11 +110,13 @@ public final class HealingImprovementDatabaseRebuilder {
         for (var entry : REQUIRED_COLUMNS.entrySet()) {
             var present = new HashSet<String>();
             try (var rows = connection.getMetaData().getColumns(connection.getCatalog(), null, "%", "%")) {
-                while (rows.next()) if (entry.getKey().equalsIgnoreCase(rows.getString("TABLE_NAME")))
-                    present.add(rows.getString("COLUMN_NAME").toLowerCase(Locale.ROOT));
+                while (rows.next())
+                    if (entry.getKey().equalsIgnoreCase(rows.getString("TABLE_NAME")))
+                        present.add(rows.getString("COLUMN_NAME").toLowerCase(Locale.ROOT));
             }
-            for (String column : entry.getValue()) if (!present.contains(column))
-                missing.add(entry.getKey() + "." + column);
+            for (String column : entry.getValue())
+                if (!present.contains(column))
+                    missing.add(entry.getKey() + "." + column);
         }
         return missing;
     }

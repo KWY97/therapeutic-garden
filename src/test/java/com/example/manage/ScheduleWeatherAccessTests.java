@@ -5,6 +5,8 @@ import com.example.manage.service.WeatherService;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,15 +35,14 @@ class ScheduleWeatherAccessTests {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).addFilters(security).build();
     }
 
     @Test
-    void memberRequestToExistingAdminWeatherEndpointRedirectsToLoginHtml() throws Exception {
+    void memberRequestToExistingAdminWeatherEndpointReturnsUnauthorized() throws Exception {
         mvc.perform(get("/admin/weather").sessionAttr("loginMemberId", 1L)
                         .param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound())
-                .andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
 
         var login = mvc.perform(get("/admin/login").sessionAttr("loginMemberId", 1L))
                 .andExpect(status().isOk()).andReturn().getResponse();
@@ -83,12 +84,12 @@ class ScheduleWeatherAccessTests {
     @Test
     void weatherEndpointsRequireTheirOwnRolesAndReturnJsonErrors() throws Exception {
         mvc.perform(get("/member/weather").param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/member/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/member/weather").sessionAttr("loginAdminId", 1L)
                         .param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/member/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/admin/weather").param("date", "2026-10-28").param("time", "09:00"))
-                .andExpect(status().isFound()).andExpect(redirectedUrl("/admin/login"));
+                .andExpect(status().isUnauthorized());
         mvc.perform(get("/admin/schedules").sessionAttr("loginMemberId", 1L))
                 .andExpect(status().isFound()).andExpect(redirectedUrl("/admin/login"));
 
@@ -105,5 +106,34 @@ class ScheduleWeatherAccessTests {
                         .param("date", date.toString()).param("time", "09:00"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").exists());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"admin", "member"})
+    void bothWeatherEndpointsKeepExactNotFoundAndRangeErrorResponses(String role) throws Exception {
+        LocalDate date = LocalDate.of(2026, 10, 28);
+        LocalTime time = LocalTime.of(9, 0);
+        String path = "/" + role + "/weather";
+        String sessionKey = role.equals("admin") ? "loginAdminId" : "loginMemberId";
+
+        mvc.perform(get(path).sessionAttr(sessionKey, 1L)
+                        .param("date", date.toString()).param("time", "09:00"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.message").value(
+                        "선택한 날짜의 날씨 데이터가 제공되지 않습니다. 다른 날짜를 선택해 주세요."));
+
+        var rangeError = new WeatherService.WeatherDateOutOfRangeException(
+                date.minusDays(69), date.plusDays(15));
+        when(weatherService.getWeather(date, time)).thenThrow(rangeError);
+        mvc.perform(get(path).sessionAttr(sessionKey, 1L)
+                        .param("date", date.toString()).param("time", "09:00"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(jsonPath("$.message").value(rangeError.getMessage()));
+
+        mvc.perform(get(path).sessionAttr(sessionKey, 1L)
+                        .param("date", "invalid-date").param("time", "09:00"))
+                .andExpect(status().isBadRequest());
     }
 }

@@ -15,8 +15,10 @@ public final class PersonalEegVersionStore {
 
     private void activate(Connection c, long batchId, Long expectedCurrentBatchId,
             boolean enforceExpected) throws SQLException {
-        if (!c.getAutoCommit()) throw new IllegalArgumentException("새 connection 필요");
-        if (batchId <= 0) throw new IllegalArgumentException("배치 ID 오류");
+        if (!c.getAutoCommit())
+            throw new IllegalArgumentException("새 connection 필요");
+        if (batchId <= 0)
+            throw new IllegalArgumentException("배치 ID 오류");
         c.setAutoCommit(false);
         try {
             var integrity = new PersonalEegBatchIntegrity();
@@ -25,15 +27,22 @@ public final class PersonalEegVersionStore {
                 throw new IllegalArgumentException("활성 버전이 expected current와 일치하지 않습니다.");
             integrity.requireValid(c, batchId, null);
             int changed;
-            try(var s=c.prepareStatement("update personal_eeg_active_version set batch_id=?,activated_at=current_timestamp where id=1")) {
-                s.setLong(1,batchId); changed=s.executeUpdate();
+            try (var s = c.prepareStatement("update personal_eeg_active_version set batch_id=?,activated_at=current_timestamp where id=1")) {
+                s.setLong(1, batchId);
+                changed = s.executeUpdate();
             }
-            if(changed==0) try(var s=c.prepareStatement("insert into personal_eeg_active_version (id,batch_id,activated_at) values (1,?,current_timestamp)")) {
-                s.setLong(1,batchId); s.executeUpdate();
-            }
+            if (changed == 0)
+                try (var s = c.prepareStatement("insert into personal_eeg_active_version (id,batch_id,activated_at) values (1,?,current_timestamp)")) {
+                    s.setLong(1, batchId);
+                    s.executeUpdate();
+                }
             c.commit();
-        } catch(SQLException | RuntimeException ex) { c.rollback(); throw ex; }
+        } catch (SQLException | RuntimeException ex) {
+            c.rollback();
+            throw ex;
+        }
     }
+
     public void returnToLegacy(Connection c) throws SQLException {
         returnToLegacy(c, null, false);
     }
@@ -45,16 +54,20 @@ public final class PersonalEegVersionStore {
 
     private void returnToLegacy(Connection c, Long expectedCurrentBatchId,
             boolean enforceExpected) throws SQLException {
-        if(!c.getAutoCommit()) throw new IllegalArgumentException("새 connection 필요");
+        if (!c.getAutoCommit())
+            throw new IllegalArgumentException("새 connection 필요");
         c.setAutoCommit(false);
         try {
             var current = new PersonalEegBatchIntegrity().activeForUpdate(c);
             if (enforceExpected && !java.util.Objects.equals(current.batchId(), expectedCurrentBatchId))
                 throw new IllegalArgumentException("활성 버전이 expected current와 일치하지 않습니다.");
-            try(var s=c.createStatement()) {
+            try (var s = c.createStatement()) {
                 s.executeUpdate("update personal_eeg_active_version set batch_id=null,activated_at=current_timestamp where id=1");
             }
             c.commit();
-        } catch(SQLException | RuntimeException ex) { c.rollback(); throw ex; }
+        } catch (SQLException | RuntimeException ex) {
+            c.rollback();
+            throw ex;
+        }
     }
 }

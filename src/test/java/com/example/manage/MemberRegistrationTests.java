@@ -34,7 +34,7 @@ class MemberRegistrationTests {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
     }
 
     @Test

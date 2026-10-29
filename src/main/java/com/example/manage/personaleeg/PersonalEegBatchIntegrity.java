@@ -6,15 +6,22 @@ import java.util.*;
 /** Read-only batch and active-pointer inspection shared by activation paths. */
 public final class PersonalEegBatchIntegrity {
     public record ActiveVersion(Long batchId, String versionLabel) {
-        public boolean legacy() { return batchId == null; }
+        public boolean legacy() {
+            return batchId == null;
+        }
     }
 
     public record BatchStatus(long batchId, String versionLabel, String sourceSha256, long siteId,
             int declaredSessions, int declaredResults, int declaredComplete, int declaredMissing,
             int actualSessions, int actualResults, int actualComplete, int actualMissing,
             List<String> issues) {
-        public BatchStatus { issues = List.copyOf(issues); }
-        public boolean valid() { return issues.isEmpty(); }
+        public BatchStatus {
+            issues = List.copyOf(issues);
+        }
+
+        public boolean valid() {
+            return issues.isEmpty();
+        }
     }
 
     public ActiveVersion active(Connection connection) throws SQLException {
@@ -32,7 +39,8 @@ public final class PersonalEegBatchIntegrity {
                        session_count,result_count,complete_count,post_missing_count
                   from personal_eeg_analysis_batch order by id
                 """); var rows = statement.executeQuery()) {
-            while (rows.next()) result.add(inspect(connection, rows.getLong(1), rows.getString(2),
+            while (rows.next())
+                result.add(inspect(connection, rows.getLong(1), rows.getString(2),
                     rows.getString(3), rows.getLong(4), rows.getInt(5), rows.getInt(6),
                     rows.getInt(7), rows.getInt(8)));
         }
@@ -138,7 +146,10 @@ public final class PersonalEegBatchIntegrity {
     private static int count(Connection connection, String sql, long batchId) throws SQLException {
         try (var statement = connection.prepareStatement(sql)) {
             statement.setLong(1, batchId);
-            try (var rows = statement.executeQuery()) { rows.next(); return rows.getInt(1); }
+            try (var rows = statement.executeQuery()) {
+                rows.next();
+                return rows.getInt(1);
+            }
         }
     }
 }

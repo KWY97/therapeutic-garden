@@ -51,7 +51,7 @@ class HealingSpotManagementTests {
         sibling = courseService.createHealingCourse(site, "HC-B", "감각 코스", 37.1, 127.1, 50.0);
         other = courseService.createHealingCourse(otherSite, "HC-A", "다른 코스", null, null, null);
         spot = create(course, "HS1");
-        mvc = MockMvcBuilders.webAppContextSetup(context).build();
+        mvc = MockMvcBuilders.webAppContextSetup(context).defaultRequest(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/").with(LegacyAuthenticatedSession.hydrate(context))).build();
     }
 
     HealingSpot create(HealingCourse owner, String code) {

@@ -16,7 +16,8 @@ final class ParticipantPasswordResetter {
     static final int FIRST_PARTICIPANT = 1;
     static final int LAST_PARTICIPANT = 11;
 
-    record Account(long memberId, int participantNo, String maskedLoginId) {}
+    record Account(long memberId, int participantNo, String maskedLoginId) {
+    }
 
     List<Account> inspect(Connection connection, boolean lock) throws SQLException {
         String sql = "select member_id, participant_no, login_id from member "
@@ -110,9 +111,12 @@ final class ParticipantPasswordResetter {
     }
 
     private static String mask(String loginId) {
-        if (loginId == null || loginId.isEmpty()) return "[EMPTY]";
-        if (loginId.length() == 1) return "*";
-        if (loginId.length() == 2) return loginId.charAt(0) + "*";
+        if (loginId == null || loginId.isEmpty())
+            return "[EMPTY]";
+        if (loginId.length() == 1)
+            return "*";
+        if (loginId.length() == 2)
+            return loginId.charAt(0) + "*";
         char[] middle = new char[Math.min(8, loginId.length() - 2)];
         Arrays.fill(middle, '*');
         return loginId.charAt(0) + new String(middle) + loginId.charAt(loginId.length() - 1);

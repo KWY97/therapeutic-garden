@@ -29,7 +29,8 @@ public class AdminMemberAnalysisApiController {
     }
 
     private void requireMember(Long memberId) {
-        if (members.findMember(memberId) == null) throw new IllegalArgumentException("존재하지 않는 참가자입니다.");
+        if (members.findMember(memberId) == null)
+            throw new IllegalArgumentException("존재하지 않는 참가자입니다.");
     }
 
     @GetMapping("/spatial-layout")
@@ -80,7 +81,7 @@ public class AdminMemberAnalysisApiController {
 
     @GetMapping("/monitoring/spots/{spotId}/images/{imageId}/content")
     public ResponseEntity<byte[]> image(@PathVariable Long memberId, @PathVariable Long spotId,
-                                         @PathVariable Long imageId) {
+            @PathVariable Long imageId) {
         try {
             requireMember(memberId);
             var content = monitoringImages.spotImage(spotId, imageId);

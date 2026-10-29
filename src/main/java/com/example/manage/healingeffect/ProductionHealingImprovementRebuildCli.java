@@ -13,7 +13,8 @@ public final class ProductionHealingImprovementRebuildCli {
     public static void main(String[] args) {
         int exit = run(args, System.getenv(), System.out, System.err,
                 config -> DriverManager.getConnection(config.jdbcUrl(), config.user(), config.password()));
-        if (exit != 0) System.exit(exit);
+        if (exit != 0)
+            System.exit(exit);
     }
 
     static int run(String[] args, Map<String, String> environment, PrintStream out, PrintStream err,
@@ -25,8 +26,10 @@ public final class ProductionHealingImprovementRebuildCli {
             var guard = new ProductionDatabaseTargetGuard();
             var config = guard.config(environment);
             var expected = guard.rebuildExpectations(environment);
-            if (dryRun) ProductionCliArguments.rejectWriteConfirmationsForDryRun(options);
-            else ProductionCliArguments.requireWriteConfirmations(options,
+            if (dryRun)
+                ProductionCliArguments.rejectWriteConfirmationsForDryRun(options);
+            else
+                ProductionCliArguments.requireWriteConfirmations(options,
                     config.expectedSourceSha256(), false);
             var rebuildExpected = new HealingImprovementDatabaseRebuilder.ExpectedResult(
                     expected.overall(), expected.memberSpots(), expected.participantOverall());
@@ -97,11 +100,13 @@ public final class ProductionHealingImprovementRebuildCli {
 
     private static String safeMessage(Exception ex, Map<String, String> environment) {
         String message = ex.getMessage();
-        if (message == null || message.isBlank()) return ex.getClass().getSimpleName();
+        if (message == null || message.isBlank())
+            return ex.getClass().getSimpleName();
         for (String key : List.of(ProductionDatabaseTargetGuard.JDBC_URL,
                 ProductionDatabaseTargetGuard.DB_USER, ProductionDatabaseTargetGuard.DB_PASSWORD)) {
             String secret = environment.get(key);
-            if (secret != null && !secret.isBlank()) message = message.replace(secret, "[REDACTED]");
+            if (secret != null && !secret.isBlank())
+                message = message.replace(secret, "[REDACTED]");
         }
         return message.replaceAll("jdbc:mysql://\\S+", "[REDACTED_JDBC_URL]");
     }

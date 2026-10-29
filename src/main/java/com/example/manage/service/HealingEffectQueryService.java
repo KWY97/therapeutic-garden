@@ -1,16 +1,18 @@
 package com.example.manage.service;
 
+import com.example.manage.domain.MemberHealingSpotEffectSummary;
 import com.example.manage.dto.HealingEffectView;
 import com.example.manage.dto.HealingSpotImprovementView;
 import com.example.manage.dto.ImprovementMaximumView;
 import com.example.manage.dto.ImprovementMetricView;
 import com.example.manage.dto.MonitoringSpotEffectView;
 import com.example.manage.dto.ParticipantOverallImprovementView;
-import com.example.manage.domain.MemberHealingSpotEffectSummary;
 import com.example.manage.repository.*;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class HealingEffectQueryService {
+
     private final HealingSpotEffectSummaryRepository overall;
     private final MemberHealingSpotEffectSummaryRepository participants;
     private final HealingSpotRepository spots;
@@ -33,7 +36,8 @@ public class HealingEffectQueryService {
     public List<HealingEffectView> findAnonymousExample() {
         return batches.findFirstByOrderByIdAsc().map(b -> {
             var candidates = participants.findCompleteExampleMemberIds(b.getTargetSiteId());
-            if (candidates.isEmpty()) return List.<HealingEffectView>of();
+            if (candidates.isEmpty())
+                return List.<HealingEffectView>of();
             var views = findMember(b.getTargetSiteId(), candidates.getFirst());
             // Do not publish a partial or ambiguous example after Spot edits/deletions.
             return views.size() == 6 && views.stream().allMatch(HealingEffectView::hasMeasurement)
@@ -54,7 +58,8 @@ public class HealingEffectQueryService {
     }
 
     public List<HealingEffectView> findMember(Long siteId, Long memberId) {
-        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        if (!members.existsById(memberId))
+            throw new IllegalArgumentException("존재하지 않는 Member입니다.");
         var measurements = participants
                 .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId)
                 .stream().collect(Collectors.toMap(s -> s.getHealingSpot().getSpotId(), Function.identity()));
@@ -98,7 +103,8 @@ public class HealingEffectQueryService {
     public List<HealingSpotImprovementView> findAnonymousExampleImprovements() {
         return batches.findFirstByOrderByIdAsc().map(batch -> {
             var candidates = participants.findCompleteExampleMemberIds(batch.getTargetSiteId());
-            if (candidates.isEmpty()) return List.<HealingSpotImprovementView>of();
+            if (candidates.isEmpty())
+                return List.<HealingSpotImprovementView>of();
             var views = findMemberImprovements(batch.getTargetSiteId(), candidates.getFirst());
             return views.size() == 6 ? views : List.<HealingSpotImprovementView>of();
         }).orElse(List.of());
@@ -106,7 +112,8 @@ public class HealingEffectQueryService {
 
     /** Public landing example selected by participant number, never by Member primary key. */
     public List<HealingSpotImprovementView> findPublishedMemberImprovementsByParticipantNo(Integer participantNo) {
-        if (participantNo == null) return List.of();
+        if (participantNo == null)
+            return List.of();
         return batches.findFirstByOrderByIdAsc()
                 .flatMap(batch -> members.findByParticipantNo(participantNo)
                         .map(member -> findMemberImprovements(batch.getTargetSiteId(), member.getMemberId())))
@@ -116,7 +123,8 @@ public class HealingEffectQueryService {
 
     /** Highest rate wins, then highest valid count; exact ties remain joint maxima. */
     public ImprovementMaximumView findMaximumImprovements(List<HealingSpotImprovementView> views) {
-        if (views == null || views.isEmpty()) return ImprovementMaximumView.empty();
+        if (views == null || views.isEmpty())
+            return ImprovementMaximumView.empty();
         return new ImprovementMaximumView(
                 findMaximumSpotCodes(views, HealingSpotImprovementView::spotCode, HealingSpotImprovementView::stress),
                 findMaximumSpotCodes(views, HealingSpotImprovementView::spotCode, HealingSpotImprovementView::emotional));
@@ -124,7 +132,8 @@ public class HealingEffectQueryService {
 
     /** Applies the public landing maximum rule to the protected Monitoring snapshot. */
     public ImprovementMaximumView findMonitoringMaximumImprovements(List<MonitoringSpotEffectView> views) {
-        if (views == null || views.isEmpty()) return ImprovementMaximumView.empty();
+        if (views == null || views.isEmpty())
+            return ImprovementMaximumView.empty();
         return new ImprovementMaximumView(
                 findMaximumSpotCodes(views, MonitoringSpotEffectView::spotCode, MonitoringSpotEffectView::stress),
                 findMaximumSpotCodes(views, MonitoringSpotEffectView::spotCode, MonitoringSpotEffectView::emotional));
@@ -144,7 +153,8 @@ public class HealingEffectQueryService {
 
     public List<HealingSpotImprovementView> findOverallImprovements(Long siteId) {
         var summaries = overall.findByHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(siteId);
-        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
+        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary)))
+            return List.of();
         return summaries.stream()
                 .map(summary -> new HealingSpotImprovementView(
                         summary.getHealingSpot().getCode(), summary.getHealingSpot().getName(),
@@ -155,10 +165,12 @@ public class HealingEffectQueryService {
     }
 
     public List<HealingSpotImprovementView> findMemberImprovements(Long siteId, Long memberId) {
-        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        if (!members.existsById(memberId))
+            throw new IllegalArgumentException("존재하지 않는 Member입니다.");
         var summaries = participants
                 .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId);
-        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
+        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary)))
+            return List.of();
         return summaries.stream()
                 .map(summary -> new HealingSpotImprovementView(
                         summary.getHealingSpot().getCode(), summary.getHealingSpot().getName(), null,
@@ -169,10 +181,12 @@ public class HealingEffectQueryService {
     }
 
     private List<HealingSpotImprovementView> findMemberImprovementsWithMissing(Long siteId, Long memberId) {
-        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        if (!members.existsById(memberId))
+            throw new IllegalArgumentException("존재하지 않는 Member입니다.");
         var summaries = participants
                 .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId);
-        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary))) return List.of();
+        if (summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary)))
+            return List.of();
         var bySpot = summaries.stream().collect(Collectors.toMap(
                 summary -> summary.getHealingSpot().getSpotId(), Function.identity()));
         return spots.findByHealingCourseSiteSiteId(siteId).stream()
@@ -192,7 +206,8 @@ public class HealingEffectQueryService {
 
     /** Participant overall is derived by summing Member x Spot source counts; it is not stored. */
     public Optional<ParticipantOverallImprovementView> findParticipantOverallImprovement(Long siteId, Long memberId) {
-        if (!members.existsById(memberId)) throw new IllegalArgumentException("존재하지 않는 Member입니다.");
+        if (!members.existsById(memberId))
+            throw new IllegalArgumentException("존재하지 않는 Member입니다.");
         var summaries = participants
                 .findByMemberMemberIdAndHealingSpotHealingCourseSiteSiteIdOrderByHealingSpotCodeAsc(memberId, siteId);
         if (summaries.isEmpty() || summaries.stream().anyMatch(summary -> !hasImprovementCounts(summary)))
@@ -228,7 +243,8 @@ public class HealingEffectQueryService {
             var metric = metricExtractor.apply(view);
             return metric != null && metric.improvementRate() != null;
         }).toList();
-        if (available.isEmpty()) return Set.of();
+        if (available.isEmpty())
+            return Set.of();
         var maximumRate = available.stream().map(metricExtractor)
                 .map(ImprovementMetricView::improvementRate).max(java.math.BigDecimal::compareTo).orElseThrow();
         int maximumValidCount = available.stream().map(metricExtractor)

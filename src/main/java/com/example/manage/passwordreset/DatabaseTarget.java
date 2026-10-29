@@ -64,7 +64,8 @@ enum DatabaseTarget {
         try {
             URI uri = URI.create(jdbcUrl.substring("jdbc:".length()));
             String host = uri.getHost();
-            if (host == null || host.isBlank()) throw new IllegalArgumentException();
+            if (host == null || host.isBlank())
+                throw new IllegalArgumentException();
             boolean loopback = host.equalsIgnoreCase("localhost") || host.equals("127.0.0.1")
                     || host.equals("::1") || host.equals("0:0:0:0:0:0:0:1");
             if (this == LOCAL && !loopback) {
@@ -79,7 +80,8 @@ enum DatabaseTarget {
                         + "사용할 수 있습니다.");
             }
         } catch (IllegalArgumentException ex) {
-            if (ex.getMessage() != null) throw ex;
+            if (ex.getMessage() != null)
+                throw ex;
             throw new IllegalArgumentException("JDBC URL의 host를 확인할 수 없습니다.");
         }
     }
