@@ -1,6 +1,7 @@
 package com.example.manage.healingeffect;
 
 import com.example.manage.domain.HealingMeasurementRecord;
+
 import java.util.*;
 
 /** Pure count aggregation. Rates are deliberately derived outside the stored source counts. */
@@ -11,12 +12,19 @@ public final class HealingImprovementAggregator {
                 throw new IllegalArgumentException("invalid improvement counts");
         }
     }
+
     public record MemberSpot(long memberId, long spotId, int totalExperienceCount,
-            MetricCounts stress, MetricCounts emotional) {}
+            MetricCounts stress, MetricCounts emotional) {
+    }
+
     public record OverallSpot(long spotId, int participantCount, int totalExperienceCount,
-            MetricCounts stress, MetricCounts emotional) {}
+            MetricCounts stress, MetricCounts emotional) {
+    }
+
     public record ParticipantOverall(long memberId, int totalExperienceCount,
-            MetricCounts stress, MetricCounts emotional) {}
+            MetricCounts stress, MetricCounts emotional) {
+    }
+
     public record Result(List<MemberSpot> memberSpots, List<OverallSpot> overallSpots,
             List<ParticipantOverall> participantOverall) {
         public Result {
@@ -26,7 +34,9 @@ public final class HealingImprovementAggregator {
         }
     }
 
-    private record MemberSpotKey(long memberId, long spotId) {}
+    private record MemberSpotKey(long memberId, long spotId) {
+    }
+
     private static final class Counts {
         int experiences;
         int stressValid;
@@ -36,10 +46,14 @@ public final class HealingImprovementAggregator {
 
         void add(HealingMeasurementRecord row) {
             experiences++;
-            if (row.stressValid()) stressValid++;
-            if (row.stressImproved()) stressImproved++;
-            if (row.emotionalValid()) emotionalValid++;
-            if (row.emotionalImproved()) emotionalImproved++;
+            if (row.stressValid())
+                stressValid++;
+            if (row.stressImproved())
+                stressImproved++;
+            if (row.emotionalValid())
+                emotionalValid++;
+            if (row.emotionalImproved())
+                emotionalImproved++;
         }
 
         void add(Counts other) {
@@ -50,8 +64,13 @@ public final class HealingImprovementAggregator {
             emotionalImproved += other.emotionalImproved;
         }
 
-        MetricCounts stress() { return new MetricCounts(stressValid, stressImproved); }
-        MetricCounts emotional() { return new MetricCounts(emotionalValid, emotionalImproved); }
+        MetricCounts stress() {
+            return new MetricCounts(stressValid, stressImproved);
+        }
+
+        MetricCounts emotional() {
+            return new MetricCounts(emotionalValid, emotionalImproved);
+        }
     }
 
     public Result aggregate(Collection<HealingMeasurementRecord> records) {
