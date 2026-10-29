@@ -15,14 +15,19 @@ public final class HealingEffectDatabaseImporter {
     private static final List<String> COURSE_NAMES = List.of("회복 코스", "감각 코스", "힐링 코스");
 
     public record Result(String status, int overallRows, int participantRows, boolean schemaReady,
-            List<String> warnings) {}
-    private record Mapping(Map<String, Long> spots, Map<Integer, Long> members) {}
+            List<String> warnings) {
+    }
+
+    private record Mapping(Map<String, Long> spots, Map<Integer, Long> members) {
+    }
 
     /** Caller supplies a fresh connection and closes it after return. */
     public Result execute(Connection connection, HealingEffectSource source, long siteId, boolean dryRun)
             throws SQLException {
-        if (!connection.getAutoCommit()) throw new IllegalArgumentException("독립적인 새 connection이 필요합니다.");
-        if (source.filename().length() > 255) throw invalid("source filename은 255자 이하여야 합니다.");
+        if (!connection.getAutoCommit())
+            throw new IllegalArgumentException("독립적인 새 connection이 필요합니다.");
+        if (source.filename().length() > 255)
+            throw invalid("source filename은 255자 이하여야 합니다.");
         connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
         connection.setReadOnly(dryRun);
         connection.setAutoCommit(false);
@@ -41,7 +46,8 @@ public final class HealingEffectDatabaseImporter {
                 }
             }
             var missingTables = new ArrayList<String>();
-            for (String table : TABLES) if (!tableExists(connection, table)) missingTables.add(table);
+            for (String table : TABLES)
+                if (!tableExists(connection, table)) missingTables.add(table);
             boolean schemaReady = missingTables.isEmpty();
             if (tableExists(connection, "healing_effect_import_batch")) {
                 try (var statement = connection.prepareStatement(
@@ -50,7 +56,8 @@ public final class HealingEffectDatabaseImporter {
                     try (var rows = statement.executeQuery()) {
                         if (rows.next()) {
                             long originalSite = rows.getLong(1);
-                            if (originalSite != siteId) throw invalid("동일 source가 다른 Site에 already imported: " + originalSite);
+                            if (originalSite != siteId)
+                                throw invalid("동일 source가 다른 Site에 already imported: " + originalSite);
                             connection.rollback();
                             return new Result("ALREADY_IMPORTED", 0, 0, schemaReady,
                                     List.of("기존 데이터를 변경하거나 삭제된 summary를 재생성하지 않습니다."));
@@ -68,12 +75,17 @@ public final class HealingEffectDatabaseImporter {
                 return new Result("DRY_RUN", source.overall().size(), source.participants().size(), schemaReady,
                         schemaReady ? List.of() : List.of("실제 write 전 스키마 준비 필요: " + missingTables));
             }
-            if (!schemaReady) throw invalid("Schema missing: " + missingTables + ". 스키마를 먼저 준비해야 합니다.");
+            if (!schemaReady)
+                throw invalid("Schema missing: " + missingTables + ". 스키마를 먼저 준비해야 합니다.");
             persist(connection, source, siteId, mapping);
             connection.commit();
             return new Result("IMPORTED", source.overall().size(), source.participants().size(), true, List.of());
         } catch (SQLException | RuntimeException ex) {
-            try { connection.rollback(); } catch (SQLException rollback) { ex.addSuppressed(rollback); }
+            try {
+                connection.rollback();
+            } catch (SQLException rollback) {
+                ex.addSuppressed(rollback);
+            }
             throw ex;
         }
     }
@@ -139,7 +151,8 @@ public final class HealingEffectDatabaseImporter {
         source.participants().stream().map(HealingEffectSource.Participant::participant).distinct()
                 .filter(code -> !members.containsKey(Integer.parseInt(code.substring(1))))
                 .forEach(code -> errors.add("Member 누락: " + code));
-        if (!errors.isEmpty()) throw new EffectImportValidationException(errors);
+        if (!errors.isEmpty())
+            throw new EffectImportValidationException(errors);
         return new Mapping(spots, members);
     }
 
@@ -195,7 +208,8 @@ public final class HealingEffectDatabaseImporter {
 
     private boolean tableExists(Connection connection, String table) throws SQLException {
         try (var rows = connection.getMetaData().getTables(connection.getCatalog(), null, "%", new String[]{"TABLE"})) {
-            while (rows.next()) if (table.equalsIgnoreCase(rows.getString("TABLE_NAME"))) return true;
+            while (rows.next())
+                if (table.equalsIgnoreCase(rows.getString("TABLE_NAME"))) return true;
         }
         return false;
     }
@@ -203,7 +217,10 @@ public final class HealingEffectDatabaseImporter {
     private long count(Connection connection, String table) throws SQLException {
         // Table names originate exclusively in TABLES, never from CLI/source input.
         try (var statement = connection.prepareStatement("select count(*) from " + table);
-             var rows = statement.executeQuery()) { rows.next(); return rows.getLong(1); }
+             var rows = statement.executeQuery()) {
+            rows.next();
+            return rows.getLong(1);
+        }
     }
 
     private EffectImportValidationException invalid(String message) {
