@@ -14,6 +14,7 @@ import org.springframework.ui.ExtendedModelMap;
 
 import java.math.BigDecimal;
 import java.nio.file.*;
+import java.security.MessageDigest;
 import java.sql.*;
 import java.time.LocalDate;
 import java.util.*;
@@ -23,10 +24,6 @@ import static org.mockito.Mockito.*;
 
 /** Each test uses an isolated in-memory DB. No local or Production MySQL connection is made. */
 class PersonalEegIntegrationTests {
-    private static final Path PREVIOUS_REPORT=Path.of(".local/egg-report/EEG_Personal_Report_All_Participants.xlsx");
-    private static final Path CURRENT_REPORT=Path.of("../private-data/EEG_Personal_Report_All_Participants_v.20261023_ver.2.xlsx");
-    private static final String PREVIOUS_SHA="25aa3eb3735cb57ec6b88da8985070f48da397bc2f0ba1168834c52520f5dfb7";
-    private static final String CURRENT_SHA="2dd867810d58525dc6d289a3b3d6c070e2a6a53eba23f1ed4b571b84da513819";
     @TempDir Path temporary;
     private String url;
     private JdbcTemplate jdbc;
@@ -60,11 +57,10 @@ class PersonalEegIntegrationTests {
         for(String sql:statements.split(";")) if(!sql.isBlank()) jdbc.execute(sql);
     }
 
-    @Test void actualPrivateReportDryRunAndIsolatedDraftImportPreserveLegacyTables() throws Exception {
-        Path file=PREVIOUS_REPORT;
-        Assumptions.assumeTrue(Files.isRegularFile(file),"private workbook is not shipped with the repository");
+    @Test void syntheticReportDryRunAndIsolatedDraftImportPreserveLegacyTables() throws Exception {
+        Path file=SyntheticPersonalEegWorkbook.create(temporary,false);
         var source=new PersonalEegExcelParser().parse(file);
-        assertEquals(PREVIOUS_SHA,source.sha256());
+        assertEquals(sha256(file),source.sha256());
         assertEquals(65,source.sessions().size()); assertEquals(130,source.resultCount());
         assertEquals(126,source.completeCount()); assertEquals(4,source.postMissingCount());
         assertEquals(1,source.correctedDateCount());
@@ -116,13 +112,13 @@ class PersonalEegIntegrationTests {
     }
 
     @Test void currentReportImportsAllResultsAndCanSwitchBackToPreviousBatch() throws Exception {
-        Assumptions.assumeTrue(Files.isRegularFile(CURRENT_REPORT) && Files.isRegularFile(PREVIOUS_REPORT),
-                "private workbooks are not shipped with the repository");
+        Path previousFile=SyntheticPersonalEegWorkbook.create(temporary,false);
+        Path currentFile=SyntheticPersonalEegWorkbook.create(temporary,true);
         var parser=new PersonalEegExcelParser();
-        var previous=parser.parse(PREVIOUS_REPORT);
-        var current=parser.parse(CURRENT_REPORT);
-        assertEquals(PREVIOUS_SHA,previous.sha256());
-        assertEquals(CURRENT_SHA,current.sha256());
+        var previous=parser.parse(previousFile);
+        var current=parser.parse(currentFile);
+        assertEquals(sha256(previousFile),previous.sha256());
+        assertEquals(sha256(currentFile),current.sha256());
         assertNotEquals(previous.sha256(),current.sha256());
         assertEquals(67,current.sessions().size());
         assertEquals(134,current.resultCount());
@@ -290,8 +286,7 @@ class PersonalEegIntegrationTests {
     }
 
     @Test void fourReportedValuesDoNotRequireTheEegBandSheet() throws Exception {
-        Path original=CURRENT_REPORT;
-        Assumptions.assumeTrue(Files.isRegularFile(original),"private workbook is not shipped with the repository");
+        Path original=SyntheticPersonalEegWorkbook.create(temporary,true);
         Path withoutBands=temporary.resolve("dated-only.xlsx");
         try(var workbook=new XSSFWorkbook(Files.newInputStream(original))) {
             int index=workbook.getSheetIndex("EEG_날짜별_대역균형");
@@ -307,8 +302,7 @@ class PersonalEegIntegrationTests {
     }
 
     @Test void correctedP008DateCannotCollideWithAnotherSession() throws Exception {
-        Path original=CURRENT_REPORT;
-        Assumptions.assumeTrue(Files.isRegularFile(original),"private workbook is not shipped with the repository");
+        Path original=SyntheticPersonalEegWorkbook.create(temporary,true);
         Path duplicateFile=temporary.resolve("date-collision.xlsx");
         try(var workbook=new XSSFWorkbook(Files.newInputStream(original))) {
             var sheet=workbook.getSheet("날짜별_결과");
@@ -386,6 +380,9 @@ class PersonalEegIntegrationTests {
     private static void assertSameNumber(BigDecimal expected,BigDecimal actual) {
         if(expected==null) assertNull(actual);
         else { assertNotNull(actual); assertEquals(0,expected.compareTo(actual)); }
+    }
+    private static String sha256(Path path) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
     }
     private Connection connect() throws SQLException { return DriverManager.getConnection(url,"sa",""); }
     private int count(String table) { return jdbc.queryForObject("select count(*) from "+table,Integer.class); }

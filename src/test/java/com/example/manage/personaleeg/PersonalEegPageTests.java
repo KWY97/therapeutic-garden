@@ -5,6 +5,7 @@ import com.example.manage.repository.*;
 import com.example.manage.service.SessionAuthentication;
 import jakarta.servlet.Filter;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -23,13 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/** Full Spring Boot templates backed by an isolated H2 database and the private v2 workbook. */
+/** Full Spring Boot templates backed by an isolated H2 database and generated workbooks. */
 @SpringBootTest(properties="spring.datasource.url=jdbc:h2:mem:personal-eeg-pages;MODE=MySQL;NON_KEYWORDS=SEQUENCE;DB_CLOSE_DELAY=-1")
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PersonalEegPageTests {
-    private static final Path PREVIOUS=Path.of(".local/egg-report/EEG_Personal_Report_All_Participants.xlsx");
-    private static final Path CURRENT=Path.of("../private-data/EEG_Personal_Report_All_Participants_v.20261023_ver.2.xlsx");
+    @TempDir static Path temporary;
     @Autowired WebApplicationContext context;
     @Autowired @Qualifier("springSecurityFilterChain") Filter security;
     @Autowired DataSource dataSource;
@@ -46,8 +46,8 @@ class PersonalEegPageTests {
     private long adminId;
 
     @BeforeAll void seed() throws Exception {
-        Assumptions.assumeTrue(Files.isRegularFile(CURRENT) && Files.isRegularFile(PREVIOUS),
-                "private workbooks are not shipped with the repository");
+        Path previous=SyntheticPersonalEegWorkbook.create(temporary,false);
+        Path current=SyntheticPersonalEegWorkbook.create(temporary,true);
         mvc=MockMvcBuilders.webAppContextSetup(context).addFilters(security).build();
         var site=sites.saveAndFlush(new Site("EEG isolated", "test", 37.0, 127.0, 3));
         for(int p=1;p<=11;p++) {
@@ -69,8 +69,8 @@ class PersonalEegPageTests {
         for(String sql:statements.split(";")) if(!sql.isBlank()) jdbc.execute(sql);
         var parser=new PersonalEegExcelParser();
         var importer=new PersonalEegDatabaseImporter();
-        try(var c=dataSource.getConnection()) { importer.execute(c,parser.parse(PREVIOUS),site.getSiteId(),"eeg-v1",false); }
-        try(var c=dataSource.getConnection()) { importer.execute(c,parser.parse(CURRENT),site.getSiteId(),"eeg-v2",false); }
+        try(var c=dataSource.getConnection()) { importer.execute(c,parser.parse(previous),site.getSiteId(),"eeg-v1",false); }
+        try(var c=dataSource.getConnection()) { importer.execute(c,parser.parse(current),site.getSiteId(),"eeg-v2",false); }
         try(var c=dataSource.getConnection()) { new PersonalEegVersionStore().activate(c,2); }
     }
 
@@ -85,7 +85,7 @@ class PersonalEegPageTests {
                 .isEqualTo(adminPage.getModelAndView().getModel().get("measurementHistory"));
         for(var page:List.of(memberPage,adminPage))
             assertThat(page.getResponse().getContentAsString())
-                    .contains("memberMeasurementHistory", "2026-08-19", "2.4653292639234912",
+                    .contains("memberMeasurementHistory", "2026-08-19", "2.500000000000000000",
                             "measurement-history.js", "member-healing-analysis.js");
         var p009=new MockHttpSession(); authentication.authenticateMember(p009,members.findById(memberIds.get(9)).orElseThrow());
         assertThat(mvc.perform(get("/member").session(p009)).andExpect(status().isOk())
