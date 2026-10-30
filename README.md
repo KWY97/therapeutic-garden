@@ -350,13 +350,7 @@ Java 및 JavaScript 테스트를 통해 주요 기능의 회귀를 검증합니�
 ./gradlew test
 ```
 
-**주의:** 현재 일부 Java 테스트는 `.local` 또는 `../private-data`의 실제 Excel 워크북을 조건부로 참조할 수 있습니다. 전체 테스트를 실행하기 전 데이터 접근 경로를 확인하고, 필요한 경우 해당 테스트를 제외한 격리된 테스트 구성으로 실행해야 합니다.
-
-실데이터 의존성을 별도로 확인해야 하는 테스트:
-
-- `HealingImprovementExcelRegressionTests`
-- `PersonalEegIntegrationTests`
-- `PersonalEegPageTests`
+기존 실데이터 의존 테스트 3개는 Apache POI로 합성 Excel 워크북을 생성합니다. 데이터베이스가 필요한 테스트는 격리된 H2 테스트 DB를 사용합니다.
 
 ### JavaScript 테스트
 
@@ -366,13 +360,15 @@ node --test src/test/js/*.test.js
 
 ### 회귀 검증 기록
 
-2026년 10월 기준, 안전하게 선별한 환경에서 다음 테스트를 통과했습니다.
+2026년 10월 기준, `./gradlew test`로 전체 Java 테스트를 실행해 다음 결과를 확인했습니다.
 
 | 구분 | 결과 |
 |---|---|
-| Java | 52개 클래스, 499개 테스트 통과 |
+| Java | 55개 클래스, 507개 테스트 통과 |
 | JavaScript | 129개 테스트 통과 |
 | 주요 검증 | 인증·세션·권한·일정·이미지·데이터 집계 |
+
+Java와 JavaScript 모두 실패·건너뜀 0건입니다.
 
 실제 운영 DB, S3 네트워크 및 모든 외부 연동에 대한 검증을 포함하는 결과는 아닙니다.
 

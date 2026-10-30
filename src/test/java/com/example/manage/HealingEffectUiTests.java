@@ -133,18 +133,7 @@ class HealingEffectUiTests {
         String html = result.getResponse().getContentAsString();
         assertThat(html).contains("데이터 변화", "data-stress=\"88.2%\"", "data-emotional=\"88.9%\"",
                         "스트레스 / 정서 안정성", "뇌파 분석 레포트", "분석 요약", "상세 분석",
-                        "/images/landing/report-previews/stress-chart.png",
-                        "/images/landing/report-previews/emotional-chart.png",
-                        "/images/landing/report-previews/stress-graph.png",
-                        "/images/landing/report-previews/emotional-graph.png",
-                        "/images/landing/report-previews/eeg-report-summary.png",
-                        "/images/landing/report-previews/eeg-report-detail.png",
-                        "실참여자 데이터 샘플입니다.", "data-report-modal", "PERSON / HEALING SPOT",
-                        "2026-08-14", "2.82", "2.59", "-0.23", "8.3% 감소",
-                        "2026-08-19", "2.56", "2.33", "-0.22", "8.8% 감소",
-                        "2026-08-21", "2.71", "2.31", "-0.40", "14.7% 감소",
-                        "0.77", "0.86", "0.09", "11.1% 증가", "0.88", "0.99", "0.11", "12.6% 증가",
-                        "0.82", "1.01", "0.19", "23.8% 증가",
+                        "data-report-modal", "PERSON / HEALING SPOT",
                         "최대 개선 스팟", "landing-preview-legend")
                 .doesNotContain("P001", "P002", "P004", "participantNo", "memberId", "participantCode", "loginId",
                         "secret-login-one", "secret-login-two", "secret-login-four", "secret-login-six", "비공개이름하나", "비공개이름둘", "비공개이름넷", "비공개이름육",
@@ -153,6 +142,7 @@ class HealingEffectUiTests {
                         "평균 스트레스 증감률", "평균 정서 안정성 증감률", "정서적 안정성", "data-personal-spot=",
                         "data-stress-display=", "data-emotional-display=", "data-personal-metric=",
                         "BEFORE &amp; AFTER", "stress-baseline", "stress-followup", "66.7% 증가", "landing-chart-line");
+        assertFixedReportPreviews(html);
 
         assertMapCard(html, "HS1", "data-maximum-change-rate=\"27.69\"", "스트레스", "27.7%", "감소", "지수:", "2.75", "1.99", "88.2%", "17회 중 15회 개선", "호스타 정원", "is-maximum", "aria-label=\"최대 개선 스팟\"");
         assertMapCard(html, "HS2", "data-maximum-change-rate=\"28.58\"", "정서 안정성", "28.6%", "증가", "지수:", "0.85", "1.09", "68.8%", "16회 중 11회 개선", "곶자왈원");
@@ -204,10 +194,9 @@ class HealingEffectUiTests {
         @SuppressWarnings("unchecked") var personalData = (List<HealingSpotImprovementView>)
                 result.getModelAndView().getModel().get("personalEffects");
         assertThat(personalData).isEmpty();
-        assertThat(result.getResponse().getContentAsString())
-                .contains("/images/landing/report-previews/stress-chart.png",
-                        "/images/landing/report-previews/stress-graph.png", "실참여자 데이터 샘플입니다.")
-                .doesNotContain("data-personal-spot=");
+        String html = result.getResponse().getContentAsString();
+        assertFixedReportPreviews(html);
+        assertThat(html).doesNotContain("data-personal-spot=");
     }
 
     @Test void zeroValidP006MetricDoesNotAlterFixedReportExamples() throws Exception {
@@ -215,9 +204,14 @@ class HealingEffectUiTests {
         var summary = personal.findByMemberMemberIdOrderByHealingSpotCodeAsc(landingParticipant.getMemberId()).getFirst();
         summary.updateImprovementCounts(summary.getTotalExperienceCount(), 0, 0, 0, 0);
         personal.flush();
-        String html = mvc.perform(get("/")).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
-        assertThat(html).contains("/images/landing/report-previews/eeg-report-summary.png", "실참여자 데이터 샘플입니다.")
-                .doesNotContain("data-stress-display=", "data-emotional-display=", "0회 중 0회 개선");
+        var result = mvc.perform(get("/")).andExpect(status().isOk()).andReturn();
+        @SuppressWarnings("unchecked") var personalData = (List<HealingSpotImprovementView>)
+                result.getModelAndView().getModel().get("personalEffects");
+        assertThat(personalData.getFirst().stress().validCount()).isZero();
+        assertThat(personalData.getFirst().stress().improvementRateDisplay()).isEqualTo("측정 없음");
+        String html = result.getResponse().getContentAsString();
+        assertFixedReportPreviews(html);
+        assertThat(html).doesNotContain("data-stress-display=", "data-emotional-display=", "0회 중 0회 개선");
     }
 
     @Test void anonymousSelectionIsCompleteStableAndOrderedByParticipantNumber() {
@@ -518,6 +512,32 @@ class HealingEffectUiTests {
         int end = html.indexOf("landing-preview-spot landing-preview-spot-", start + marker.length());
         String card = html.substring(start, end < 0 ? html.indexOf("</figure>", start) : end);
         assertThat(card).contains(expected);
+    }
+
+    private static void assertFixedReportPreviews(String html) {
+        int start = html.indexOf("landing-person-scene");
+        int end = html.indexOf("landing-connection", start);
+        assertThat(start).isGreaterThanOrEqualTo(0);
+        assertThat(end).isGreaterThan(start);
+        String section = html.substring(start, end);
+        assertThat(section).contains("role=\"tablist\"", "data-report-panel=\"wellbeing\"",
+                "data-report-panel=\"eeg\"", "<th scope=\"col\">Baseline</th>",
+                "/images/landing/report-previews/stress-chart.png",
+                "/images/landing/report-previews/emotional-chart.png",
+                "/images/landing/report-previews/stress-graph.png",
+                "/images/landing/report-previews/emotional-graph.png",
+                "/images/landing/report-previews/eeg-report-summary.png",
+                "/images/landing/report-previews/eeg-report-detail.png");
+        assertThat(count(section, "class=\"landing-vital-table\"")).isEqualTo(2);
+        assertThat(count(section, "class=\"landing-vital-graph\"")).isEqualTo(2);
+        assertThat(count(section, "data-report-preview-kind=\"chart\"")).isEqualTo(2);
+        assertThat(count(section, "data-report-preview-kind=\"report\"")).isEqualTo(2);
+    }
+
+    private static int count(String text, String marker) {
+        int total = 0;
+        for (int at = text.indexOf(marker); at >= 0; at = text.indexOf(marker, at + marker.length())) total++;
+        return total;
     }
 
     private static void assertMobileMapCard(String html, String spotCode, String... expected) {
