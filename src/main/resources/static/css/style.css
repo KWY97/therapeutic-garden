@@ -532,12 +532,6 @@ body {
     font-weight: 600;
 }
 
-.detail-action-list {
-    display: flex;
-    gap: 12px;
-    margin-top: 24px;
-}
-
 /* 일정 등록 폼 */
 .form-card fieldset {
     min-width: 0;
@@ -3102,12 +3096,6 @@ input[type="time"].form-input {
         font-size: 10px;
     }
 
-    .calendar-legend {
-        width: 100%;
-        flex-wrap: wrap;
-        gap: 10px 16px;
-    }
-
     .calendar-legend-item {
         font-size: 12px;
     }
@@ -3201,7 +3189,6 @@ input[type="time"].form-input {
 }
 
 .admin-settings-menu { position: relative; display: inline-flex; align-items: stretch; }
-.admin-settings-menu .admin-settings-link { padding-right: 34px; }
 .admin-settings-toggle {
     position: absolute; top: 1px; right: 1px; bottom: 1px; width: 32px; padding: 0;
     border: 0; border-left: 1px solid #e5e7eb; border-radius: 0 7px 7px 0;
@@ -7139,8 +7126,7 @@ input[type="time"].form-input {
 .home-survey-page .effect-neutral { color: #86743f; }
 .home-survey-page .effect-missing { color: #9ca3af; font-weight: 500; }
 .survey-summary-track { height: 6px; overflow: hidden; border-radius: 4px; background: #edf0eb; }
-.survey-summary-track span { display: block; height: 100%; border-radius: inherit; }
-.survey-summary-track span { background: currentColor; }
+.survey-summary-track span { display: block; height: 100%; border-radius: inherit; background: currentColor; }
 .survey-highlight-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
 .survey-highlight-card { padding: 14px; border: 1px solid #e5e7eb; border-radius: 9px; background: #fff; }
 .survey-highlight-card strong { display: block; margin-top: 7px; font-size: 14px; }
@@ -7497,7 +7483,6 @@ input[type="time"].form-input {
 .landing-page .landing-final-cta { position: relative; overflow: hidden; isolation: isolate; min-height: 540px; display: flex; align-items: center; background: #f6f5ef; }
 .landing-page .landing-final-image { position: absolute; inset: 0; z-index: -1; }
 .landing-page .landing-final-image img { width: 100%; height: 100%; display: block; object-fit: cover; object-position: center 60%; }
-/*.landing-page .landing-final-image::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(246,245,239,.0), rgba(239,243,230,.0)); }*/
 .landing-page .landing-final-image::after {
     content: '';
     position: absolute;

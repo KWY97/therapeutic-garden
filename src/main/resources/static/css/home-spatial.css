@@ -1,7 +1,6 @@
 @property --halo-color { syntax: "<color>"; inherits: false; initial-value: hsl(40 35% 82%); }
 .monitoring-space {
     --effect-good-color: hsl(150 45% 40%);
-    --effect-bad-color: hsl(8 58% 50%);
     --effect-neutral-color: hsl(40 35% 82%);
     --label-good-text: hsl(150 55% 24%);
     --label-bad-text: hsl(8 62% 38%);
